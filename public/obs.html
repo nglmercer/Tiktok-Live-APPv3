@@ -11,27 +11,8 @@
 
     <style>
         body {
-            min-width: 200px !important;
-            display: flex;
-            justify-content: center;
+            background-color: rgba(0, 0, 0, 0);
             /* Centrar contenido horizontalmente */
-            align-items: center;
-            /* Centrar contenido verticalmente */
-            text-align: center;
-            /* Centrar texto horizontalmente */
-        }
-        
-        .usernamelink {
-            color: rgb(102, 143, 217) !important;
-        }
-        
-         ::-webkit-scrollbar {
-            width: 0px;
-            height: 0px;
-        }
-        
-        .eventcontainer>div {
-            margin-top: 5px;
         }
     </style>
 
@@ -46,10 +27,6 @@
                 $('body').css('color', window.settings.fontColor);
             }
 
-            if (window.settings.bgColor) {
-                $('body').css('background-color', window.settings.bgColor);
-            }
-
             if (window.settings.fontSize) {
                 $('body').css('font-size', window.settings.fontSize);
             }
@@ -62,14 +39,6 @@
 
 <body>
     <table class="splitstatetable">
-        <tr>
-            <td>
-                <pre id="stateText"></pre>
-            </td>
-            <td>
-                <div id="roomStats"></div>
-            </td>
-        </tr>
     </table>
     <div class="eventcontainer"></div>
 
