@@ -98,7 +98,7 @@ function addChatItem(color, data, text, summarize) {
     </div>
   `);
 
-    const specialChars = /[@#$%^&*()/,.?":{}|<>]/;
+    const specialChars = /[#$%^&*()/,.?":{}|<>]/;
     const startsWithSpecialChar = specialChars.test(text.charAt(0));
     const messagePrefix = startsWithSpecialChar ? "!" : "";
     const messageSuffix = summarize ? "" : ` ${text}`;
@@ -117,7 +117,6 @@ function addChatItem(color, data, text, summarize) {
     container.animate({
         scrollTop: container[0].scrollHeight
     }, 400);
-    leerMensajes(text);
     cacheMessage(text);
 }
 // Resto del código...
@@ -159,14 +158,8 @@ function addGiftItem(data) {
     } else {
         container.append(html);
     }
-    const giftImageFilename = `assets/${data.giftName.replace(/\s/g, '_')}.png`;
-
-    // Verificar si el regalo ya ha sido descargado
-    if (!downloadedGifts.has(giftImageFilename)) {
-        // Descargar y guardar la imagen del regalo en la carpeta "assets"
-        downloadImage(data.giftPictureUrl, giftImageFilename);
-    }
     enviarMensaje(data.giftName, "");
+    obtenerComandosYEnviarMensaje(data.giftName, "");
 
     container.stop();
     container.animate({
@@ -231,7 +224,6 @@ connection.on('gift', (data) => {
     if (window.settings.showGifts === "0") return;
 
     addGiftItem(data);
-    console.log(data);
 })
 
 // share, follow
@@ -256,91 +248,76 @@ connection.on('streamEnd', () => {
         }, 30000);
     }
 })
-let mensajes = [];
-let lastComment = '';
-let lastCommentTime = 0;
-const filterTime = 5000; // 5 segundos en milisegundos
-const palabrasSpam = ['join', 'joined', 'shared', '@'];
 
-function contienePalabrasSpam(message) {
-    const lowerCaseMessage = message.toLowerCase();
-    for (const palabra of palabrasSpam) {
-        if (lowerCaseMessage.includes(palabra)) {
-            return true;
-        }
-    }
-    return false;
-}
+function obtenerComandosYEnviarMensaje(giftname, message = "", isGift = false) {
+    const pageSize = 100; // Cantidad de comandos a devolver por página
+    let skip = 0; // Comenzar desde el primer comando
 
-let isSendingMessage = false; // Variable para verificar si se está enviando un mensaje
+    const listaComandos = [];
 
-function enviarMensaje(message, isGift = false) {
-    const lowerCaseMessage = message.toLowerCase();
-    const currentTime = Date.now();
+    function obtenerPaginaDeComandos() {
+        fetch(`http://localhost:8911/api/v2/commands?skip=${skip}&pageSize=${pageSize}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!Array.isArray(data.Commands)) {
+                    throw new Error('La respuesta no contiene un array de comandos');
+                }
 
-    if (isSendingMessage) {
-        console.log('Ya hay un mensaje en proceso de envío');
-        return; // No enviar mensaje si ya hay otro en proceso
-    }
+                const comandos = data.Commands;
+                listaComandos.push(...comandos);
 
-    if (message !== lastComment || (currentTime - lastCommentTime) > filterTime) {
-        if (message === lastComment) {
-            return; // No enviar mensaje si es igual al mensaje anterior
-        }
+                // Si hay más comandos, pasar a la siguiente página
+                if (comandos.length === pageSize) {
+                    skip += pageSize;
+                    obtenerPaginaDeComandos();
+                } else {
+                    // Se han obtenido todos los comandos, imprimirlos
+                    listaComandos.forEach(cmd => {});
 
-        if (contienePalabrasSpam(lowerCaseMessage)) {
-            console.log('Mensaje filtrado:', message);
-            return; // No enviar mensaje
-        }
+                    // Buscar el ID del comando según el nombre
+                    const comandosEncontrados = listaComandos.filter(cmd => cmd.Name.includes(giftname));
+                    if (comandosEncontrados.length === 0) {
+                        console.error(`No se encontró ningún comando con el nombre que contiene: ${giftname}`);
+                        return; // Salir de la función si no se encuentran comandos
+                    }
 
-        mensajes.push(message);
-        console.log('Mensaje enviado:', message);
+                    // Enviar el mensaje con el ID de cada comando encontrado
+                    const chat_message = {
+                        Message: message,
+                        Platform: "Twitch",
+                        SendAsStreamer: true
+                    };
 
-        const chat_message = {
-            "Message": message,
-            "Platform": "Twitch",
-            "SendAsStreamer": true
-        };
-
-        isSendingMessage = true; // Marcar que se está enviando un mensaje
-
-        fetch("http://localhost:8911/api/v2/chat/message", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(chat_message)
-            })
-            .then(function(response) {
-                if (response.ok) {
-                    // La solicitud se realizó correctamente
-                    // Hacer algo con la respuesta si es necesario
+                    comandosEncontrados.forEach(comando => {
+                        fetch(`http://localhost:8911/api/commands/${comando.ID}`, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify(chat_message)
+                            })
+                            .then(function(response) {
+                                if (response.ok) {
+                                    // La solicitud se realizó correctamente
+                                    // Hacer algo con la respuesta si es necesario
+                                } else {
+                                    throw new Error('Error al enviar el mensaje');
+                                }
+                            })
+                            .catch(function(error) {
+                                console.error('Error al enviar el mensaje:', error);
+                            });
+                    });
                 }
             })
-            .catch(function(error) {
-                console.error('Error al enviar el mensaje');
-            })
-            .finally(function() {
-                isSendingMessage = false; // Marcar que se ha completado el envío del mensaje
+            .catch(error => {
+                console.error('Error al obtener los comandos:', error);
             });
-
-        lastComment = message;
-        lastCommentTime = currentTime;
     }
 
-    connection.on('chat', (msg) => {
-        if (msg.Platform === 'Twitch' && !msg.SendAsStreamer) {
-            console.log('Mensaje recibido:', msg.Message);
-        }
-    });
+    obtenerPaginaDeComandos(); // Llamada a la función para iniciar la secuencia
 }
 
-// Función para verificar cada 30 segundos si hay mensajes en proceso de envío
-setInterval(() => {
-    if (isSendingMessage) {
-        console.log('Hay un mensaje en proceso de envío');
-    }
-}, 30000);
 var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;
 
 const TTS_API_ENDPOINT = 'https://api.streamelements.com/kappa/v2/speech?'; // unprotected API - use with caution
@@ -586,10 +563,62 @@ voiceSelect.addEventListener('change', function() {
     fetchAudio(voiceSelect.value);
 });
 let isReading = false;
-const MAX_CONCURRENT_MESSAGES = 10;
 let cache = [];
-let readMessages = [];
 let lastText = "";
+let lastComment = '';
+let lastCommentTime = 0;
+const filteredWords = JSON.parse(localStorage.getItem('filteredWords')) || [];
+const palabrasSpam = JSON.parse(localStorage.getItem('palabrasSpam')) || [];
+
+
+function enviarMensaje(message) {
+    if (shouldSendMessage(message)) {
+        if (!containsFilteredWords(message)) {
+            // Enviar el mensaje
+            fetch("http://localhost:8911/api/v2/chat/message", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ "Message": message, "Platform": "Twitch", "SendAsStreamer": true })
+                })
+                .then(function(response) {
+                    if (response.ok) {
+                        leerMensajes();
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error al enviar el mensaje:', error);
+                });
+
+            lastComment = message;
+            lastCommentTime = Date.now();
+        }
+    }
+}
+
+function shouldSendMessage(message) {
+    return (
+        message !== lastComment &&
+        !containsFilteredWords(message)
+    );
+
+}
+
+function containsFilteredWords(message) {
+    const filteredWords = JSON.parse(localStorage.getItem('filteredWords')) || [];
+    return filteredWords.some(word => message.includes(word));
+}
+
+function cacheMessage(text) {
+    if (text.length >= 3 && text.length <= 400 && text !== lastText) {
+        cache.push(text);
+        lastText = text;
+    }
+    if (cache.length > 15) {
+        cache.shift();
+    }
+}
 
 class Queue {
     constructor() {
@@ -633,44 +662,27 @@ function filtros(text) {
     return true;
 }
 
-
-// Objeto para realizar un seguimiento del número de repeticiones de cada mensaje
-const messageRepetitions = {};
-
 function leerMensajes() {
     if (cache.length > 0 && !isReading) {
-        const messagesToRead = cache.splice(0, MAX_CONCURRENT_MESSAGES);
-        messagesToRead.forEach(text => {
-            // Verificar si el mensaje ha alcanzado el límite de repeticiones
-            if (messageRepetitions[text] && messageRepetitions[text] >= 2) {
-                // No leer el mensaje si ha alcanzado el límite de repeticiones
-                console.log('Mensaje omitido:', text);
-            } else {
-                fetchAudio(text);
+        const text = cache.shift();
+        const nextText = cache[0];
 
-                // Incrementar el número de repeticiones del mensaje
-                messageRepetitions[text] = messageRepetitions[text] ? messageRepetitions[text] + 1 : 1;
-            }
-        });
+        // Comprobar si el mensaje es igual a los 5 anteriores
+        const similarMessages = readMessages.filter(msg => msg === text).length;
+        const isRepeated = similarMessages >= 5;
+
+        if (!isRepeated && text !== nextText) {
+            fetchAudio(text);
+        }
     }
 }
+
+const readMessages = [];
+
 async function fetchAudio(txt, voice) {
     try {
-        const hasAlphabet = /[a-zA-Z]/.test(txt);
-        let language = '';
-
-        if (hasAlphabet) {
-            language = detectLanguage(txt); // Detectar el idioma del texto
-        } else {
-            // Asignar idioma basado en el tipo de escritura
-            if (/[ぁ-んァ-ン]/.test(txt)) {
-                language = 'Mizuki'; // Japonés
-            } else if (/[가-힣]/.test(txt)) {
-                language = 'Seoyeon'; // Coreano
-            } else {
-                language = voiceSelect.value; // Usar la voz seleccionada por defecto
-            }
-            // Puedes agregar más idiomas y patrones de escritura según tus necesidades
+        if (!filtros(txt)) {
+            return;
         }
 
         const selectedVoice = selectVoice(language);
@@ -699,6 +711,10 @@ async function fetchAudio(txt, voice) {
             }
         }, 200); // Verifica cada segundo si el audio ha terminado de reproducirse
 
+        readMessages.push(txt);
+        if (readMessages.length > 5) {
+            readMessages.shift(); // Si hay más de 5 mensajes, elimina el más antiguo
+        }
     } catch (error) {
         console.error("Error:", error);
     }
@@ -711,10 +727,22 @@ function makeParameters(params) {
 }
 
 function skipAudio() {
-    if (audio.paused) return console.error("skipped player while paused");
     if (audioqueue.isEmpty()) {
         isPlaying = false;
         audio.pause();
+    } else {
+        isPlaying = true;
+        audio.src = audioqueue.dequeue();
+        audio.load();
+        audio.play();
+    }
+}
+
+function kickstartPlayer() {
+    if (audioqueue.isEmpty()) {
+        isPlaying = false;
+        audio.pause();
+        leerMensajes(); // Leer el próximo mensaje
     } else {
         isPlaying = true;
         audio.src = audioqueue.dequeue();
@@ -725,23 +753,13 @@ function skipAudio() {
     }
 }
 
-function kickstartPlayer() {
-    if (audioqueue.isEmpty()) return isPlaying = false;
-    if (!audio.paused) return console.error("started player while running");
-    isPlaying = true;
-    audio.src = audioqueue.dequeue();
-    audio.load();
-    audio.play();
-    audioqueue.dequeue();
-    readMessages.shift();
-}
-
 window.onload = async function() {
     try {
         audio = document.getElementById("audio");
         skip = document.getElementById("skip-button");
         isPlaying = false;
         audioqueue = new Queue();
+        leerMensajes();
 
         if (skip) {
             skip.onclick = skipAudio;
@@ -754,8 +772,6 @@ window.onload = async function() {
         } else {
             console.error("Error: audio is undefined");
         }
-
-        setInterval(leerMensajes, 1000); // Llamar a leerMensajes cada segundo
 
     } catch (error) {
         console.error("Error:", error);
