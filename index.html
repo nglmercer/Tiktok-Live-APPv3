@@ -106,7 +106,6 @@
         </div>
     </div>
     <div id="overlay-container">
-        <iframe id="overlay-frame" src="http://localhost:8111/overlay/" frameborder="0" style="width: 100%; height: 100%;" allow="autoplay"></iframe></iframe>
     </div>
     <div>
         <script>
@@ -118,20 +117,40 @@
         <audio id="audio" autoplay></audio>
         <audio id="soundPlayer" src="" type="audio/mp3"></audio>
         <input id="skip-button" type="button" value="SKIP"></input>
+        <button onclick="mostrarOverlay()">Mostrar Overlay</button>
+        <button onclick="ocultarOverlay()">Ocultar Overlay</button>
+
 </body>
 <script>
     function mostrarOverlay() {
         const overlayContainer = document.getElementById("overlay-container");
-        overlayContainer.style.display = "flex"; // Mostrar el contenedor del overlay
+
+        // Crear y configurar el iframe
+        const iframeElement = document.createElement("iframe");
+        iframeElement.id = "overlay-frame";
+        iframeElement.src = "http://localhost:8111/overlay/";
+        iframeElement.frameborder = "0";
+        iframeElement.style.width = "100%";
+        iframeElement.style.height = "100%";
+        iframeElement.allow = "autoplay";
+
+        // Agregar el iframe al contenedor del overlay
+        overlayContainer.appendChild(iframeElement);
+
+        // Mostrar el contenedor del overlay
+        overlayContainer.style.display = "flex";
     }
 
     function ocultarOverlay() {
         const overlayContainer = document.getElementById("overlay-container");
-        overlayContainer.style.display = "none"; // Ocultar el contenedor del overlay
-    }
+        const iframeElement = document.getElementById("overlay-frame");
 
-    // Llamar a estas funciones según sea necesario
-    mostrarOverlay(); // Mostrar el overlay
+        // Eliminar el iframe
+        overlayContainer.removeChild(iframeElement);
+
+        // Ocultar el contenedor del overlay
+        overlayContainer.style.display = "none";
+    }
 </script>
 
 <body>
