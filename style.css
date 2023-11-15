@@ -10,6 +10,56 @@ body {
     /* Estilo del cuerpo de la página */
 }
 
+input[type="button"] {
+    background-color: #4CAF50;
+    /* color de fondo */
+    border: none;
+    /* color del texto */
+    /* padding alrededor del texto */
+    text-align: center;
+    /* alinear el texto al centro */
+    text-decoration: none;
+    /* quitar el subrayado */
+    display: inline-block;
+    margin-bottom: 10px;
+    cursor: pointer;
+    padding: 12px 20px;
+    /* cambiar el cursor a un puntero cuando se pasa por encima */
+    border-radius: 4px;
+    /* bordes redondeados */
+}
+
+input[type="button"]:hover {
+    background-color: #45a049;
+    /* cambiar el color de fondo */
+}
+
+
+/* Estilo para los botones cuando se presionan */
+
+input[type="button"]:active {
+    background-color: #3e8e41;
+    /* cambiar el color de fondo */
+    box-shadow: 0 5px #666;
+    /* añadir una sombra */
+    transform: translateY(4px);
+    /* mover el botón ligeramente hacia abajo */
+}
+
+input[type="text"] {
+    /* ocupar todo el ancho disponible */
+    padding: 12px 20px;
+    /* padding alrededor del texto */
+    margin: 8px 0;
+    /* margen arriba y abajo */
+    box-sizing: border-box;
+    /* el padding y el borde se incluyen en el ancho total */
+    border: 2px solid #ccc;
+    /* borde alrededor del campo de entrada */
+    border-radius: 4px;
+    /* bordes redondeados */
+}
+
 .dark-theme body {
     background-color: rgba(0, 0, 0, 0);
     color: #f5f5f5;
@@ -133,12 +183,6 @@ body.theme-dark {
     background-color: rgba(0, 0, 0, 0);
     color: #ffffff;
     /* Estilo del cuerpo de la página en el tema oscuro */
-}
-
-body.theme-light {
-    background-color: #f5f5f5;
-    color: #333333;
-    /* Estilo del cuerpo de la página en el tema claro */
 }
 
 .themeButtons button {
