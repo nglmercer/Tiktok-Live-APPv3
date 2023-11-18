@@ -37,7 +37,7 @@
     <div class="inputFields">
         <input type="text" id="uniqueIdInput" value="@melserngl">
         <input type="button" id="connectButton" value="Conectar">
-        <a href="#" onclick="generateOverlay()">Overlay URL</a>
+        <a href="#" onclick="generateOverlay()">Overlay</a>
     </div>
     <div class="themeButtons">
         <button onclick="showColorPicker('bgColor')">body color</button>
@@ -47,10 +47,8 @@
     </div>
 
     <script>
-        var bgColor = localStorage.getItem('bgColor') || '#ffffff';
-        var fontColor = localStorage.getItem('fontColor') || '#010000';
-
-        applyTheme();
+        var bgColor = localStorage.getItem('bgColor') || '#000000';
+        var fontColor = localStorage.getItem('fontColor') || '#ffffff';
 
         function showColorPicker(type) {
             var colorPicker = document.createElement('input');
@@ -108,9 +106,9 @@
     <div id="overlay-container">
     </div>
     <div>
-        <script>
-            document.body.appendChild(voiceSelect);
-        </script><audio id="audio" controls autoplay>
+        <div id="voiceSelectContainer"></div>
+
+<audio id="audio" controls autoplay>
     <source src="" type="audio/mpeg">
 </audio>
 
@@ -153,89 +151,27 @@
     }
 </script>
 
-<body>
-    <webchatgpt-custom-element-bc18c451-d94d-48bc-8a67-f46a28eefcd8 id="webchatgpt-snackbar" style="z-index: 2147483647;"></webchatgpt-custom-element-bc18c451-d94d-48bc-8a67-f46a28eefcd8>
-    <div id="monica-content-root" class="monica-widget" data-darkreader-mode="dynamic" data-darkreader-scheme="dark">
-        <meta name="darkreader" content="796a1b9879ee427291add6fb0d02ecf2">
-    </div>
-    <div id="otherside-root" style="z-index: 2147483647; position: relative;">
-        <div id="hyper-main-container">
-            <div id="hyper-menu-shadow-root" style="all: initial;"></div>
-            <div id="assistant-shadow-root" style="all: initial;"></div>
-        </div>
-    </div>
-</body>
 
-<head>
-    <style>
-        button {
-            margin-bottom: 10px;
+<div>
+    <label for="filter-words">Palabras para filtrar (separadas por espacio):</label>
+    <input type="text" id="filter-words">
+  </div>
+  <script>
+    const filterWordsInput = document.getElementById('filter-words');
+
+    // Load the last entered value from localStorage
+    const lastFilterWords = localStorage.getItem('lastFilterWords');
+    if (lastFilterWords) {
+        filterWordsInput.value = lastFilterWords;
+    }
+
+    filterWordsInput.addEventListener('change', () => {
+        const currentFilterWords = filterWordsInput.value;
+        if (currentFilterWords) {
+            // Store the current value in localStorage
+            localStorage.setItem('lastFilterWords', currentFilterWords);
         }
-    </style>
-    <script>
-        // Función para añadir una palabra al filtro
-        function agregarPalabra() {
-            var palabra = prompt('Ingrese una palabra para filtrar:');
-            if (palabra) {
-                var palabrasFiltro = obtenerPalabrasFiltro();
-                palabrasFiltro.push(palabra);
-                guardarPalabrasFiltro(palabrasFiltro);
-                mostrarPalabrasFiltro();
-            }
-        }
-
-        // Función para eliminar una palabra del filtro
-        function eliminarPalabra(palabra) {
-            var palabrasFiltro = obtenerPalabrasFiltro();
-            var indice = palabrasFiltro.indexOf(palabra);
-            if (indice !== -1) {
-                palabrasFiltro.splice(indice, 1);
-                guardarPalabrasFiltro(palabrasFiltro);
-                mostrarPalabrasFiltro();
-            }
-        }
-
-        // Función para obtener las palabras de filtro almacenadas en LocalStorage
-        function obtenerPalabrasFiltro() {
-            var palabrasFiltro = JSON.parse(localStorage.getItem('filteredWords')) || [];
-            return palabrasFiltro;
-        }
-
-        // Función para guardar las palabras de filtro en LocalStorage
-        function guardarPalabrasFiltro(palabrasFiltro) {
-            localStorage.setItem('filteredWords', JSON.stringify(palabrasFiltro));
-        }
-
-        // Función para mostrar las palabras de filtro en la interfaz de usuario
-        function mostrarPalabrasFiltro() {
-            var palabrasFiltro = obtenerPalabrasFiltro();
-            var lista = document.getElementById('listaPalabras');
-            lista.innerHTML = '';
-
-            palabrasFiltro.forEach(function(palabra) {
-                var item = document.createElement('li');
-                item.textContent = palabra;
-                var eliminarBoton = document.createElement('button');
-                eliminarBoton.textContent = 'Eliminar';
-                eliminarBoton.addEventListener('click', function() {
-                    eliminarPalabra(palabra);
-                });
-                item.appendChild(eliminarBoton);
-                lista.appendChild(item);
-            });
-        }
-    </script>
-</head>
-
-<body>
-    <p>filtra palabras:</p>
-    <ul id="listaPalabras"></ul>
-    <button onclick="agregarPalabra()">Añadir palabra</button>
-
-    <script>
-        // Mostrar las palabras de filtro cuando se carga la página
-        mostrarPalabrasFiltro();
-    </script>
-</body>
+    });
+</script>
 
 </html>

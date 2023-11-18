@@ -4,7 +4,6 @@ let connection = new TikTokIOConnection(backendUrl);
 const chatContainer = document.getElementById('chatContainer');
 const playButton = document.getElementById('playButton');
 // Counter
-
 let viewerCount = 0;
 let likeCount = 0;
 let diamondsCount = 0;
@@ -12,7 +11,6 @@ let previousLikeCount = 0;
 
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
-
 
 $(document).ready(() => {
     $('#connectButton').click(connect);
@@ -22,25 +20,25 @@ $(document).ready(() => {
         }
     });
 
-    if (window.settings.username) connect();
-})
+    if (window.settings.username) {
+        $('#connectButton').prop('disabled', true); // Desactivar el botón hasta que se establezca la conexión
+        connect();
+    }
+});
 
 function connect() {
     let uniqueId = window.settings.username || $('#uniqueIdInput').val();
     if (uniqueId !== '') {
-
         $('#stateText').text('Conectando...');
+        $('#connectButton').prop('disabled', true);
 
         connection.connect(uniqueId, {
             enableExtendedGiftInfo: true
         }).then(state => {
             $('#stateText').text(`Conectado a la sala ${state.roomId}`);
 
-            // resetear estadísticas
-            viewerCount = 0;
-            likeCount = 0;
-            diamondsCount = 0;
-            updateRoomStats();
+            // Habilitar el botón después de establecer la conexión
+            $('#connectButton').prop('disabled', false);
 
         }).catch(errorMessage => {
             $('#stateText').text(errorMessage);
@@ -51,13 +49,15 @@ function connect() {
                     connect(window.settings.username);
                 }, 30000);
             }
-        })
+
+            // Habilitar el botón en caso de error
+            $('#connectButton').prop('disabled', false);
+        });
 
     } else {
-        alert('no se ingresó nombre de usuario');
+        alert('No se ingresó nombre de usuario');
     }
 }
-
 
 // Prevent Cross site scripting (XSS)
 function sanitize(text) {
@@ -117,6 +117,16 @@ function addChatItem(color, data, text, summarize) {
     container.animate({
         scrollTop: container[0].scrollHeight
     }, 400);
+    let filterWords = document.getElementById('filter-words').value.split(' ');
+    // Convertir el texto a minúsculas para la comparación
+    let lowerCaseText = text.toLowerCase();
+    // Verificar si el texto contiene alguna de las palabras para filtrar
+    for (let word of filterWords) {
+        if (word && lowerCaseText.includes(word.toLowerCase())) {
+            console.log('filtrado');
+            return;
+        }
+    }
     cacheMessage(text);
 }
 // Resto del código...
@@ -158,7 +168,6 @@ function addGiftItem(data) {
     } else {
         container.append(html);
     }
-    enviarMensaje(data.giftName, "");
     obtenerComandosYEnviarMensaje(data.giftName, "");
 
     container.stop();
@@ -206,13 +215,53 @@ connection.on('member', (msg) => {
         addChatItem('#CDA434', msg, 'welcome', true);
     }, joinMsgDelay);
 })
-
+let processedMessages = {};
 // New chat comment received
+let lastComments = [];
+let messageRepetitions = {};
+
 connection.on('chat', (msg) => {
     if (window.settings.showChats === "0") return;
 
+    // Add the new comment to the list
+    let now = Date.now();
+    if (processedMessages[msg.comment] && now - processedMessages[msg.comment] < 30000) {
+        // Si el mensaje ya ha sido procesado hace menos de
+        return;
+    }
+
+    // Si el mensaje no ha sido procesado o fue procesado hace más de un minuto,
+    // añadirlo a la estructura de datos con la hora actual
+    processedMessages[msg.comment] = now;
+    lastComments.push(msg.comment);
+
+    // If the list has more than 20 elements, remove the oldest one
+    if (lastComments.length > 20) {
+        let removedComment = lastComments.shift();
+        messageRepetitions[removedComment]--;
+        if (messageRepetitions[removedComment] === 0) {
+            delete messageRepetitions[removedComment];
+        }
+    }
+
+    // Calculate the message rate
+    let currentTime = Date.now();
+    let messageRate = 1000 / (currentTime - lastCommentTime);
+    lastCommentTime = currentTime;
+
+    // Check the repetition count
+    if (!messageRepetitions[msg.comment]) {
+        messageRepetitions[msg.comment] = 0;
+    }
+    messageRepetitions[msg.comment]++;
+
+    // If the message rate is high and the message has been repeated many times, filter it
+    if (messageRate > 1 && messageRepetitions[msg.comment] > 5) {
+        return;
+    }
+
     addChatItem('', msg, msg.comment);
-})
+});
 
 // New gift received
 connection.on('gift', (data) => {
@@ -230,13 +279,16 @@ connection.on('gift', (data) => {
 connection.on('social', (data) => {
     if (window.settings.showFollows === "0") return;
 
-    let color = data.displayType.includes('follow') ? '#CDA434' : '##CDA434';
+    let color = data.displayType.includes('follow') ? '#CDA434' : '#CDA434';
     if (data.displayType.includes('follow')) {
         data.label = `${data.uniqueId} Te sigue`;
     }
+    if (data.displayType.includes('share')) {
+        data.label = `${data.uniqueId} compartió el directo`;
+    }
 
     addChatItem(color, data, data.label.replace('{0:user}', ''));
-})
+});
 
 connection.on('streamEnd', () => {
     $('#stateText').text('Transmisión terminada.');
@@ -275,8 +327,7 @@ function obtenerComandosYEnviarMensaje(giftname, message = "", isGift = false) {
                     listaComandos.forEach(cmd => {});
 
                     // Buscar el ID del comando según el nombre
-                    const comandosEncontrados = listaComandos.filter(cmd => cmd.Name.includes(giftname));
-                    if (comandosEncontrados.length === 0) {
+                    const comandosEncontrados = listaComandos.filter(cmd => cmd.Name.toLowerCase().includes(giftname.toLowerCase()));                    if (comandosEncontrados.length === 0) {
                         console.error(`No se encontró ningún comando con el nombre que contiene: ${giftname}`);
                         return; // Salir de la función si no se encuentran comandos
                     }
@@ -288,26 +339,37 @@ function obtenerComandosYEnviarMensaje(giftname, message = "", isGift = false) {
                         SendAsStreamer: true
                     };
 
-                    comandosEncontrados.forEach(comando => {
-                        fetch(`http://localhost:8911/api/commands/${comando.ID}`, {
-                                method: "POST",
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-                                body: JSON.stringify(chat_message)
-                            })
-                            .then(function(response) {
-                                if (response.ok) {
-                                    // La solicitud se realizó correctamente
-                                    // Hacer algo con la respuesta si es necesario
-                                } else {
-                                    throw new Error('Error al enviar el mensaje');
-                                }
-                            })
-                            .catch(function(error) {
-                                console.error('Error al enviar el mensaje:', error);
-                            });
-                    });
+                    let index = 0;
+
+                    function enviarMensajeConRetraso() {
+                        if (index < comandosEncontrados.length) {
+                            const comando = comandosEncontrados[index];
+                            fetch(`http://localhost:8911/api/commands/${comando.ID}`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify(chat_message)
+                                })
+                                .then(function(response) {
+                                    if (response.ok) {
+                                        // La solicitud se realizó correctamente
+                                        // Hacer algo con la respuesta si es necesario
+                                    } else {
+                                        throw new Error('Error al enviar el mensaje');
+                                    }
+                                })
+                                .catch(function(error) {
+                                    console.error('Error al enviar el mensaje:', error);
+                                })
+                                .finally(function() {
+                                    index++;
+                                    setTimeout(enviarMensajeConRetraso, 2000); // Esperar 2 segundos antes de enviar el siguiente mensaje
+                                });
+                        }
+                    }
+
+                    enviarMensajeConRetraso();
                 }
             })
             .catch(error => {
@@ -558,6 +620,11 @@ Object.keys(VOICE_LIST).forEach(function(key) {
     option.value = VOICE_LIST[key];
     voiceSelect.appendChild(option);
 });
+document.addEventListener('DOMContentLoaded', (event) => {
+    var voiceSelectContainer = document.getElementById('voiceSelectContainer');
+    voiceSelectContainer.appendChild(voiceSelect);
+});
+
 console.log('Voz seleccionada:', voiceSelect.value);
 voiceSelect.addEventListener('change', function() {
     fetchAudio(voiceSelect.value);
@@ -567,13 +634,11 @@ let cache = [];
 let lastText = "";
 let lastComment = '';
 let lastCommentTime = 0;
-const filteredWords = JSON.parse(localStorage.getItem('filteredWords')) || [];
-const palabrasSpam = JSON.parse(localStorage.getItem('palabrasSpam')) || [];
-
+const palabrasSpam = ['@'];
 
 function enviarMensaje(message) {
     if (shouldSendMessage(message)) {
-        if (!containsFilteredWords(message)) {
+        if (!containspalabrasSpam(message)) {
             // Enviar el mensaje
             fetch("http://localhost:8911/api/v2/chat/message", {
                     method: "POST",
@@ -600,23 +665,23 @@ function enviarMensaje(message) {
 function shouldSendMessage(message) {
     return (
         message !== lastComment &&
-        !containsFilteredWords(message)
+        !containspalabrasSpam(message)
     );
 
 }
 
-function containsFilteredWords(message) {
-    const filteredWords = JSON.parse(localStorage.getItem('filteredWords')) || [];
-    return filteredWords.some(word => message.includes(word));
+function containspalabrasSpam(message) {
+    const palabrasSpam = JSON.parse(localStorage.getItem('palabrasSpam')) || [];
+    return palabrasSpam.some(word => message.includes(word));
 }
 
 function cacheMessage(text) {
-    if (text.length >= 3 && text.length <= 400 && text !== lastText) {
+    if (text.length >= 1 && text.length <= 400 && text !== lastText) {
         cache.push(text);
         lastText = text;
     }
-    if (cache.length > 15) {
-        cache.shift();
+    if (cache.length > 3) {
+        cache.shift(); 
     }
 }
 
@@ -642,7 +707,7 @@ class Queue {
 }
 
 function cacheMessage(text) {
-    if (text.length >= 3 && text.length <= 400 && text !== lastText) {
+    if (text.length >= 1 && text.length <= 400 && text !== lastText) {
         cache.push(text);
         lastText = text;
     }
@@ -652,10 +717,16 @@ function cacheMessage(text) {
 }
 
 function filtros(text) {
-    if (cache.includes(text) || palabrasSpam.some(word => text.includes(word))) {
-        return false;
+    // Apply the filter only if there are more than 3 messages in the queue
+    if (cache.length > 1) { 
+        if (cache.includes(text) || palabrasSpam.some(word => text.includes(word))) {
+            return false;
+        }
     }
-    cache.push(text);
+    if (text.length >= 1 && text.length <= 400 && text !== lastText) {
+        cache.push(text);
+        lastText = text;
+    }
     if (cache.length > 15) {
         cache.shift();
     }

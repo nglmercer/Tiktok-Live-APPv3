@@ -1,13 +1,15 @@
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 1.5em;
-    /* Cambiar el tamaño de la fuente a 1.2em */
-    font-weight: bold;
-    /* Hacer la fuente más gruesa */
-    min-width: 400px;
-    background-color: rgba(0, 0, 0, 0);
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    margin: 10;
+    padding: 10;
+    background-color: #000000;
     color: #ffffff;
-    /* Estilo del cuerpo de la página */
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bold;
+    font-size: 2em;
+    min-width: 300px;
 }
 
 input[type="button"] {
@@ -58,12 +60,6 @@ input[type="text"] {
     /* borde alrededor del campo de entrada */
     border-radius: 4px;
     /* bordes redondeados */
-}
-
-.dark-theme body {
-    background-color: rgba(0, 0, 0, 0);
-    color: #f5f5f5;
-    /* Estilo del cuerpo de la página en el tema oscuro */
 }
 
 h1 {
@@ -152,8 +148,27 @@ a {
     /* Estilo del contenedor de regalos */
 }
 
-@media (aspect-ratio: 1/1),
-(aspect-ratio: 9/16) {
+@media (max-aspect-ratio: 1/1) {
+    .splitchattable {
+        flex-direction: column;
+    }
+    .chatcontainer,
+    .giftcontainer {
+        float: left;
+        width: 100%;
+    }
+    #roomStats {
+        text-align: left;
+    }
+    .chatcontainer {
+        padding-right: 20;
+    }
+    .giftcontainer {
+        padding-left: 20;
+    }
+}
+
+@media (orientation: portrait) {
     .splitchattable {
         flex-direction: column;
     }
@@ -161,86 +176,19 @@ a {
     .giftcontainer {
         min-width: 50px;
         max-width: 1000px;
-        max-height: 250px;
+        max-height: 400px;
     }
-    /* Estilos para pantallas con relación de aspecto 1/1, 9/16 o 16/9 */
 }
 
 .miniprofilepicture {
     height: 30px;
     width: 30px;
-    /* Estilo de las imágenes de perfil pequeñas */
 }
 
 .gifticon {
     height: 100px;
     width: 100px;
     margin-right: 10px;
-    /* Estilo de los iconos de regalo */
-}
-
-body.theme-dark {
-    background-color: rgba(0, 0, 0, 0);
-    color: #ffffff;
-    /* Estilo del cuerpo de la página en el tema oscuro */
-}
-
-.themeButtons button {
-    width: 100px;
-    height: 25px;
-    background-color: #f1f1f1;
-    color: #020202;
-    border: none;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px rgba(114, 114, 114, 0);
-    cursor: pointer;
-    /* Estilo de los botones de cambio de tema */
-}
-
-.themeButtons button:hover {
-    background-color: #1356a3;
-    /* Estilo de los botones de cambio de tema al pasar el cursor por encima */
-}
-
-body.overlay {
-    background-color: rgba(0, 0, 0, 0);
-    color: #333333;
-    /* Estilo del cuerpo de la página en el modo de superposición */
-}
-
-.overlay .splitchattable,
-.overlay .giftcontainer,
-.overlay .eventcontainer {
-    opacity: 1;
-    /* Estilo de las tablas divididas, contenedor de regalos y contenedor de eventos en el modo de superposición */
-}
-
-.overlay .chatcontainer,
-.overlay .giftcontainer {
-    opacity: 1;
-    /* Estilo del contenedor de chat y contenedor de regalos en el modo de superposición */
-}
-
-.overlay::-webkit-scrollbar {
-    width: 10px;
-    background-color: rgba(0, 0, 0, 0);
-    /* Estilo de la barra de desplazamiento en el modo de superposición */
-}
-
-.overlay::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0);
-    overflow-y: hidden;
-    background-color: rgba(0, 0, 0, 0);
-    /* Estilo del pulgar de la barra de desplazamiento en el modo de superposición */
-}
-
-@media (orientation: portrait) {
-    body {
-        flex-direction: row;
-    }
-    .splitchattable {
-        flex-direction: row;
-    }
 }
 
 .username {
@@ -253,27 +201,125 @@ body.overlay {
     font-weight: bold;
 }
 
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f6f6f6;
+    min-width: 230px;
+    overflow: auto;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 1;
+}
+
+.dropdown-content div {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+.dark-theme body {
+    background-color: #333333;
+    color: #f5f5f5;
+}
+
+body.theme-dark {
+    background-color: #000000;
+    color: #ffffff;
+}
+
+body.theme-light {
+    background-color: #f5f5f5;
+    color: #333333;
+}
+
+.themeButtons button {
+    width: 100px;
+    height: 25px;
+    background-color: #f1f1f1;
+    color: #020202;
+    border: none;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(114, 114, 114, 0);
+    cursor: pointer;
+}
+
+.themeButtons button:hover {
+    background-color: #1356a3;
+}
+
+body.overlay {
+    background-color: #00ff00;
+    color: #ffffff;
+}
+
+.overlay .splitchattable,
+.overlay .giftcontainer,
+.overlay .eventcontainer {
+    opacity: 1;
+}
+
+.overlay .chatcontainer,
+.overlay .giftcontainer {
+    opacity: 1;
+}
+
+.overlay::-webkit-scrollbar {
+    width: 10px;
+    background-color: #00ff00;
+}
+
+.overlay::-webkit-scrollbar-thumb {
+    background-color: green;
+    color: #f5f5f5;
+}
+#soundList li {
+    list-style-type: japanese-informal; /* Esto eliminará el marcador de lista */
+    padding-right: 20px; /* Esto agregará una sangría de 20px a todo el bloque de texto */
+    margin: 30px;
+
+}
+
+.deleteButton {
+    color: white;
+    background-color: red;
+    width: 30px; /* Esto establecerá el ancho del botón en 50px */
+    height: 30px;
+}
+#voiceSelectContainer {
+    color: rgb(36, 23, 23);
+}
+audio {
+    width: 300px;
+    height: 65px;
+    outline: none;
+    vertical-align: middle; /* Alineación vertical en el centro */
+}
+
+audio::-webkit-media-controls-play-button {
+    background-color: transparent;
+}
+audio::-webkit-media-controls-panel {
+    background-color: #ececec;
+    color: rgb(36, 23, 23);
+}
 #overlay-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
     background-color: rgba(0, 0, 0, 0);
-    /* Fondo semi-transparente */
+    z-index: 1000;
     pointer-events: none;
-    /* El overlay no bloquea los eventos del mouse */
-}
-
-#overlay-frame {
-    width: 80%;
-    /* Ancho del iframe */
-    height: 80%;
-    /* Alto del iframe */
-    pointer-events: none;
-    /* El iframe no acepta eventos del mouse */
+    display: none; /* Añade esta línea para ocultar el overlay por defecto */
 }

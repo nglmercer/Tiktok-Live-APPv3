@@ -1,6 +1,6 @@
 /**
-* Envoltorio para conexión TikTok del lado del cliente a través de Socket.IO
-* Con funcionalidad de reconexión.
+ * Envoltorio para conexión TikTok del lado del cliente a través de Socket.IO
+ * Con funcionalidad de reconexión.
  */
 class TikTokIOConnection {
     constructor(backendUrl) {
@@ -46,7 +46,7 @@ class TikTokIOConnection {
 
             setTimeout(() => {
                 reject('Connection Timeout');
-            }, 15000)
+            }, 60000)
         })
     }
 
