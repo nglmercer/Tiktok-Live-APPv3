@@ -1,6 +1,7 @@
 const { WebcastPushConnection } = require('tiktok-live-connector');
 const { EventEmitter } = require('events');
 let globalConnectionCount = 0;
+const http = require('http');
 
 /**
  * TikTok LIVE connection wrapper with advanced reconnect functionality and error handling
@@ -20,7 +21,11 @@ class TikTokConnectionWrapper extends EventEmitter {
         this.maxReconnectAttempts = 5;
 
         this.connection = new WebcastPushConnection(uniqueId, options);
-
+        if (uniqueIdOrUrl.startsWith('http')) {
+            this.connection.connectFromUrl(uniqueIdOrUrl);
+        } else {
+            this.connection.connect(uniqueIdOrUrl, options);
+        }
         this.connection.on('streamEnd', () => {
             this.log(`streamEnd event received, giving up connection`);
             this.reconnectEnabled = false;

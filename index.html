@@ -1,90 +1,100 @@
 <!DOCTYPE html>
 <html lang="es">
+<div id="overlayEventContainer" style="width: 100%; height: 100vh; position: relative; border: 1px solid green;"></div>
+<input type="color" id="colorPicker" value="#ffffff">
+<script>
+    document.getElementById('colorPicker').addEventListener('change', function() {
+        document.getElementById('overlayEventContainer').style.backgroundColor = this.value;
+    });
+</script>
+<style>
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        font-weight: bold;
+        font-size: 2em;
+        cursor: auto;
+    }
+</style>
 
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TikTok LIVE</title>
-
     <meta name="description" content="A chat reader for TikTok LIVE utilizing TikTok-Live-Connector and Socket.IO to forward the data to the client. This demo project uses the unofficial TikTok API to retrieve chat comments, gifts and other events from TikTok LIVE.">
     <meta name="keywords" content="TikTok,Live,Livestream,Chat,Reader,Scraper,Tracker,tiktok.com,broadcast,api,library,node,node.js,javascript">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=10.0">
 
     <link rel="stylesheet" href="style.css">
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
-    <script src="connection.js"></script>
-    <script src="app.js"></script>
-    <script src="index.js"></script>
-    <script>
-        function generateOverlay() {
-            let username = $('#uniqueIdInput').val();
-            let url = `/obs.html?username=${username}&showLikes=1&showChats=1&showGifts=1&showFollows=1&showJoins=1&bgColor=rgb(24,23,28)&fontColor=rgb(227,229,235)&fontSize=1.3em`;
-
-            if (username) {
-                window.open(url, '_blank');
-            } else {
-                alert("Enter username");
-            }
-        }
-    </script>
 </head>
+<script>
+    function generateOverlay() {
+        let username = $('#uniqueIdInput').val();
+        let url = `obs.html?username=${username}&showLikes=1&showChats=1&showGifts=1&showFollows=1&showJoins=1&bgColor=rgb(24,23,28)&fontColor=rgb(227,229,235)&fontSize=1.3em`;
+
+        if (username) {
+            window.open(url, '_blank');
+        } else {
+            alert("Enter username");
+        }
+    }
+</script>
+<a href="#" onclick="generateOverlay()">OverlayURL</a>
 
 <body>
     <div class="inputFields">
-        <input type="text" id="uniqueIdInput" value="@melserngl">
+        <input type="text" placeholder="@tuusuario" id="uniqueIdInput" value="@melserngl">
         <input type="button" id="connectButton" value="Conectar">
-        <a href="#" onclick="generateOverlay()">Overlay</a>
+        <div class="toggleWrapper">
+            <input type="checkbox" class="dn" id="dn">
+            <label for="dn" class="toggle">
+                <span class="toggle__handler">
+                    <span class="crater crater--1"></span>
+                    <span class="crater crater--2"></span>
+                    <span class="crater crater--3"></span>
+                </span>
+                <span class="star star--1"></span>
+                <span class="star star--2"></span>
+                <span class="star star--3"></span>
+                <span class="star star--4"></span>
+                <span class="star star--5"></span>
+                <span class="star star--6"></span>
+            </label>
+        </div>
     </div>
-    <div class="themeButtons">
-        <button onclick="showColorPicker('bgColor')">body color</button>
-        <button onclick="showColorPicker('fontColor')">font color</button>
-        <button onclick="changeTheme('theme-dark')">Tema Oscuro</button>
-        <button onclick="applyTheme()">Aplicar</button>
     </div>
-
     <script>
-        var bgColor = localStorage.getItem('bgColor') || '#000000';
-        var fontColor = localStorage.getItem('fontColor') || '#ffffff';
+        const uniqueIdInput = document.getElementById('uniqueIdInput');
+        const connectButton = document.getElementById('connectButton');
 
-        function showColorPicker(type) {
-            var colorPicker = document.createElement('input');
-            colorPicker.type = 'color';
-            colorPicker.addEventListener('change', function() {
-                var color = this.value;
-                if (type === 'bgColor') {
-                    bgColor = color;
-                } else if (type === 'fontColor') {
-                    fontColor = color;
+        // Load the last entered value from localStorage
+        const lastValue = localStorage.getItem('lastValue');
+        if (lastValue) {
+            uniqueIdInput.value = lastValue;
+        }
+
+        if (connectButton) {
+            connectButton.addEventListener('click', () => {
+                const currentValue = uniqueIdInput.value;
+                if (currentValue) {
+                    // Store the current value in localStorage
+                    localStorage.setItem('lastValue', currentValue);
                 }
             });
-
-            colorPicker.click();
-        }
-
-        function changeTheme(theme) {
-            if (theme === 'theme-dark') {
-                bgColor = '#000000';
-                fontColor = '#ffffff';
-            }
-            applyTheme(); // Aplicar los cambios de color al cambiar el tema
-        }
-
-        function applyTheme() {
-            document.body.style.backgroundColor = bgColor;
-            document.body.style.color = fontColor;
-            localStorage.setItem('bgColor', bgColor);
-            localStorage.setItem('fontColor', fontColor);
         }
     </script>
-
-    <head>
-        <script src=tmi.min.js></script>
-        <script src=TTSmain.js></script>
-    </head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="connection.js"></script>
+    <script src="app.js"></script>
+    <script src="index.js"></script>
+    <script src="tmi.min.js"></script>
+    <script src="TTSmain.js"></script>
+    <script>
+        function changeTheme(theme) {
+            document.body.className = theme;
+        }
+    </script>
 
     <body>
         <input id="channel" type="text" placeholder="channel name goes here"></input> <input id="channel-button" value="GO" type="button"></input>
@@ -108,7 +118,7 @@
     <div>
         <div id="voiceSelectContainer"></div>
 
-<audio id="audio" controls autoplay>
+        <audio id="audio" controls autoplay>
     <source src="" type="audio/mpeg">
 </audio>
 
@@ -122,9 +132,13 @@
 <script>
     function mostrarOverlay() {
         const overlayContainer = document.getElementById("overlay-container");
+        let iframeElement = document.getElementById("overlay-frame");
+
+        // Si el iframe ya existe, no hagas nada
+        if (iframeElement) return;
 
         // Crear y configurar el iframe
-        const iframeElement = document.createElement("iframe");
+        iframeElement = document.createElement("iframe");
         iframeElement.id = "overlay-frame";
         iframeElement.src = "http://localhost:8111/overlay/";
         iframeElement.frameborder = "0";
@@ -143,6 +157,9 @@
         const overlayContainer = document.getElementById("overlay-container");
         const iframeElement = document.getElementById("overlay-frame");
 
+        // Si el iframe no existe, no hagas nada
+        if (!iframeElement) return;
+
         // Eliminar el iframe
         overlayContainer.removeChild(iframeElement);
 
@@ -151,12 +168,11 @@
     }
 </script>
 
-
 <div>
-    <label for="filter-words">Palabras para filtrar (separadas por espacio):</label>
+    <label for="filter-words">filtrar (palabras separadas):</label>
     <input type="text" id="filter-words">
-  </div>
-  <script>
+</div>
+<script>
     const filterWordsInput = document.getElementById('filter-words');
 
     // Load the last entered value from localStorage

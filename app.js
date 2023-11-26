@@ -11,7 +11,33 @@ let previousLikeCount = 0;
 
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
+document.addEventListener('DOMContentLoaded', (event) => {
+    const toggleButton = document.getElementById('dn');
 
+    // Check if running in OBS
+    if (window.obsstudio) {
+        document.body.style.backgroundColor = 'transparent';
+    } else {
+        // Cargar el tema actual desde localStorage
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme) {
+            document.body.className = currentTheme;
+            toggleButton.checked = currentTheme === 'theme-dark';
+        }
+
+        toggleButton.addEventListener('change', () => {
+            if (toggleButton.checked) {
+                // Si el botón de alternancia está marcado, aplicar el tema oscuro
+                document.body.className = 'theme-dark';
+                localStorage.setItem('theme', 'theme-dark');
+            } else {
+                // Si el botón de alternancia no está marcado, aplicar el tema claro
+                document.body.className = 'theme-light';
+                localStorage.setItem('theme', 'theme-light');
+            }
+        });
+    }
+});
 $(document).ready(() => {
     $('#connectButton').click(connect);
     $('#uniqueIdInput').on('keyup', function(e) {
@@ -25,43 +51,68 @@ $(document).ready(() => {
         connect();
     }
 });
+let isConnected = false;
+
+let currentRoomId = null;
+let isReconnecting = false;
 
 function connect() {
-    let uniqueId = window.settings.username || $('#uniqueIdInput').val();
+    let uniqueId = $('#uniqueIdInput').val();
+    isReconnecting = true;
     if (uniqueId !== '') {
         $('#stateText').text('Conectando...');
         $('#connectButton').prop('disabled', true);
 
-        connection.connect(uniqueId, {
-            enableExtendedGiftInfo: true
-        }).then(state => {
-            $('#stateText').text(`Conectado a la sala ${state.roomId}`);
+        // Si ya está conectado y el uniqueId es diferente, desconectar la conexión actual
+        if (isConnected && uniqueId !== currentUniqueId) {
+            connection.disconnect();
+            isConnected = false;
+        }
 
-            // Habilitar el botón después de establecer la conexión
-            $('#connectButton').prop('disabled', false);
+        // Si no está conectado, establecer una nueva conexión
+        if (!isConnected) {
+            connection.connect(uniqueId, {
+                enableExtendedGiftInfo: true
+            }).then(state => {
+                if (currentRoomId && currentRoomId === state.roomId) {
+                    alert('Ya estás conectado a esta sala');
+                    return;
+                }
+                currentRoomId = state.roomId;
+                $('#stateText').text(`Conectado a la sala ${state.roomId}`);
 
-        }).catch(errorMessage => {
-            $('#stateText').text(errorMessage);
+                // Habilitar el botón después de establecer la conexión
+                $('#connectButton').prop('disabled', false);
+                isConnected = true;
+                currentUniqueId = uniqueId; // Guardar el uniqueId actual
 
-            // programar próximo intento si se establece el nombre de usuario obs
-            if (window.settings.username) {
-                setTimeout(() => {
-                    connect(window.settings.username);
-                }, 30000);
-            }
+            }).catch(errorMessage => {
+                $('#stateText').text(errorMessage);
 
-            // Habilitar el botón en caso de error
-            $('#connectButton').prop('disabled', false);
-        });
+                // programar próximo intento si se establece el nombre de usuario obs
+                if (window.settings.username) {
+                    setTimeout(() => {
+                        connect(window.settings.username);
+                    }, 30000);
+                }
 
+                // Habilitar el botón en caso de error
+                $('#connectButton').prop('disabled', false);
+            });
+        } else {
+            alert('Ya estás conectado');
+        }
     } else {
         alert('No se ingresó nombre de usuario');
     }
 }
-
 // Prevent Cross site scripting (XSS)
 function sanitize(text) {
-    return text.replace(/</g, '&lt;')
+    if (text) { // Verifica si la entrada no es undefined
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    } else {
+        return ''; // Devuelve una cadena vacía si la entrada es undefined
+    }
 }
 
 function updateRoomStats() {
@@ -89,15 +140,30 @@ function addChatItem(color, data, text, summarize) {
     container.find('.temporary').remove();;
 
     container.append(`
-    <div class=${summarize ? 'temporary' : 'static'}>
-      <img class="miniprofilepicture" src="${data.profilePictureUrl}">
-      <span>
-        <b>${generateUsernameLink(data)}:</b>
-        <span style="color:${color}">${sanitize(text)}</span>
-      </span>
-    </div>
-  `);
+        <div class=${summarize ? 'temporary' : 'static'}>
+            <img class="miniprofilepicture" src="${data.profilePictureUrl}">
+            <span>
+                <b>${generateUsernameLink(data)}:</b>   
+                <span style="color:${color}">${sanitize(text)}</span>
+            </span>
+        </div>
+    `);
+    container.stop();
+    container.animate({
+        scrollTop: container[0].scrollHeight
+    }, 400);
+    addOverlayEvent(data, text, color, false);
 
+    let filterWords = document.getElementById('filter-words').value.split(' ');
+    // Convertir el texto a minúsculas para la comparación
+    let lowerCaseText = text.toLowerCase();
+    // Verificar si el texto contiene alguna de las palabras para filtrar
+    for (let word of filterWords) {
+        if (word && lowerCaseText.includes(word.toLowerCase())) {
+            console.log('filtrado');
+            return;
+        }
+    }
     const specialChars = /[#$%^&*()/,.?":{}|<>]/;
     const startsWithSpecialChar = specialChars.test(text.charAt(0));
     const messagePrefix = startsWithSpecialChar ? "!" : "";
@@ -109,57 +175,244 @@ function addChatItem(color, data, text, summarize) {
         cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
     }
 
-    const message = messagePrefix + (cleanedText.length > 50 ? `${data.uniqueId} dice ${messageSuffix}` : cleanedText);
+    const message = messagePrefix + (cleanedText.length > 60 ? `${data.uniqueId} dice ${messageSuffix}` : cleanedText);
 
     enviarMensaje(message);
+    leerMensajes(message);
+    onMessageReceived(message);
+}
+// Supongamos que tienes una lista de nombres de videos
+let videoNames = ["video1.mp4", "video2.mp4", "video3.mp4"];
 
-    container.stop();
-    container.animate({
-        scrollTop: container[0].scrollHeight
-    }, 400);
-    let filterWords = document.getElementById('filter-words').value.split(' ');
-    // Convertir el texto a minúsculas para la comparación
-    let lowerCaseText = text.toLowerCase();
-    // Verificar si el texto contiene alguna de las palabras para filtrar
-    for (let word of filterWords) {
-        if (word && lowerCaseText.includes(word.toLowerCase())) {
-            console.log('filtrado');
-            return;
+function onMessageReceived(message) {
+    for (let videoName of videoNames) {
+        if (message.includes(videoName)) {
+            let video = document.createElement("video");
+            video.src = videoName;
+            video.style.position = "fixed";
+            video.style.zIndex = "1000";
+            video.style.width = "100%";
+            video.style.height = "100%";
+            console.log(videoName);
+            document.body.appendChild(video);
+            video.play();
+            break;
         }
     }
-    cacheMessage(text);
 }
+
+function isValidUrl(string) {
+    try {
+        new URL(string);
+    } catch (_) {
+        return false;
+    }
+
+    return true;
+}
+
+let lastEvent = null;
+let eventDivs = {};
+
+function createGiftDiv(data, repeatCount, userId) {
+    let giftDiv = document.createElement('div');
+    giftDiv.className = 'gift-div';
+
+    if (repeatCount <= 2) {
+        // Si repeatCount es 1 o 2, muestra la imagen del perfil
+        giftDiv.innerHTML = `
+            <img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;">
+            <img class="gift-image gift-animation" src="${data.giftPictureUrl}" style="border-radius: 50%;">`;
+    } else if (repeatCount >= 3) {
+        // Si repeatCount es mayor que 4, muestra solo la imagen del regalo
+        giftDiv.innerHTML = `
+            <img class="gift-image gift-animation" src="${data.giftPictureUrl}" style="border-radius: 50%;">`;
+    }
+
+    // Reinicia el contador para este usuario
+    giftCounters[userId] = 0;
+
+    return giftDiv;
+}
+let giftCounters = {};
+let lastFilteredPositions = [];
+let lastFilteredPositionIndex = 0;
+
+function addOverlayEvent(data, text, color, isGift, repeatCount) {
+    const eventContainer = document.getElementById('overlayEventContainer');
+    let userId = data.profilePictureUrl;
+    if (text === lastText) {
+        return;
+    }
+
+    // Update the last event and last text
+    lastEvent = { text, isGift };
+    lastText = text;
+
+    let eventDiv = document.createElement('div');
+    eventDiv.className = 'event-div'; // Add class
+
+
+
+    // Si no es un regalo y no contiene 'sige' ni 'compartió', agregamos la clase 'marquee'
+    if (!isGift && !text.includes('sige') && !text.includes('compartió')) {
+        eventDiv.className += ' marquee';
+        eventDiv.innerHTML = `<span class="event-text text-animation" style="color: ${color};">${text}</span>`;
+    }
+    if (isGift) {
+        let userId = data.profilePictureUrl;
+        if (!giftCounters[userId]) {
+            giftCounters[userId] = 0;
+        }
+        if (repeatCount >= 2) {
+            giftCounters[userId]++;
+        }
+        if (giftCounters[userId] % 2 !== 0 || repeatCount < 2) {
+            let giftDiv = createGiftDiv(data, repeatCount, userId);
+            eventDiv.appendChild(giftDiv);
+        }
+    } else if (text.includes(`sige`) || text.includes('compartió')) {
+        eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><span class="event-text text-animation" style="color: ${color};">${text}</span>`;
+    } else {
+        eventDiv.innerHTML = `<span class="event-text text-animation" style="color: ${color};">${text}</span>`;
+    }
+
+    // Get a random position for the div within the container
+    let top, left;
+    let filterWords = document.getElementById('filter-words').value.split(' ');
+    let lowerCaseText = text.toLowerCase();
+    let isFiltered = filterWords.some(word => word && lowerCaseText.includes(word.toLowerCase()));
+    if (isFiltered && lastFilteredPositions.length > 0) {
+        // If the text is filtered and there are last filtered positions, use one of them
+        top = lastFilteredPositions[lastFilteredPositionIndex].top;
+        left = lastFilteredPositions[lastFilteredPositionIndex].left;
+        // Increment the index, and reset it to 0 if it's greater than the length of lastFilteredPositions
+        lastFilteredPositionIndex = (lastFilteredPositionIndex + 1) % lastFilteredPositions.length;
+    } else {
+        // If the text is not filtered or there are no last filtered positions, generate a new one
+        ({ top, left } = getRandomPosition(eventContainer, eventDiv, 100));
+        if (isFiltered) {
+            // If the text is filtered, store the new position
+            lastFilteredPositions.push({ top, left });
+            if (lastFilteredPositions.length > 5) {
+                lastFilteredPositions.shift();
+            }
+        }
+    }
+    eventDiv.style.top = `${top}px`;
+    eventDiv.style.left = `${left}px`;
+
+    // Add the div to the container
+    eventContainer.appendChild(eventDiv);
+
+    // Determine the removal time based on the category
+    let removalTime;
+    if (isGift) {
+        removalTime = 20000; // 30 seconds for gifts
+    } else if (text.includes('sige') || text.includes('compartió')) {
+        removalTime = 15000; // 20 seconds for 'sige' and 'compartió'
+    } else {
+        removalTime = 15000; // 10 seconds for everything else
+    }
+
+    // Remove the div after the determined time
+    setTimeout(() => {
+        eventContainer.removeChild(eventDiv);
+    }, removalTime);
+}
+let grid = [];
+const gridSize = 100; // Tamaño de la celda de la cuadrícula en píxeles
+let precalculatedPositions = [];
+
+function initializeGrid(container) {
+    const containerRect = container.getBoundingClientRect();
+    const gridRows = Math.floor(containerRect.height / gridSize);
+    const gridColumns = Math.floor(containerRect.width / gridSize);
+    grid = new Array(gridRows).fill(0).map(() => new Array(gridColumns).fill(false));
+
+    // Precalculate 50 random positions
+    for (let i = 0; i < 50; i++) {
+        let row, column;
+        do {
+            row = Math.floor(Math.random() * gridRows);
+            column = Math.floor(Math.random() * gridColumns);
+        } while (grid[row][column] || isNearCorner(row, column, gridRows, gridColumns));
+
+        grid[row][column] = true;
+        precalculatedPositions.push({
+            top: row * gridSize,
+            left: column * gridSize
+        });
+    }
+}
+
+function isNearCorner(row, column, gridRows, gridColumns) {
+    const cornerMargin = 2; // Margen para evitar las esquinas
+    return (
+        (row < cornerMargin && column < cornerMargin) || // Esquina superior izquierda
+        (row < cornerMargin && column >= gridColumns - cornerMargin) || // Esquina superior derecha
+        (row >= gridRows - cornerMargin && column < cornerMargin) || // Esquina inferior izquierda
+        (row >= gridRows - cornerMargin && column >= gridColumns - cornerMargin) // Esquina inferior derecha
+    );
+}
+
+function getRandomPosition() {
+    const elementSize = 500; // Define el tamaño del elemento que estás generando
+
+    // If precalculatedPositions is empty, generate a new random position
+    if (precalculatedPositions.length === 0) {
+        const container = document.getElementById('overlayEventContainer');
+        const containerRect = container.getBoundingClientRect();
+        return {
+            top: Math.random() * (containerRect.height - elementSize), // Resta elementSize del valor aleatorio generado para top
+            left: Math.random() * (containerRect.width - elementSize) // Resta elementSize del valor aleatorio generado para left
+        };
+    }
+
+    // Get a random index from the precalculated positions
+    const index = Math.floor(Math.random() * precalculatedPositions.length);
+    // Remove the selected position from the array to avoid reusing it
+    return precalculatedPositions.splice(index, 1)[0];
+}
+// Llamar a initializeGrid con el contenedor cuando la página se carga
+window.onload = function() {
+    const eventContainer = document.getElementById('overlayEventContainer');
+    initializeGrid(eventContainer);
+}
+
 // Resto del código...
 /** ID[${data.giftId}] id regalo
  * Agregar un nuevo regalo al contenedor de regalos
  */
 function addGiftItem(data) {
     let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.giftcontainer');
-
     if (container.find('div').length > 200) {
         container.find('div').slice(0, 100).remove();
     }
 
     let streakId = data.userId.toString() + '_' + data.giftId;
 
+    const profilePictureUrl = isValidUrl(data.profilePictureUrl) ? data.profilePictureUrl : 'url_de_imagen_por_defecto';
+    const giftPictureUrl = isValidUrl(data.giftPictureUrl) ? data.giftPictureUrl : 'url_de_imagen_por_defecto';
+
     let html = `
       <div data-streakid=${isPendingStreak(data) ? streakId : ''}>
-          <img class="miniprofilepicture" src="${data.profilePictureUrl}">
+          <img class="miniprofilepicture" src="${profilePictureUrl}">
           <span>
               <b>${generateUsernameLink(data)}:</b> <span><span style="color: ${data.giftName ? 'purple' : 'black'}">${data.giftName}</span></span></span><br>
               <div>
                   <table>
                       <tr>
-                          <td><img class="gifticon" src="${data.giftPictureUrl}"></td>
+                          <td><img class="gifticon" src="${giftPictureUrl}"></td>
                           <td>
                               <span><b style="${isPendingStreak(data) ? 'color:red' : ''}">x${data.repeatCount.toLocaleString()} : ${(data.diamondCount * data.repeatCount).toLocaleString()} Diamantes </b><span><br>
                           </td>
                       </tr>
-                  </tabl>
+                  </table>
               </div>
           </span>
       </div>
-  `;
+    `;
 
     let existingStreakItem = container.find(`[data-streakid='${streakId}']`);
 
@@ -168,7 +421,12 @@ function addGiftItem(data) {
     } else {
         container.append(html);
     }
-    obtenerComandosYEnviarMensaje(data.giftName, "");
+
+    if (data.repeatCount === 1) {
+        obtenerComandosYEnviarMensaje(data.giftName, "");
+        addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
+        createGiftDiv(data, data.giftPictureUrl, 'red', true, data.repeatCount);
+    }
 
     container.stop();
     container.animate({
@@ -183,22 +441,38 @@ connection.on('roomUser', (msg) => {
         updateRoomStats();
     }
 })
+let userLikes = {};
+let userTotalLikes = {};
 
-// like stats
 connection.on('like', (msg) => {
     if (typeof msg.totalLikeCount === 'number') {
         likeCount = msg.totalLikeCount;
         updateRoomStats();
+    }
 
-        // Check if the like count has reached a multiple of 10, 100, 1000, etc.
-        if (likeCount % 500 === 0 && likeCount !== previousLikeCount) {
-            previousLikeCount = likeCount;
-            const likeMessage = `${likeCount} likes.`;
-            enviarMensaje(likeMessage);
+    // Increment user's like count
+    if (!userLikes[msg.uniqueId]) {
+        userLikes[msg.uniqueId] = 0;
+    }
+    userLikes[msg.uniqueId] += msg.likeCount;
+
+    // Increment user's total like count
+    if (!userTotalLikes[msg.uniqueId]) {
+        userTotalLikes[msg.uniqueId] = 0;
+    }
+    userTotalLikes[msg.uniqueId] += msg.likeCount;
+
+    // Check if user's like count has reached 10, 50, 200, 300, 500 or 1000
+    // Check if user's like count is a multiple of 10 up to 500
+    const likes = userLikes[msg.uniqueId];
+    if (likes % 25 === 0 && likes <= 500) {
+        obtenerComandosYEnviarMensaje(`${likes}LIKES`, likes);
+        console.log(`${likes}LIKES`);
+        if (likes >= 500) {
+            userLikes[msg.uniqueId] = 0; // Reset user's like count if it reaches 500
         }
     }
-})
-
+});
 // Member join
 let joinMsgDelay = 0;
 connection.on('member', (msg) => {
@@ -226,10 +500,12 @@ connection.on('chat', (msg) => {
     // Add the new comment to the list
     let now = Date.now();
     if (processedMessages[msg.comment] && now - processedMessages[msg.comment] < 30000) {
-        // Si el mensaje ya ha sido procesado hace menos de
-        return;
+        // Si el mensaje ya ha sido procesado hace menos de 30 segundos, no lo envíe
+        // a menos que no estemos en el proceso de reconexión
+        if (isReconnecting) {
+            return;
+        }
     }
-
     // Si el mensaje no ha sido procesado o fue procesado hace más de un minuto,
     // añadirlo a la estructura de datos con la hora actual
     processedMessages[msg.comment] = now;
@@ -246,7 +522,7 @@ connection.on('chat', (msg) => {
 
     // Calculate the message rate
     let currentTime = Date.now();
-    let messageRate = 1000 / (currentTime - lastCommentTime);
+    let messageRate = 10000 / (currentTime - lastCommentTime);
     lastCommentTime = currentTime;
 
     // Check the repetition count
@@ -256,40 +532,56 @@ connection.on('chat', (msg) => {
     messageRepetitions[msg.comment]++;
 
     // If the message rate is high and the message has been repeated many times, filter it
-    if (messageRate > 1 && messageRepetitions[msg.comment] > 5) {
+    if (messageRate > 1 && messageRepetitions[msg.comment] > 10) {
         return;
     }
 
     addChatItem('', msg, msg.comment);
+    // After processing a message, if we were reconnecting, we're not anymore
+    if (isReconnecting) {
+        isReconnecting = false;
+    }
 });
 
 // New gift received
 connection.on('gift', (data) => {
     if (!isPendingStreak(data) && data.diamondCount > 0) {
         diamondsCount += (data.diamondCount * data.repeatCount);
+
         updateRoomStats();
     }
 
     if (window.settings.showGifts === "0") return;
-
     addGiftItem(data);
 })
 
 // share, follow
+let seguidores = new Set();
+
 connection.on('social', (data) => {
     if (window.settings.showFollows === "0") return;
 
-    let color = data.displayType.includes('follow') ? '#CDA434' : '#CDA434';
+    let color;
+    let message;
+
     if (data.displayType.includes('follow')) {
-        data.label = `${data.uniqueId} Te sigue`;
-    }
-    if (data.displayType.includes('share')) {
-        data.label = `${data.uniqueId} compartió el directo`;
+        color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
+        if (!seguidores.has(data.uniqueId)) {
+            seguidores.add(data.uniqueId);
+            message = `${data.uniqueId} te acaba de seguir`;
+            obtenerComandosYEnviarMensaje('follow', "");
+        }
+    } else if (data.displayType.includes('share')) {
+        color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
+        message = `${data.uniqueId} compartió el directo`;
+        obtenerComandosYEnviarMensaje('share', "");
+    } else {
+        color = '#CDA434'; // Color por defecto
+        message = data.label.replace('{0:user}', '');
     }
 
-    addChatItem(color, data, data.label.replace('{0:user}', ''));
+    addChatItem(color, data, message);
 });
-
 connection.on('streamEnd', () => {
     $('#stateText').text('Transmisión terminada.');
 
@@ -300,8 +592,21 @@ connection.on('streamEnd', () => {
         }, 30000);
     }
 })
+let contadorGiftname = {};
+let ultimaVezGiftname = {};
 
-function obtenerComandosYEnviarMensaje(giftname, message = "", isGift = false) {
+function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = false) {
+    let ahora = Date.now();
+
+    if (contadorGiftname[giftname] === undefined) {
+        contadorGiftname[giftname] = 0;
+    } else if (ahora - ultimaVezGiftname[giftname] < 4000 && contadorGiftname[giftname] >= 2) {
+        contadorGiftname[giftname]--;
+    }
+
+    ultimaVezGiftname[giftname] = ahora;
+    contadorGiftname[giftname]++;
+
     const pageSize = 100; // Cantidad de comandos a devolver por página
     let skip = 0; // Comenzar desde el primer comando
 
@@ -327,7 +632,8 @@ function obtenerComandosYEnviarMensaje(giftname, message = "", isGift = false) {
                     listaComandos.forEach(cmd => {});
 
                     // Buscar el ID del comando según el nombre
-                    const comandosEncontrados = listaComandos.filter(cmd => cmd.Name.toLowerCase().includes(giftname.toLowerCase()));                    if (comandosEncontrados.length === 0) {
+                    const comandosEncontrados = listaComandos.filter(cmd => cmd.Name.toLowerCase().includes(giftname.toLowerCase()) || cmd.Name.toLowerCase().includes(`${likes}likes`.toLowerCase()));
+                    if (comandosEncontrados.length === 0) {
                         console.error(`No se encontró ningún comando con el nombre que contiene: ${giftname}`);
                         return; // Salir de la función si no se encuentran comandos
                     }
@@ -634,57 +940,28 @@ let cache = [];
 let lastText = "";
 let lastComment = '';
 let lastCommentTime = 0;
-const palabrasSpam = ['@'];
+
 
 function enviarMensaje(message) {
-    if (shouldSendMessage(message)) {
-        if (!containspalabrasSpam(message)) {
-            // Enviar el mensaje
-            fetch("http://localhost:8911/api/v2/chat/message", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ "Message": message, "Platform": "Twitch", "SendAsStreamer": true })
-                })
-                .then(function(response) {
-                    if (response.ok) {
-                        leerMensajes();
-                    }
-                })
-                .catch(function(error) {
-                    console.error('Error al enviar el mensaje:', error);
-                });
+    // Enviar el mensaje
+    fetch("http://localhost:8911/api/v2/chat/message", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ "Message": message, "Platform": "Twitch", "SendAsStreamer": true })
+        })
+        .then(function(response) {
+            if (response.ok) {}
+        })
+        .catch(function(error) {
+            console.error('Error al enviar el mensaje:', error);
+        });
+    leerMensajes(); // Llama a leerMensajes() después de agregar un mensaje a la cola
 
-            lastComment = message;
-            lastCommentTime = Date.now();
-        }
-    }
+    lastComment = message;
+    lastCommentTime = Date.now();
 }
-
-function shouldSendMessage(message) {
-    return (
-        message !== lastComment &&
-        !containspalabrasSpam(message)
-    );
-
-}
-
-function containspalabrasSpam(message) {
-    const palabrasSpam = JSON.parse(localStorage.getItem('palabrasSpam')) || [];
-    return palabrasSpam.some(word => message.includes(word));
-}
-
-function cacheMessage(text) {
-    if (text.length >= 1 && text.length <= 400 && text !== lastText) {
-        cache.push(text);
-        lastText = text;
-    }
-    if (cache.length > 3) {
-        cache.shift(); 
-    }
-}
-
 class Queue {
     constructor() {
         this.items = [];
@@ -706,56 +983,21 @@ class Queue {
     }
 }
 
-function cacheMessage(text) {
-    if (text.length >= 1 && text.length <= 400 && text !== lastText) {
-        cache.push(text);
-        lastText = text;
-    }
-    if (cache.length > 15) {
-        cache.shift();
-    }
-}
-
-function filtros(text) {
-    // Apply the filter only if there are more than 3 messages in the queue
-    if (cache.length > 1) { 
-        if (cache.includes(text) || palabrasSpam.some(word => text.includes(word))) {
-            return false;
-        }
-    }
-    if (text.length >= 1 && text.length <= 400 && text !== lastText) {
-        cache.push(text);
-        lastText = text;
-    }
-    if (cache.length > 15) {
-        cache.shift();
-    }
-    return true;
-}
-
-function leerMensajes() {
-    if (cache.length > 0 && !isReading) {
-        const text = cache.shift();
-        const nextText = cache[0];
-
-        // Comprobar si el mensaje es igual a los 5 anteriores
-        const similarMessages = readMessages.filter(msg => msg === text).length;
-        const isRepeated = similarMessages >= 5;
-
-        if (!isRepeated && text !== nextText) {
-            fetchAudio(text);
-        }
+function leerMensajes(text) {
+    if (text && !isReading) {
+        fetchAudio(text).then(audioUrl => {
+            if (audioUrl) {
+                audioqueue.enqueue(audioUrl);
+                if (!isPlaying) kickstartPlayer();
+            }
+        });
     }
 }
 
-const readMessages = [];
+const readMessages = new Set();
 
 async function fetchAudio(txt, voice) {
     try {
-        if (!filtros(txt)) {
-            return;
-        }
-
         const selectedVoice = selectVoice(language);
         const resp = await fetch(TTS_API_ENDPOINT + makeParameters({ voice: selectedVoice, text: txt }));
         if (resp.status !== 200) {
@@ -765,29 +1007,10 @@ async function fetchAudio(txt, voice) {
 
         const blob = await resp.blob();
         const blobUrl = URL.createObjectURL(blob);
-        if (audioqueue) {
-            audioqueue.enqueue(blobUrl);
-            if (!isPlaying) kickstartPlayer();
-        }
-        const index = cache.indexOf(txt);
-        if (index !== -1) {
-            cache.splice(index, 1);
-        }
 
-        // Elimina el mensaje de cache una vez que se ha reproducido
-        const interval = setInterval(() => {
-            if (audio.ended) {
-                clearInterval(interval);
-                URL.revokeObjectURL(blobUrl);
-            }
-        }, 200); // Verifica cada segundo si el audio ha terminado de reproducirse
-
-        readMessages.push(txt);
-        if (readMessages.length > 5) {
-            readMessages.shift(); // Si hay más de 5 mensajes, elimina el más antiguo
-        }
+        return blobUrl;
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Error fetchaudio:", error);
     }
 }
 
@@ -798,9 +1021,14 @@ function makeParameters(params) {
 }
 
 function skipAudio() {
-    if (audioqueue.isEmpty()) {
-        isPlaying = false;
-        audio.pause();
+    audio.pause();
+    audio.currentTime = 0;
+
+    // If the queue is not empty, dequeue the next audio and start playing it
+    if (!audioqueue.isEmpty()) {
+        audio.src = audioqueue.dequeue();
+        audio.load();
+        audio.play();
     } else {
         isPlaying = true;
         audio.src = audioqueue.dequeue();
@@ -810,27 +1038,33 @@ function skipAudio() {
 }
 
 function kickstartPlayer() {
+    // If the queue is empty, do nothing
     if (audioqueue.isEmpty()) {
         isPlaying = false;
-        audio.pause();
-        leerMensajes(); // Leer el próximo mensaje
-    } else {
-        isPlaying = true;
-        audio.src = audioqueue.dequeue();
-        audio.load();
-        audio.play();
-        audioqueue.dequeue();
-        readMessages.shift();
+        return;
     }
-}
 
+    // Dequeue the first text from the queue and fetch its audio
+    isPlaying = true;
+    const audioUrl = audioqueue.dequeue();
+    audio.src = audioUrl;
+    audio.load();
+    audio.play().catch(() => {
+        // If there is an error while playing the audio, try to play the next audio in the queue
+        kickstartPlayer();
+    });
+
+    // When the audio ends, try to play the next audio in the queue
+    audio.onended = function() {
+        kickstartPlayer();
+    };
+}
 window.onload = async function() {
     try {
         audio = document.getElementById("audio");
         skip = document.getElementById("skip-button");
         isPlaying = false;
         audioqueue = new Queue();
-        leerMensajes();
 
         if (skip) {
             skip.onclick = skipAudio;
