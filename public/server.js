@@ -12,17 +12,17 @@ const httpServer = createServer(app); //use same app server instance to create h
 
 // Habilitar el intercambio de recursos de origen cruzado
 const io = new Server(httpServer, {
-  cors: {
-    origin: "*",
-  },
+    cors: {
+        origin: "*",
+    },
 });
 
 app.use(
     cors({
-      origin: "*",
+        origin: "*",
     })
-  );
-  
+);
+
 io.on('connection', (socket) => {
     let tiktokConnectionWrapper;
 

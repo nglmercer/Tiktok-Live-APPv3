@@ -4,7 +4,6 @@ let connection = new TikTokIOConnection(backendUrl);
 const chatContainer = document.getElementById('chatContainer');
 const playButton = document.getElementById('playButton');
 // Counter
-
 let viewerCount = 0;
 let likeCount = 0;
 let diamondsCount = 0;
@@ -12,8 +11,33 @@ let previousLikeCount = 0;
 
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
+document.addEventListener('DOMContentLoaded', (event) => {
+    const toggleButton = document.getElementById('dn');
 
+    // Check if running in OBS
+    if (window.obsstudio) {
+        document.body.style.backgroundColor = 'transparent';
+    } else {
+        // Cargar el tema actual desde localStorage
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme) {
+            document.body.className = currentTheme;
+            toggleButton.checked = currentTheme === 'theme-dark';
+        }
 
+        toggleButton.addEventListener('change', () => {
+            if (toggleButton.checked) {
+                // Si el botón de alternancia está marcado, aplicar el tema oscuro
+                document.body.className = 'theme-dark';
+                localStorage.setItem('theme', 'theme-dark');
+            } else {
+                // Si el botón de alternancia no está marcado, aplicar el tema claro
+                document.body.className = 'theme-light';
+                localStorage.setItem('theme', 'theme-light');
+            }
+        });
+    }
+});
 $(document).ready(() => {
     $('#connectButton').click(connect);
     $('#uniqueIdInput').on('keyup', function(e) {
@@ -22,46 +46,86 @@ $(document).ready(() => {
         }
     });
 
-    if (window.settings.username) connect();
-})
+    if (window.settings.username) {
+        $('#connectButton').prop('disabled', true); // Desactivar el botón hasta que se establezca la conexión
+        connect();
+    }
+});
+let isConnected = false;
+
+let currentRoomId = null;
+let isReconnecting = false;
 
 function connect() {
-    let uniqueId = window.settings.username || $('#uniqueIdInput').val();
+    let uniqueId = $('#uniqueIdInput').val();
+    isReconnecting = true;
+    console.log('Iniciando conexión...');
     if (uniqueId !== '') {
-
         $('#stateText').text('Conectando...');
+        $('#connectButton').prop('disabled', true); // Desactivar el botón durante la conexión
+        console.log('Botón desactivado');
 
-        connection.connect(uniqueId, {
-            enableExtendedGiftInfo: true
-        }).then(state => {
-            $('#stateText').text(`Conectado a la sala ${state.roomId}`);
+        // Si ya está conectado y el uniqueId es diferente, desconectar la conexión actual
+        if (isConnected && uniqueId !== currentUniqueId) {
+            console.log('Desconectando conexión actual...');
+            isConnected = false;
+        }
 
-            // resetear estadísticas
-            viewerCount = 0;
-            likeCount = 0;
-            diamondsCount = 0;
-            updateRoomStats();
+        // Si no está conectado, establecer una nueva conexión
+        if (!isConnected) {
+            console.log('Estableciendo nueva conexión...');
+            connection.connect(uniqueId, {
+                enableExtendedGiftInfo: true
+            }).then(state => {
+                if (currentRoomId && currentRoomId === state.roomId) {
+                    console.log('Ya estás conectado a esta sala');
+                    alert('Ya estás conectado a esta sala');
+                    $('#connectButton').prop('disabled', false); // Reactivar el botón si ya está conectado
+                    return;
+                }
+                currentRoomId = state.roomId;
+                $('#stateText').text(`Conectado a la sala ${state.roomId}`);
+                console.log(`Conectado a la sala ${state.roomId}`);
 
-        }).catch(errorMessage => {
-            $('#stateText').text(errorMessage);
+                // Habilitar el botón después de establecer la conexión
+                $('#connectButton').prop('disabled', false);
+                console.log('Botón reactivado');
+                isConnected = true;
+                currentUniqueId = uniqueId; // Guardar el uniqueId actual
 
-            // programar próximo intento si se establece el nombre de usuario obs
-            if (window.settings.username) {
-                setTimeout(() => {
-                    connect(window.settings.username);
-                }, 30000);
-            }
-        })
+            }).catch(errorMessage => {
+                console.log(`Error: ${errorMessage}`);
+                $('#stateText').text(errorMessage);
 
+                // programar próximo intento si se establece el nombre de usuario obs
+                if (window.settings.username) {
+                    console.log('Programando próximo intento...');
+                    setTimeout(() => {
+                        connect(window.settings.username);
+                    }, 30000);
+                }
+
+                // Habilitar el botón en caso de error
+                $('#connectButton').prop('disabled', false);
+                console.log('Botón reactivado');
+            });
+        } else {
+            console.log('Ya estás conectado');
+            alert('Ya estás conectado');
+            $('#connectButton').prop('disabled', false); // Reactivar el botón si ya está conectado
+        }
     } else {
-        alert('no se ingresó nombre de usuario');
+        console.log('No se ingresó nombre de usuario');
+        alert('No se ingresó nombre de usuario');
     }
 }
-
-
 // Prevent Cross site scripting (XSS)
 function sanitize(text) {
-    return text.replace(/</g, '&lt;')
+    if (text) { // Verifica si la entrada no es undefined
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    } else {
+        return ''; // Devuelve una cadena vacía si la entrada es undefined
+    }
 }
 
 function updateRoomStats() {
@@ -86,71 +150,351 @@ function addChatItem(color, data, text, summarize) {
         container.find('div').slice(0, 200).remove();
     }
 
+    // Modificación para eliminar o reemplazar los caracteres especiales
     container.find('.temporary').remove();;
 
     container.append(`
-    <div class=${summarize ? 'temporary' : 'static'}>
-      <img class="miniprofilepicture" src="${data.profilePictureUrl}">
-      <span>
-        <b>${generateUsernameLink(data)}:</b>
-        <span style="color:${color}">${sanitize(text)}</span>
-      </span>
-    </div>
-  `);
-
-    const specialChars = /[@#$%^&*()/,.?":{}|<>]/;
-    const startsWithSpecialChar = specialChars.test(text.charAt(0));
-    const messagePrefix = startsWithSpecialChar ? "!" : "";
-    const messageSuffix = summarize ? "" : ` ${text}`;
-
-    // Modificación para eliminar o reemplazar los caracteres especiales
-    let cleanedText = text;
-    if (startsWithSpecialChar) {
-        cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
-    }
-
-    const message = messagePrefix + (cleanedText.length > 50 ? `${data.uniqueId} dice ${messageSuffix}` : cleanedText);
-
-    enviarMensaje(message);
-
+        <div class=${summarize ? 'temporary' : 'static'}>
+            <img class="miniprofilepicture" src="${data.profilePictureUrl}">
+            <span>
+                <b>${generateUsernameLink(data)}:</b>   
+                <span style="color:${color}">${sanitize(text)}</span>
+            </span>
+        </div>
+    `);
     container.stop();
     container.animate({
         scrollTop: container[0].scrollHeight
     }, 400);
-    leerMensajes(text);
-    cacheMessage(text);
+    addOverlayEvent(data, text, color, false);
+    let filterWords = document.getElementById('filter-words').value.split(' ');
+    // Convertir el texto a minúsculas para la comparación
+    let lowerCaseText = text && text.toLowerCase();
+    let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
+
+    if (sendsoundCheckbox.checked) {
+
+        playSoundByText(text);
+    }
+    // Verificar si el texto contiene alguna de las palabras para filtrar
+    for (let word of filterWords) {
+        if (word && lowerCaseText.includes(word.toLowerCase())) {
+            return;
+        }
+    }
+    const specialChars = /[#$%^&*()/,.?":{}|<>]/;
+    const startsWithSpecialChar = specialChars.test(text.charAt(0));
+    const messagePrefix = startsWithSpecialChar ? "!" : "";
+    const messageSuffix = summarize ? "" : ` ${text}`;
+    let cleanedText = text;
+    if (startsWithSpecialChar) {
+        cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
+    }
+    let emojiRegex = /[\u{1F600}-\u{1F64F}]/gu;
+    let emojis = text && text.match(emojiRegex);
+
+    if (emojis) {
+        let emojiCounts = {};
+        for (let emoji of emojis) {
+            if (emoji in emojiCounts) {
+                emojiCounts[emoji]++;
+            } else {
+                emojiCounts[emoji] = 1;
+            }
+
+            if (emojiCounts[emoji] >= 2) {
+                return;
+            }
+        }
+    }
+    const message = messagePrefix + (cleanedText.length > 60 ? `${data.uniqueId} dice ${messageSuffix}` : cleanedText);
+    if (text.length <= 3) {
+        console.log('filtrado');
+        return;
+    }
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+
+    if (sendDataCheckbox.checked) {
+        enviarMensaje(message);
+
+    }
+    leerMensajes(message);
+    onMessageReceived(message);
 }
+// Supongamos que tienes una lista de nombres de videos
+let videoNames = ["video1.mp4", "video2.mp4", "video3.mp4"];
+
+function onMessageReceived(message) {
+    for (let videoName of videoNames) {
+        if (message.includes(videoName)) {
+            let video = document.createElement("video");
+            video.src = videoName;
+            video.style.position = "fixed";
+            video.style.zIndex = "1000";
+            video.style.width = "100%";
+            video.style.height = "100%";
+            console.log(videoName);
+            document.body.appendChild(video);
+            video.play();
+            break;
+        }
+    }
+}
+
+function isValidUrl(string) {
+    try {
+        new URL(string);
+    } catch (_) {
+        return false;
+    }
+
+    return true;
+}
+
+let lastEvent = null;
+let eventDivs = {};
+let giftCounters = {};
+let lastFilteredPositions = [];
+let lastFilteredPositionIndex = 0;
+
+function testOverlay() {
+    // Obtener el valor del campo de entrada
+    const inputValue = document.getElementById('inputest').value;
+
+    // Dividir el valor del campo de entrada en palabras
+    const words = inputValue.split(' ');
+
+    // Buscar la primera palabra que sea un número
+    let numMessages = 1;
+    const messageWords = [];
+    for (const word of words) {
+        const num = Number(word);
+        if (!isNaN(num)) {
+            numMessages = num;
+        } else {
+            messageWords.push(word);
+        }
+    }
+
+    // Si el número es mayor que 30, limitarlo a 30
+    if (numMessages > 30) {
+        numMessages = 30;
+    }
+
+    // Crear un objeto de datos ficticio para pasar a addOverlayEvent
+    const fakeData = {
+        profilePictureUrl: 'https://example.com/profile.jpg' // Reemplazar con una URL de imagen real
+    };
+
+    // Llamar a addOverlayEvent tantas veces como numMessages
+    const message = messageWords.join(' ');
+    for (let i = 0; i < numMessages; i++) {
+        const messageWithNumber = `${message} ${i + 1}`;
+        addOverlayEvent(fakeData, messageWithNumber, 'black', false, 1);
+    }
+}
+let comboCounters = {};
+let isImageLink = false;
+
+function addOverlayEvent(data, text, color, isGift, repeatCount) {
+    const eventContainer = document.getElementById('overlayEventContainer');
+    // Update the last event and last text
+    lastEvent = { text, isGift };
+    lastText = text;
+    const spacing = 30;
+
+    // Initialize comboCounters[text] if it doesn't exist
+    if (!comboCounters[text]) {
+        comboCounters[text] = { count: 0, timeout: null, div: null };
+    }
+
+    // Increment comboCounters[text]
+    comboCounters[text].count++;
+
+    let baseTime = isGift ? 12000 : 10000; // 5 seconds for gifts, 3 seconds for text
+    let totalTime = baseTime * Math.pow(1.01, comboCounters[text].count);
+    let imageExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    isImageLink = text && imageExtensions.some(ext => text.endsWith(ext)); // Update isImageLink here
+
+    let eventDiv; // Define eventDiv here
+
+    if (comboCounters[text].count > 1) {
+        // If we're in a combo, clear the existing timeout, update the existing div and set a new timeout
+        clearTimeout(comboCounters[text].timeout);
+        eventDiv = comboCounters[text].div; // Update eventDiv with the existing div
+        if (isImageLink) {
+            // If the text is an image link, display the image
+            eventDiv.innerHTML = `<img src="${text}" class="event-image"> x${comboCounters[text].count}`;
+            let left = Math.random() * (eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth - spacing);
+            eventDiv.style.left = `${left}px`; // Set left to a random value within the container
+        } else {
+            eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)} x${comboCounters[text].count}</span>`;
+        }
+        comboCounters[text].timeout = setTimeout(() => {
+            comboCounters[text].count = 0;
+            if (eventDiv.parentNode) {
+                eventContainer.removeChild(eventDiv);
+            }
+            comboCounters[text].div = null;
+        }, totalTime);
+    } else {
+        eventDiv = document.createElement('div'); // Assign a new div to eventDiv
+        eventDiv.className = 'event-div';
+        let { top, left } = getRandomPosition(eventContainer, eventDiv, 100);
+        eventDiv.style.top = `${top}px`;
+        eventDiv.style.left = `${(eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth) / 2}px`;
+        if (isImageLink) {
+            // If the text is an image link, display the image
+            eventDiv.innerHTML = `<img src="${text}" class="event-image">`;
+            let left = Math.random() * (eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth - spacing);
+            eventDiv.style.left = `${left}px`;
+        } else if (text && (text.includes('sige') || text.includes('compartió') || text.includes('gato') || text.includes('directo'))) {
+            eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><span class="event-text text-animation" style="color: ${color};">${text}</span>`;
+        } else if (isGift) {
+            let repeatCountElement = document.createElement('b');
+            repeatCountElement.style = isPendingStreak(data) ? 'color:red' : '';
+            repeatCountElement.textContent = `x${repeatCount.toLocaleString()}`;
+
+            eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><img class="gift-animation" src="${data.giftPictureUrl}" style="border-radius: 50%;">`;
+            eventDiv.appendChild(repeatCountElement);
+            eventDiv.className += ' zoom-in';
+
+            // Set a timeout to remove repeatCountElement after 5 seconds
+            setTimeout(() => {
+                if (repeatCountElement.parentNode) {
+                    repeatCountElement.parentNode.removeChild(repeatCountElement);
+                }
+            }, 5000);
+        } else {
+            eventDiv.className += ' marquee';
+            eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)}</span>`;
+            eventDiv.style.left = `${(eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth) / 2}px`;
+        }
+        // Add the div to the container
+        eventContainer.appendChild(eventDiv);
+        comboCounters[text].div = eventDiv;
+    }
+
+    if (comboCounters[text].timeout) {
+        clearTimeout(comboCounters[text].timeout);
+    }
+
+    // Set a timeout to reset comboCounters[text] to 0 after totalTime
+    comboCounters[text].timeout = setTimeout(() => {
+        comboCounters[text].count = 0;
+        if (eventDiv.parentNode) {
+            eventContainer.removeChild(eventDiv);
+        }
+        comboCounters[text].div = null;
+    }, totalTime);
+}
+let grid = [];
+const gridSize = 100; // Tamaño de la celda de la cuadrícula en píxeles
+let precalculatedPositions = [];
+
+function initializeGrid(container) {
+    const containerRect = container.getBoundingClientRect();
+    const gridRows = Math.floor(containerRect.height / gridSize);
+    const gridColumns = Math.floor(containerRect.width / gridSize);
+    grid = new Array(gridRows).fill(0).map(() => new Array(gridColumns).fill(false));
+
+    // Precalculate 50 random positions
+    for (let i = 0; i < 50; i++) {
+        let row, column;
+        do {
+            row = Math.floor(Math.random() * gridRows);
+            column = Math.floor(Math.random() * gridColumns);
+        } while (grid[row][column] || isNearCorner(row, column, gridRows, gridColumns));
+
+        grid[row][column] = true;
+        precalculatedPositions.push({
+            top: row * gridSize,
+            left: column * gridSize
+        });
+    }
+}
+
+function isNearCorner(row, column, gridRows, gridColumns) {
+    const cornerMargin = 2; // Margen para evitar las esquinas
+    return (
+        (row < cornerMargin && column < cornerMargin) || // Esquina superior izquierda
+        (row < cornerMargin && column >= gridColumns - cornerMargin) || // Esquina superior derecha
+        (row >= gridRows - cornerMargin && column < cornerMargin) || // Esquina inferior izquierda
+        (row >= gridRows - cornerMargin && column >= gridColumns - cornerMargin) // Esquina inferior derecha
+    );
+}
+let existingPositions = [];
+
+function getRandomPosition() {
+    const elementSize = 30; // Define el tamaño del elemento que estás generando
+    const spacing = 30; // Define el espaciado entre elementos
+    const maxAttempts = 100; // Define el número máximo de intentos para encontrar una nueva posición
+
+    const container = document.getElementById('overlayEventContainer');
+    const containerRect = container.getBoundingClientRect();
+
+    for (let attempts = 0; attempts < maxAttempts; attempts++) {
+        // Generar una nueva posición
+        const newPosition = {
+            top: Math.random() * (containerRect.height - elementSize - spacing), // Resta elementSize y spacing del valor aleatorio generado para top
+            left: Math.random() * (containerRect.width - elementSize) // Resta elementSize del valor aleatorio generado para left
+        };
+
+        // Comprobar si la nueva posición está demasiado cerca de alguna de las posiciones existentes
+        if (!existingPositions.some(existingPosition => Math.abs(existingPosition.top - newPosition.top) < elementSize + spacing)) {
+            // Si la nueva posición no está demasiado cerca, añadirla a la lista de posiciones existentes y devolverla
+            existingPositions.push(newPosition);
+            return newPosition;
+        }
+    }
+
+    // Si no se puede encontrar una nueva posición después de maxAttempts intentos, reiniciar la lista de posiciones existentes
+    existingPositions = [];
+    return getRandomPosition();
+}
+// Llamar a initializeGrid con el contenedor cuando la página se carga
+window.onload = function() {
+    const eventContainer = document.getElementById('overlayEventContainer');
+    initializeGrid(eventContainer);
+}
+
 // Resto del código...
 /** ID[${data.giftId}] id regalo
  * Agregar un nuevo regalo al contenedor de regalos
  */
 function addGiftItem(data) {
     let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.giftcontainer');
-
     if (container.find('div').length > 200) {
         container.find('div').slice(0, 100).remove();
     }
 
     let streakId = data.userId.toString() + '_' + data.giftId;
+    let totalDiamonds = data.diamondCount * data.repeatCount;
+    let giftIconSize = 150; // Tamaño base del icono del regalo
+    if (totalDiamonds > 100) {
+        giftIconSize += totalDiamonds; // Aumenta el tamaño del icono del regalo en 1 píxel por cada diamante
+    }
+    const profilePictureUrl = isValidUrl(data.profilePictureUrl) ? data.profilePictureUrl : 'url_de_imagen_por_defecto';
+    const giftPictureUrl = isValidUrl(data.giftPictureUrl) ? data.giftPictureUrl : 'url_de_imagen_por_defecto';
 
     let html = `
       <div data-streakid=${isPendingStreak(data) ? streakId : ''}>
-          <img class="miniprofilepicture" src="${data.profilePictureUrl}">
+          <img class="miniprofilepicture" src="${profilePictureUrl}">
           <span>
               <b>${generateUsernameLink(data)}:</b> <span><span style="color: ${data.giftName ? 'purple' : 'black'}">${data.giftName}</span></span></span><br>
               <div>
                   <table>
                       <tr>
-                          <td><img class="gifticon" src="${data.giftPictureUrl}"></td>
+                          <td><img class="gifticon" src="${giftPictureUrl}" style="width: ${giftIconSize}px; height: ${giftIconSize}px;"></td>
                           <td>
                               <span><b style="${isPendingStreak(data) ? 'color:red' : ''}">x${data.repeatCount.toLocaleString()} : ${(data.diamondCount * data.repeatCount).toLocaleString()} Diamantes </b><span><br>
                           </td>
                       </tr>
-                  </tabl>
+                  </table>
               </div>
           </span>
       </div>
-  `;
+    `;
 
     let existingStreakItem = container.find(`[data-streakid='${streakId}']`);
 
@@ -159,15 +503,23 @@ function addGiftItem(data) {
     } else {
         container.append(html);
     }
-    const giftImageFilename = `assets/${data.giftName.replace(/\s/g, '_')}.png`;
 
-    // Verificar si el regalo ya ha sido descargado
-    if (!downloadedGifts.has(giftImageFilename)) {
-        // Descargar y guardar la imagen del regalo en la carpeta "assets"
-        downloadImage(data.giftPictureUrl, giftImageFilename);
+
+    addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+    if (sendDataCheckbox.checked) {
+        for (let i = 0; i < data.repeatCount; i++) {
+            obtenerComandosYEnviarMensaje(data.giftName, "");
+
+        }
     }
-    enviarMensaje(data.giftName, "");
+    let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
 
+    if (sendsoundCheckbox.checked) {
+        for (let i = 0; i < data.repeatCount; i++) {
+            playSound(data.giftName);
+        }
+    }
     container.stop();
     container.animate({
         scrollTop: container[0].scrollHeight
@@ -181,22 +533,42 @@ connection.on('roomUser', (msg) => {
         updateRoomStats();
     }
 })
+let userLikes = {};
+let userTotalLikes = {};
 
-// like stats
 connection.on('like', (msg) => {
     if (typeof msg.totalLikeCount === 'number') {
         likeCount = msg.totalLikeCount;
         updateRoomStats();
+    }
 
-        // Check if the like count has reached a multiple of 10, 100, 1000, etc.
-        if (likeCount % 500 === 0 && likeCount !== previousLikeCount) {
-            previousLikeCount = likeCount;
-            const likeMessage = `${likeCount} likes.`;
-            enviarMensaje(likeMessage);
+    // Increment user's like count
+    if (!userLikes[msg.uniqueId]) {
+        userLikes[msg.uniqueId] = 0;
+    }
+    userLikes[msg.uniqueId] += msg.likeCount;
+
+    // Increment user's total like count
+    if (!userTotalLikes[msg.uniqueId]) {
+        userTotalLikes[msg.uniqueId] = 0;
+    }
+    userTotalLikes[msg.uniqueId] += msg.likeCount;
+
+    // Check if user's like count has reached 10, 50, 200, 300, 500 or 1000
+    // Check if user's like count is a multiple of 10 up to 500
+    const likes = userLikes[msg.uniqueId];
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+
+    if (sendDataCheckbox.checked) {
+        if (likes % 25 === 0 && likes <= 500) {
+            obtenerComandosYEnviarMensaje(`${likes}LIKES`, likes);
+            console.log(`${likes}LIKES`);
+            if (likes >= 500) {
+                userLikes[msg.uniqueId] = 0; // Reset user's like count if it reaches 500
+            }
         }
     }
-})
-
+});
 // Member join
 let joinMsgDelay = 0;
 connection.on('member', (msg) => {
@@ -213,39 +585,66 @@ connection.on('member', (msg) => {
         addChatItem('#CDA434', msg, 'welcome', true);
     }, joinMsgDelay);
 })
-
+let processedMessages = {};
 // New chat comment received
+let lastComments = [];
+let messageRepetitions = {};
+
 connection.on('chat', (msg) => {
     if (window.settings.showChats === "0") return;
 
     addChatItem('', msg, msg.comment);
-})
+
+    // After processing a message, if we were reconnecting, we're not anymore
+    if (isReconnecting) {
+        isReconnecting = false;
+    }
+});
 
 // New gift received
 connection.on('gift', (data) => {
     if (!isPendingStreak(data) && data.diamondCount > 0) {
         diamondsCount += (data.diamondCount * data.repeatCount);
+
         updateRoomStats();
     }
 
     if (window.settings.showGifts === "0") return;
-
     addGiftItem(data);
-    console.log(data);
 })
 
 // share, follow
+let seguidores = new Set();
+
 connection.on('social', (data) => {
     if (window.settings.showFollows === "0") return;
 
-    let color = data.displayType.includes('follow') ? '#CDA434' : '##CDA434';
-    if (data.displayType.includes('follow')) {
-        data.label = `${data.uniqueId} Te sigue`;
+    let color;
+    let message;
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+
+    if (sendDataCheckbox.checked) {
+        if (data.displayType.includes('follow')) {
+            obtenerComandosYEnviarMensaje('follow', "");
+        } else if (data.displayType.includes('share')) {
+            obtenerComandosYEnviarMensaje('share', "");
+        }
     }
-
-    addChatItem(color, data, data.label.replace('{0:user}', ''));
-})
-
+    if (data.displayType.includes('follow')) {
+        color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
+        if (!seguidores.has(data.uniqueId)) {
+            seguidores.add(data.uniqueId);
+            message = `${data.uniqueId} es un gato mas`;
+        }
+    } else if (data.displayType.includes('share')) {
+        color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
+        message = `${data.uniqueId} compartió el directo`;
+    } else {
+        color = '#CDA434'; // Color por defecto
+        message = data.label.replace('{0:user}', '');
+    }
+    addChatItem(color, data, message);
+});
 connection.on('streamEnd', () => {
     $('#stateText').text('Transmisión terminada.');
 
@@ -256,91 +655,154 @@ connection.on('streamEnd', () => {
         }, 30000);
     }
 })
-let mensajes = [];
-let lastComment = '';
-let lastCommentTime = 0;
-const filterTime = 5000; // 5 segundos en milisegundos
-const palabrasSpam = ['join', 'joined', 'shared', '@'];
+let contadorGiftname = {};
+let ultimaVezGiftname = {};
 
-function contienePalabrasSpam(message) {
-    const lowerCaseMessage = message.toLowerCase();
-    for (const palabra of palabrasSpam) {
-        if (lowerCaseMessage.includes(palabra)) {
-            return true;
-        }
-    }
-    return false;
-}
+function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = false) {
+    let ahora = Date.now();
 
-let isSendingMessage = false; // Variable para verificar si se está enviando un mensaje
-
-function enviarMensaje(message, isGift = false) {
-    const lowerCaseMessage = message.toLowerCase();
-    const currentTime = Date.now();
-
-    if (isSendingMessage) {
-        console.log('Ya hay un mensaje en proceso de envío');
-        return; // No enviar mensaje si ya hay otro en proceso
+    if (contadorGiftname[giftname] === undefined) {
+        contadorGiftname[giftname] = 0;
+    } else if (ahora - ultimaVezGiftname[giftname] < 4000 && contadorGiftname[giftname] >= 2) {
+        contadorGiftname[giftname]--;
     }
 
-    if (message !== lastComment || (currentTime - lastCommentTime) > filterTime) {
-        if (message === lastComment) {
-            return; // No enviar mensaje si es igual al mensaje anterior
-        }
+    ultimaVezGiftname[giftname] = ahora;
+    contadorGiftname[giftname]++;
+    if (!giftname) {
+        console.error('El nombre del regalo no puede estar vacío o ser nulo');
+        return; // Salir de la función si giftname está vacío o es nulo
+    }
 
-        if (contienePalabrasSpam(lowerCaseMessage)) {
-            console.log('Mensaje filtrado:', message);
-            return; // No enviar mensaje
-        }
+    const pageSize = 100; // Cantidad de comandos a devolver por página
+    let skip = 0; // Comenzar desde el primer comando
 
-        mensajes.push(message);
-        console.log('Mensaje enviado:', message);
+    const listaComandos = [];
 
-        const chat_message = {
-            "Message": message,
-            "Platform": "Twitch",
-            "SendAsStreamer": true
-        };
+    function obtenerPaginaDeComandos() {
+        fetch(`http://localhost:8911/api/v2/commands?skip=${skip}&pageSize=${pageSize}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!Array.isArray(data.Commands)) {
+                    throw new Error('La respuesta no contiene un array de comandos');
+                }
 
-        isSendingMessage = true; // Marcar que se está enviando un mensaje
+                const comandos = data.Commands;
+                listaComandos.push(...comandos);
 
-        fetch("http://localhost:8911/api/v2/chat/message", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(chat_message)
-            })
-            .then(function(response) {
-                if (response.ok) {
-                    // La solicitud se realizó correctamente
-                    // Hacer algo con la respuesta si es necesario
+                // Si hay más comandos, pasar a la siguiente página
+                if (comandos.length === pageSize) {
+                    skip += pageSize;
+                    obtenerPaginaDeComandos();
+                } else {
+                    // Se han obtenido todos los comandos, imprimirlos
+                    listaComandos.forEach(cmd => {
+                        if (!cmd || cmd < 1) {
+                            console.error('Comando ignorado:', cmd);
+                            return;
+                        }
+                    });
+
+                    // Buscar el ID del comando según el nombre
+                    const comandosEncontrados = listaComandos.filter(cmd => cmd.Name.toLowerCase().includes(giftname.toLowerCase()) || cmd.Name.toLowerCase().includes(`${likes}likes`.toLowerCase()));
+                    if (comandosEncontrados.length === 0) {
+                        console.error(`No se encontró ningún comando con el nombre que contiene: ${giftname}`);
+                        return; // Salir de la función si no se encuentran comandos
+                    }
+
+                    // Enviar el mensaje con el ID de cada comando encontrado
+                    const chat_message = {
+                        Message: message,
+                        Platform: "Twitch",
+                        SendAsStreamer: true
+                    };
+
+                    let index = 0;
+
+                    function enviarMensajeConRetraso() {
+                        if (index < comandosEncontrados.length) {
+                            const comando = comandosEncontrados[index];
+                            if (!comando || comando < 1) {
+                                console.error('Comando ignorado:', cmd);
+                                return;
+                            }
+                            fetch(`http://localhost:8911/api/commands/${comando.ID}`, {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify(chat_message)
+                                })
+                                .then(function(response) {
+                                    if (response.ok) {
+                                        // La solicitud se realizó correctamente
+                                        // Hacer algo con la respuesta si es necesario
+                                    } else {
+                                        throw new Error('Error al enviar el mensaje');
+                                    }
+                                })
+                                .catch(function(error) {
+                                    console.error('Error al enviar el mensaje:', error);
+                                })
+                                .finally(function() {
+                                    index++;
+                                    setTimeout(enviarMensajeConRetraso, 2000); // Esperar 2 segundos antes de enviar el siguiente mensaje
+                                });
+                        }
+                    }
+
+                    enviarMensajeConRetraso();
                 }
             })
-            .catch(function(error) {
-                console.error('Error al enviar el mensaje');
-            })
-            .finally(function() {
-                isSendingMessage = false; // Marcar que se ha completado el envío del mensaje
+            .catch(error => {
+                console.error('Error al obtener los comandos:', error);
             });
-
-        lastComment = message;
-        lastCommentTime = currentTime;
     }
 
-    connection.on('chat', (msg) => {
-        if (msg.Platform === 'Twitch' && !msg.SendAsStreamer) {
-            console.log('Mensaje recibido:', msg.Message);
-        }
-    });
+    obtenerPaginaDeComandos(); // Llamada a la función para iniciar la secuencia
 }
 
-// Función para verificar cada 30 segundos si hay mensajes en proceso de envío
-setInterval(() => {
-    if (isSendingMessage) {
-        console.log('Hay un mensaje en proceso de envío');
-    }
-}, 30000);
+window.isIframePlaying = false;
+
+function mostrarOverlay() {
+    const overlayContainer = document.getElementById("overlayEventContainer");
+    let iframeElement = document.getElementById("overlay-frame");
+
+    // Si el iframe ya existe, no hagas nada
+    if (iframeElement) return;
+
+    // Crear y configurar el iframe
+    iframeElement = document.createElement("iframe");
+    iframeElement.id = "overlay-frame";
+    iframeElement.src = "http://localhost:8111/overlay/";
+    iframeElement.frameborder = "0";
+    iframeElement.style.width = "100%";
+    iframeElement.style.height = "100%";
+    iframeElement.allow = "autoplay";
+
+
+    // Agregar el iframe al contenedor del overlay
+    overlayContainer.appendChild(iframeElement);
+
+    // Mostrar el contenedor del overlay
+    overlayContainer.style.display = "flex";
+    window.isIframePlaying = true;
+}
+
+function ocultarOverlay() {
+    const overlayContainer = document.getElementById("overlayEventContainer");
+    const iframeElement = document.getElementById("overlay-frame");
+
+    // Si el iframe no existe, no hagas nada
+    if (!iframeElement) return;
+
+    // Eliminar el iframe
+    overlayContainer.removeChild(iframeElement);
+
+    // Ocultar el contenedor del overlay
+    overlayContainer.style.display = "none";
+}
+
 var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;
 
 const TTS_API_ENDPOINT = 'https://api.streamelements.com/kappa/v2/speech?'; // unprotected API - use with caution
@@ -367,8 +829,12 @@ var CHANNEL_BLACKLIST = [
     'deepbot',
 ];
 var VOICE_LIST = {
-    "Miguel (Spanish, American)": "Miguel",
     "Penélope (Spanish, American)": "Penelope",
+    "Miguel (Spanish, American)": "Miguel",
+    "Enrique (Spanish, European)": "Enrique",
+    "Conchita (Spanish, European)": "Conchita",
+    "Mia (Spanish, Mexican)": "Mia",
+    "Rosalinda (Spanish, Castilian)": "es-ES-Standard-A",
     "Brian (English, British)": "Brian",
     "Amy (English, British)": "Amy",
     "Emma (English, British)": "Emma",
@@ -416,9 +882,6 @@ var VOICE_LIST = {
     "Carmen (Romanian)": "Carmen",
     "Maxim (Russian)": "Maxim",
     "Tatyana (Russian)": "Tatyana",
-    "Enrique (Spanish, European)": "Enrique",
-    "Conchita (Spanish, European)": "Conchita",
-    "Mia (Spanish, Mexican)": "Mia",
     "Astrid (Swedish)": "Astrid",
     "Filiz (Turkish)": "Filiz",
     "Gwyneth (Welsh)": "Gwyneth",
@@ -528,7 +991,6 @@ var VOICE_LIST = {
     "Пётр (Petr) (Russian)": "ru-RU-Wavenet-D",
     "Aleksandra (Serbian)": "sr-rs-Standard-A",
     "Eliska (Slovak)": "sk-SK-Wavenet-A",
-    "Rosalinda (Spanish, Castilian)": "es-ES-Standard-A",
     "Elsa (Swedish)": "sv-SE-Standard-A",
     "Zehra (Turkish)": "tr-TR-Standard-A",
     "Yagmur (Turkish)": "tr-TR-Wavenet-A",
@@ -581,16 +1043,42 @@ Object.keys(VOICE_LIST).forEach(function(key) {
     option.value = VOICE_LIST[key];
     voiceSelect.appendChild(option);
 });
+document.addEventListener('DOMContentLoaded', (event) => {
+    var voiceSelectContainer = document.getElementById('voiceSelectContainer');
+    voiceSelectContainer.appendChild(voiceSelect);
+});
+
 console.log('Voz seleccionada:', voiceSelect.value);
 voiceSelect.addEventListener('change', function() {
     fetchAudio(voiceSelect.value);
 });
 let isReading = false;
-const MAX_CONCURRENT_MESSAGES = 10;
 let cache = [];
-let readMessages = [];
 let lastText = "";
+let lastComment = '';
+let lastCommentTime = 0;
 
+
+function enviarMensaje(message) {
+    // Enviar el mensaje
+    fetch("http://localhost:8911/api/v2/chat/message", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ "Message": message, "Platform": "Twitch", "SendAsStreamer": true })
+        })
+        .then(function(response) {
+            if (response.ok) {}
+        })
+        .catch(function(error) {
+            console.error('Error al enviar el mensaje:', error);
+        });
+    leerMensajes(); // Llama a leerMensajes() después de agregar un mensaje a la cola
+
+    lastComment = message;
+    lastCommentTime = Date.now();
+}
 class Queue {
     constructor() {
         this.items = [];
@@ -612,68 +1100,65 @@ class Queue {
     }
 }
 
-function cacheMessage(text) {
-    if (text.length >= 3 && text.length <= 400 && text !== lastText) {
-        cache.push(text);
-        lastText = text;
-    }
-    if (cache.length > 15) {
-        cache.shift();
-    }
-}
-
-function filtros(text) {
-    if (cache.includes(text) || palabrasSpam.some(word => text.includes(word))) {
-        return false;
-    }
-    cache.push(text);
-    if (cache.length > 15) {
-        cache.shift();
-    }
-    return true;
-}
-
-
-// Objeto para realizar un seguimiento del número de repeticiones de cada mensaje
-const messageRepetitions = {};
-
-function leerMensajes() {
-    if (cache.length > 0 && !isReading) {
-        const messagesToRead = cache.splice(0, MAX_CONCURRENT_MESSAGES);
-        messagesToRead.forEach(text => {
-            // Verificar si el mensaje ha alcanzado el límite de repeticiones
-            if (messageRepetitions[text] && messageRepetitions[text] >= 2) {
-                // No leer el mensaje si ha alcanzado el límite de repeticiones
-                console.log('Mensaje omitido:', text);
-            } else {
-                fetchAudio(text);
-
-                // Incrementar el número de repeticiones del mensaje
-                messageRepetitions[text] = messageRepetitions[text] ? messageRepetitions[text] + 1 : 1;
+function leerMensajes(text) {
+    if (text && !isReading) {
+        fetchAudio(text).then(audioUrl => {
+            if (audioUrl) {
+                audioqueue.enqueue(audioUrl);
+                if (!isPlaying) kickstartPlayer();
             }
         });
     }
 }
-async function fetchAudio(txt, voice) {
-    try {
-        const hasAlphabet = /[a-zA-Z]/.test(txt);
-        let language = '';
 
-        if (hasAlphabet) {
-            language = detectLanguage(txt); // Detectar el idioma del texto
-        } else {
-            // Asignar idioma basado en el tipo de escritura
-            if (/[ぁ-んァ-ン]/.test(txt)) {
-                language = 'Mizuki'; // Japonés
-            } else if (/[가-힣]/.test(txt)) {
-                language = 'Seoyeon'; // Coreano
-            } else {
-                language = voiceSelect.value; // Usar la voz seleccionada por defecto
-            }
-            // Puedes agregar más idiomas y patrones de escritura según tus necesidades
+let audioQueue = [];
+let lastReadText = null;
+let audioMap = {};
+let audioKeys = [];
+let lastSelectedVoice = null;
+
+function calculatePercentageOfAlphabets(text) {
+    let alphabetCount = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (/^[a-z]$/i.test(text[i])) {
+            alphabetCount++;
+        }
+    }
+    return (alphabetCount / text.length) * 100;
+}
+let lastTwoSelectedVoices = [null, null];
+
+async function fetchAudio(txt) {
+    try {
+        // Si el texto es igual al último texto leído, simplemente retornar
+        if (txt === lastReadText) {
+            return;
         }
 
-        const selectedVoice = selectVoice(language);
+        // Actualizar el último texto leído
+        lastReadText = txt;
+
+        // Si el audio ya existe en el mapa, usarlo
+        if (audioMap[txt]) {
+            return audioMap[txt];
+        }
+
+        // Si menos del 80% del texto está en el rango de 'a' a 'z', usar la voz anterior que es distinta a la actual
+        // Si menos del 80% del texto está en el rango de 'a' a 'z', usar la segunda voz anterior que sea distinta a la actual
+        let selectedVoice;
+        if (calculatePercentageOfAlphabets(txt) < 80) {
+            selectedVoice = lastTwoSelectedVoices[1];
+        } else {
+            // Seleccionar una nueva voz que no sea la última voz seleccionada ni la segunda voz anterior
+            do {
+                selectedVoice = selectVoice(language);
+            } while (selectedVoice === lastSelectedVoice || selectedVoice === lastTwoSelectedVoices[1]);
+            lastTwoSelectedVoices[0] = lastSelectedVoice;
+            lastTwoSelectedVoices[1] = selectedVoice;
+            lastSelectedVoice = selectedVoice;
+        }
+
+        // Si el audio no existe en el mapa, solicitar un nuevo audio
         const resp = await fetch(TTS_API_ENDPOINT + makeParameters({ voice: selectedVoice, text: txt }));
         if (resp.status !== 200) {
             console.error("Mensaje incorrecto");
@@ -682,25 +1167,20 @@ async function fetchAudio(txt, voice) {
 
         const blob = await resp.blob();
         const blobUrl = URL.createObjectURL(blob);
-        if (audioqueue) {
-            audioqueue.enqueue(blobUrl);
-            if (!isPlaying) kickstartPlayer();
-        }
-        const index = cache.indexOf(txt);
-        if (index !== -1) {
-            cache.splice(index, 1);
+
+        // Agregar el nuevo audio al mapa
+        audioMap[txt] = blobUrl;
+        audioKeys.push(txt);
+
+        // Si el mapa tiene más de 30 audios, eliminar el audio más antiguo
+        if (audioKeys.length > 30) {
+            const keyToRemove = audioKeys.shift();
+            delete audioMap[keyToRemove];
         }
 
-        // Elimina el mensaje de cache una vez que se ha reproducido
-        const interval = setInterval(() => {
-            if (audio.ended) {
-                clearInterval(interval);
-                URL.revokeObjectURL(blobUrl);
-            }
-        }, 200); // Verifica cada segundo si el audio ha terminado de reproducirse
-
+        return blobUrl;
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Error fetchaudio:", error);
     }
 }
 
@@ -711,31 +1191,316 @@ function makeParameters(params) {
 }
 
 function skipAudio() {
-    if (audio.paused) return console.error("skipped player while paused");
-    if (audioqueue.isEmpty()) {
-        isPlaying = false;
-        audio.pause();
+    audio.pause();
+    audio.currentTime = 0;
+
+    // If the queue is not empty, dequeue the next audio and start playing it
+    if (!audioqueue.isEmpty()) {
+        audio.src = audioqueue.dequeue();
+        audio.load();
+        audio.play();
     } else {
         isPlaying = true;
         audio.src = audioqueue.dequeue();
         audio.load();
         audio.play();
-        audioqueue.dequeue();
-        readMessages.shift();
     }
 }
 
 function kickstartPlayer() {
-    if (audioqueue.isEmpty()) return isPlaying = false;
-    if (!audio.paused) return console.error("started player while running");
+    // If the queue is empty, do nothing
+    if (audioqueue.isEmpty()) {
+        isPlaying = false;
+        return;
+    }
+
+    // Dequeue the first text from the queue and fetch its audio
     isPlaying = true;
-    audio.src = audioqueue.dequeue();
+    const audioUrl = audioqueue.dequeue();
+    audio.src = audioUrl;
     audio.load();
-    audio.play();
-    audioqueue.dequeue();
-    readMessages.shift();
+    audio.play().catch(() => {
+        // If there is an error while playing the audio, try to play the next audio in the queue
+        kickstartPlayer();
+    });
+
+    // When the audio ends, try to play the next audio in the queue
+    audio.onended = function() {
+        kickstartPlayer();
+    };
+}
+// Crear una base de datos IndexedDB
+let openRequest = indexedDB.open("audioDB", 1);
+
+openRequest.onupgradeneeded = function() {
+    let db = openRequest.result;
+    if (!db.objectStoreNames.contains('audios')) {
+        db.createObjectStore('audios');
+    }
 }
 
+openRequest.onerror = function() {
+    console.error("Error", openRequest.error);
+};
+
+openRequest.onsuccess = function() {
+    let db = openRequest.result;
+    db.onversionchange = function() {
+        db.close();
+        alert("La base de datos está obsoleta, por favor, recargue la página.");
+    };
+};
+
+// Guardar un audio en la base de datos
+function saveAudio(audioName, audioData) {
+    let db = openRequest.result;
+    let transaction = db.transaction("audios", "readwrite");
+    let audios = transaction.objectStore("audios");
+    let request = audios.put(audioData, audioName);
+
+    request.onsuccess = function() {
+        console.log("Audio guardado con éxito.");
+    };
+
+    request.onerror = function() {
+        console.log("Error al guardar el audio.", request.error);
+    };
+}
+
+// Obtener un audio de la base de datos
+function getAudio(audioName) {
+    let db = openRequest.result;
+    let transaction = db.transaction("audios", "readonly");
+    let audios = transaction.objectStore("audios");
+    let request = audios.get(audioName);
+
+    request.onsuccess = function() {
+        if (request.result) {
+            console.log("Audio encontrado.");
+            playAudio(request.result);
+        } else {
+            console.log("No se encontró el audio.");
+        }
+    };
+
+    request.onerror = function() {
+        console.log("Error al obtener el audio.", request.error);
+    };
+}
+
+// Reproducir un audio
+function playAudio(audioData) {
+    let audio = new Audio(audioData);
+    audio.play();
+}
+
+
+function isValidUrl(string) {
+    try {
+        new URL(string);
+    } catch (_) {
+        return false;
+    }
+
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    let soundList = document.getElementById('soundList');
+
+    // Load existing sounds
+    for (let i = 0; i < localStorage.length; i++) {
+        let giftName = localStorage.key(i);
+        addSoundToList(giftName, soundList);
+    }
+
+    soundList.addEventListener('click', function(event) {
+        if (event.target.matches('.deleteButton')) {
+            handleDelete(event);
+        } else if (event.target.matches('.renameButton')) {
+            handleRename(event);
+        }
+        event.stopPropagation(); // Stop event propagation
+    });
+
+    // Hide soundList when clicking outside of it
+    document.addEventListener('click', function() {
+        soundList.style.display = 'none';
+    });
+});
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('soundForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Evita que el formulario se envíe y la página se recargue
+        let soundFiles = document.getElementById('soundFiles').files;
+        for (let i = 0; i < soundFiles.length; i++) {
+            let soundFile = soundFiles[i];
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let soundData = e.target.result;
+                let soundName = soundFile.name;
+                localStorage.setItem(soundName, soundData);
+                addSoundToList(soundName, document.getElementById('soundList'));
+            };
+            reader.readAsDataURL(soundFile);
+        }
+    });
+});
+
+function addSoundToList(giftName, soundList) {
+    let listItem = document.createElement('li');
+    listItem.textContent = giftName;
+
+    let deleteButton = document.createElement('button');
+    deleteButton.textContent = 'X';
+    deleteButton.className = 'deleteButton';
+
+    let renameButton = document.createElement('button');
+    renameButton.textContent = 'Renombrar';
+    renameButton.className = 'renameButton';
+
+    let playButton = document.createElement('button'); // Crear el botón de reproducción
+    playButton.textContent = '';
+    playButton.className = 'playButton';
+    playButton.addEventListener('click', function() { // Agregar un controlador de eventos al botón
+        playSound(giftName);
+    });
+
+    listItem.prepend(playButton); // Agregar el botón de reproducción al elemento de la lista
+    listItem.prepend(renameButton);
+    listItem.prepend(deleteButton);
+    soundList.appendChild(listItem);
+}
+
+function handleDelete(event) {
+    let giftName = event.target.parentElement.dataset.giftName; // Obtener el nombre del sonido del atributo de datos
+    if (confirm('¿Estás seguro de que quieres eliminar este sonido?')) {
+        localStorage.removeItem(giftName);
+        event.target.parentElement.remove();
+    }
+}
+
+function handleRename(event) {
+    let listItem = event.target.parentElement;
+    let giftName = listItem.dataset.giftName; // Obtener el nombre del sonido del atributo de datos
+    let newName = prompt('Introduce el nuevo nombre para el sonido:', giftName);
+    if (newName && newName !== giftName) {
+        let audioSrc = localStorage.getItem(giftName);
+        localStorage.removeItem(giftName);
+        localStorage.setItem(newName, audioSrc);
+        listItem.dataset.giftName = newName; // Actualizar el nombre del sonido en el atributo de datos
+        listItem.firstChild.textContent = newName; // Actualizar el texto del elemento de la lista
+    }
+}
+
+function playSound(giftName) {
+    // Convertir el nombre del regalo a minúsculas
+    let lowerCaseGiftName = giftName.toLowerCase();
+    let audioSrc = localStorage.getItem(giftName);
+    let audio = new Audio(audioSrc);
+    // Buscar en el almacenamiento local un sonido que contenga el nombre del regalo en su nombre
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+
+        // Convertir la clave a minúsculas antes de hacer la comparación
+        if (key.toLowerCase().includes(lowerCaseGiftName)) {
+            let audioSrc = localStorage.getItem(key);
+
+            // Agregar el audio a la cola de audioqueue
+            audioqueue.enqueue(audioSrc);
+
+            // Si el audio no está reproduciéndose, iniciar el reproductor
+            if (!isPlaying) {
+                kickstartPlayer();
+            }
+        }
+    }
+}
+
+let lastAudioSrc = null; // Variable para almacenar el último audio añadido a la cola
+
+function playSoundByText(text) {
+    // Convertir el texto a minúsculas
+    let lowerCaseText = text.toLowerCase();
+
+    // Verificar si el texto tiene una longitud mínima y máxima
+    let minLength = 1; // Define tu longitud mínima aquí
+    let maxLength = 20; // Define tu longitud máxima aquí
+    if (lowerCaseText.length < minLength || lowerCaseText.length > maxLength) {
+        return;
+    }
+    // Buscar en el almacenamiento local un sonido que contenga el texto en su nombre
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+
+        // Convertir la clave a minúsculas antes de hacer la comparación
+        if (key.toLowerCase().includes(lowerCaseText)) {
+            let audioSrc = localStorage.getItem(key);
+
+            // Si el audio es el mismo que el último añadido a la cola, no lo añade
+            if (audioSrc === lastAudioSrc) {
+                console.log('El audio es el mismo que el último añadido a la cola');
+                return;
+            }
+
+            console.log('audio al texto:', text);
+
+            // Agregar el audio a la cola de audioqueue
+            audioqueue.enqueue(audioSrc);
+            lastAudioSrc = audioSrc; // Actualizar el último audio añadido a la cola
+
+            // Si el audio no está reproduciéndose, iniciar el reproductor
+            if (!isPlaying) {
+                kickstartPlayer();
+            }
+
+            // Salir de la función después de encontrar el primer audio que coincide
+            return;
+        }
+    }
+}
+
+function exportSettings() {
+    // Convertir las configuraciones y sonidos a una cadena JSON
+    let settings = JSON.stringify(localStorage);
+
+    // Crear un elemento 'a' invisible
+    let element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings));
+    element.setAttribute('download', 'settings.json');
+
+    // Simular un click en el elemento 'a' para descargar el archivo
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
+function importSettings() {
+    // Show the loading indicator
+    document.getElementById('loadingIndicator').style.display = 'inline';
+
+    // Read the file uploaded by the user
+    let file = document.getElementById('importButton').files[0];
+    if (file) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            // Parse the file content to a JavaScript object
+            let settings = JSON.parse(e.target.result);
+
+            // Store the settings and sounds in localStorage
+            for (let key in settings) {
+                localStorage.setItem(key, settings[key]);
+            }
+
+            // Hide the loading indicator
+            document.getElementById('loadingIndicator').style.display = 'none';
+        };
+        reader.readAsText(file);
+    } else {
+        // Hide the loading indicator
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
+}
 window.onload = async function() {
     try {
         audio = document.getElementById("audio");
@@ -754,8 +1519,6 @@ window.onload = async function() {
         } else {
             console.error("Error: audio is undefined");
         }
-
-        setInterval(leerMensajes, 1000); // Llamar a leerMensajes cada segundo
 
     } catch (error) {
         console.error("Error:", error);
