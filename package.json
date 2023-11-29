@@ -18,8 +18,8 @@
     "express-async-wrapper": "^0.1.0",
     "mongoose": "^6.8.2",
     "morgan": "^1.10.0",
-    "nodemon": "^2.0.20",
-    "react-scripts": "^5.0.1",
+    "nodemon": "^3.0.1",
+    "react-scripts": "^3.0.1",
     "socket.io": "^4.5.4",
     "sqlite3": "^5.1.6",
     "tiktok-live-connector": "^1.0.2"

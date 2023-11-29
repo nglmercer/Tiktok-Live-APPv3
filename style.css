@@ -4,6 +4,7 @@ body {
     font-size: 2em;
     cursor: auto;
     background-color: black;
+    overflow-x: hidden;
 }
 
 
@@ -36,8 +37,7 @@ button {
 
 button:hover {
     background-color: #5e5dcd;
-    border: 2px solid lightgrey;
-    box-shadow: 0px 0px 20px -17px;
+    border: 1px solid lightgrey;
 }
 
 input[type="button"] {
@@ -57,8 +57,7 @@ input[type="button"] {
 
 input[type="button"]:hover {
     background-color: #5e5dcd;
-    border: 2px solid lightgrey;
-    box-shadow: 0px 0px 20px -17px;
+    border: 1px solid lightgrey;
     /* cambiar el color de fondo */
 }
 
@@ -70,7 +69,7 @@ input[type="button"]:active {
     /* cambiar el color de fondo */
     box-shadow: 0 5px #66666600;
     /* añadir una sombra */
-    transform: scale(0.95);
+    transform: scale(0.99);
     /* mover el botón ligeramente hacia abajo */
 }
 
@@ -153,6 +152,7 @@ a {
 @media (max-aspect-ratio: 1/1) {
     body {
         background-color: black;
+        overflow-x: hidden;
     }
     .splitchattable {
         flex-direction: column;
@@ -233,33 +233,42 @@ a {
     font-weight: bold;
 }
 
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-#dropdownMenu {
-    background-color: #f9f9f9;
-    border: 1px solid #ccc;
-    padding: 10px;
-    width: 200px;
-    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-}
-
 #dropdownMenu div {
-    margin-bottom: 10px;
+    display: flex;
+    flex-direction: row-reverse;
+    /* Invierte el orden de los elementos */
+    padding-top: 10px;
+    border-bottom: 1px solid #ddd;
+    margin: 1px;
+}
+
+#dropdownMenu div:last-child {
+    gap: 1;
+    padding-top: 10px;
 }
 
 #dropdownMenu span {
-    display: inline-block;
-    width: 70%;
+    flex: 1;
     overflow: hidden;
     white-space: nowrap;
+    padding-top: 10px;
     text-overflow: ellipsis;
+    text-align: left;
+    /* Alinea el texto a la derecha */
 }
 
 #dropdownMenu button {
-    margin-left: 10px;
+    border: none;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition-duration: .3s;
+    overflow: hidden;
+}
+
+#dropdownMenu button:hover {
+    transition-duration: .3s;
+    align-items: center;
 }
 
 button {
@@ -278,11 +287,11 @@ button:hover {
 }
 
 .dark-theme body {
-    color: black;
+    color: #f1f1f1;
 }
 
 body.theme-dark {
-    color: black;
+    color: #f1f1f1;
 }
 
 body.theme-light {
@@ -319,7 +328,6 @@ audio .mask-custom {
 .themeButtons button:hover {
     background-color: #1356a3;
     border: 1px solid lightgrey;
-    box-shadow: 0px 0px 20px -17px;
 }
 
 body.overlay {
@@ -345,7 +353,7 @@ body.overlay {
 
 .overlay::-webkit-scrollbar-thumb {
     background-color: green;
-    color: #f5f5f5;
+    color: #f1f1f1;
 }
 
 #soundList li {
@@ -357,7 +365,7 @@ body.overlay {
 }
 
 .deleteButton {
-    color: white;
+    color: #f1f1f1;
     background-color: red;
     width: 30px;
     /* Esto establecerá el ancho del botón en 50px */
@@ -420,7 +428,6 @@ audio::-webkit-media-controls-panel {
     background: linear-gradient(to right, #4568dc, #b06ab3);
     color: #f1f1f1;
     border: 1px solid #5e4dcd;
-    border-radius: 6px 6px 6px 6pxsolid #5e4dcd;
     background-color: #1d1adda4;
     box-shadow: 0px 0px 20px -17px;
     backdrop-filter: blur(100%);
@@ -441,18 +448,22 @@ audio::-webkit-media-controls-panel {
 }
 
 .toggleWrapper {
-    left: 0;
+    position: absolute;
+    top: 5%;
+    left: 80%;
     overflow: hidden;
-    transform: translate3d(0, 0%, 0);
+    padding: 0 200px;
+    transform: translate3d(-50%, -50%, 0);
     color: white;
 }
 
 .toggleWrapper input {
-    position: absolute;
+    position: relative;
     left: -99em;
 }
 
 .toggle {
+    cursor: pointer;
     display: inline-block;
     position: relative;
     width: 90px;
@@ -495,7 +506,7 @@ audio::-webkit-media-controls-panel {
 }
 
 .toggle__handler .crater {
-    position: absolute;
+    position: relative;
     background-color: #e8cda5;
     opacity: 0;
     transition: opacity 200ms ease-in-out;
@@ -718,22 +729,22 @@ input:checked+.toggle .star--6 {
 
 @keyframes marquee {
     0% {
-        transform: translateX(500px);
+        transform: translateX(10%);
         opacity: 0;
     }
     /* Entrada */
     10% {
-        transform: translateX(100px);
+        transform: translateX(-10%);
         opacity: 1;
     }
     /* Entrada */
     90% {
-        transform: translateX(-1200px);
+        transform: translateX(-90%);
         opacity: 1;
     }
     /* Salida */
     100% {
-        transform: translateX(-1700px);
+        transform: translateX(-100%);
         opacity: 0;
     }
     /* Salida */
@@ -792,22 +803,22 @@ input:checked+.toggle .star--6 {
 
 @keyframes text-animation {
     0% {
-        transform: translateX(200%);
+        transform: translateX(10%);
         opacity: 1;
     }
     /* Entrada */
     10% {
-        transform: translateX(0);
+        transform: translateX(-10%);
         opacity: 1;
     }
     /* Fin de la entrada */
     90% {
-        transform: translateX(0);
+        transform: translateX(-90%);
         opacity: 1;
     }
     /* Inicio de la salida */
     100% {
-        transform: translateX(-200%);
+        transform: translateX(-100%);
         opacity: 0;
         display: none;
     }
@@ -836,4 +847,141 @@ input:checked+.toggle .star--6 {
         display: none;
     }
     /* Salida */
+}
+
+.playButton {
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    color: #f1f1f1;
+    border: 1px solid #3c20f4;
+    border-radius: 50%;
+    background-color: rgba(34, 0, 255, 0.649);
+    position: relative;
+}
+
+.playButton:before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-left: 15px solid #f1f1f1;
+}
+
+.playButton:hover {
+    background-color: #2200ff;
+    transition-duration: .3s;
+}
+
+.playButton:focus {
+    outline: none;
+}
+
+.renameButton:focus {
+    outline: none;
+}
+
+.container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+    height: 0;
+    width: 0;
+}
+
+.container {
+    display: block;
+    float: inline-start;
+    position: relative;
+    top: 0;
+    right: 0;
+    cursor: pointer;
+    font-size: 20px;
+    user-select: none;
+}
+
+.checkmark {
+    position: relative;
+    top: 0;
+    left: 0;
+    height: 1.6em;
+    width: 1.6em;
+    border-radius: 10%;
+    background: #ffeded38;
+    transition: all 0.2s ease;
+}
+
+.checkmark {
+    opacity: 0.4;
+}
+
+.container input:checked~.checkmark {
+    background: linear-gradient(144deg, #af40ff, #5b42f3 50%, #00ddeb);
+    opacity: 0.9;
+    transition: all 0.2s ease;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.container input:checked~.checkmark:after {
+    display: block;
+}
+
+.container .checkmark:after {
+    left: 0.61em;
+    top: 0.43em;
+    width: 0.25em;
+    height: 0.5em;
+    border: solid rgb(255, 255, 255);
+    border-width: 0 0.15em 0.15em 0;
+    transform: rotate(45deg);
+}
+
+.cyberpunk-checkbox {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #30cfd0;
+    border-radius: 5px;
+    background-color: transparent;
+    display: inline-block;
+    position: relative;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.cyberpunk-checkbox:before {
+    content: "";
+    background-color: #30cfd0;
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    transition: all 0.3s ease-in-out;
+}
+
+.cyberpunk-checkbox:checked:before {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.cyberpunk-checkbox-label {
+    font-size: 18px;
+    color: #fff;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
 }

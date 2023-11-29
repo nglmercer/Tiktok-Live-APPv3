@@ -59,38 +59,47 @@ let isReconnecting = false;
 function connect() {
     let uniqueId = $('#uniqueIdInput').val();
     isReconnecting = true;
+    console.log('Iniciando conexión...');
     if (uniqueId !== '') {
         $('#stateText').text('Conectando...');
-        $('#connectButton').prop('disabled', true);
+        $('#connectButton').prop('disabled', true); // Desactivar el botón durante la conexión
+        console.log('Botón desactivado');
 
         // Si ya está conectado y el uniqueId es diferente, desconectar la conexión actual
         if (isConnected && uniqueId !== currentUniqueId) {
-            connection.disconnect();
+            console.log('Desconectando conexión actual...');
             isConnected = false;
         }
 
         // Si no está conectado, establecer una nueva conexión
         if (!isConnected) {
+            console.log('Estableciendo nueva conexión...');
             connection.connect(uniqueId, {
                 enableExtendedGiftInfo: true
             }).then(state => {
                 if (currentRoomId && currentRoomId === state.roomId) {
+                    console.log('Ya estás conectado a esta sala');
                     alert('Ya estás conectado a esta sala');
+                    $('#connectButton').prop('disabled', false); // Reactivar el botón si ya está conectado
                     return;
                 }
                 currentRoomId = state.roomId;
                 $('#stateText').text(`Conectado a la sala ${state.roomId}`);
+                console.log(`Conectado a la sala ${state.roomId}`);
 
                 // Habilitar el botón después de establecer la conexión
                 $('#connectButton').prop('disabled', false);
+                console.log('Botón reactivado');
                 isConnected = true;
                 currentUniqueId = uniqueId; // Guardar el uniqueId actual
 
             }).catch(errorMessage => {
+                console.log(`Error: ${errorMessage}`);
                 $('#stateText').text(errorMessage);
 
                 // programar próximo intento si se establece el nombre de usuario obs
                 if (window.settings.username) {
+                    console.log('Programando próximo intento...');
                     setTimeout(() => {
                         connect(window.settings.username);
                     }, 30000);
@@ -98,11 +107,15 @@ function connect() {
 
                 // Habilitar el botón en caso de error
                 $('#connectButton').prop('disabled', false);
+                console.log('Botón reactivado');
             });
         } else {
+            console.log('Ya estás conectado');
             alert('Ya estás conectado');
+            $('#connectButton').prop('disabled', false); // Reactivar el botón si ya está conectado
         }
     } else {
+        console.log('No se ingresó nombre de usuario');
         alert('No se ingresó nombre de usuario');
     }
 }
@@ -137,6 +150,7 @@ function addChatItem(color, data, text, summarize) {
         container.find('div').slice(0, 200).remove();
     }
 
+    // Modificación para eliminar o reemplazar los caracteres especiales
     container.find('.temporary').remove();;
 
     container.append(`
@@ -153,14 +167,18 @@ function addChatItem(color, data, text, summarize) {
         scrollTop: container[0].scrollHeight
     }, 400);
     addOverlayEvent(data, text, color, false);
-
     let filterWords = document.getElementById('filter-words').value.split(' ');
     // Convertir el texto a minúsculas para la comparación
-    let lowerCaseText = text.toLowerCase();
+    let lowerCaseText = text && text.toLowerCase();
+    let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
+
+    if (sendsoundCheckbox.checked) {
+
+        playSoundByText(text);
+    }
     // Verificar si el texto contiene alguna de las palabras para filtrar
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            console.log('filtrado');
             return;
         }
     }
@@ -168,16 +186,38 @@ function addChatItem(color, data, text, summarize) {
     const startsWithSpecialChar = specialChars.test(text.charAt(0));
     const messagePrefix = startsWithSpecialChar ? "!" : "";
     const messageSuffix = summarize ? "" : ` ${text}`;
-
-    // Modificación para eliminar o reemplazar los caracteres especiales
     let cleanedText = text;
     if (startsWithSpecialChar) {
         cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
     }
+    let emojiRegex = /[\u{1F600}-\u{1F64F}]/gu;
+    let emojis = text && text.match(emojiRegex);
 
+    if (emojis) {
+        let emojiCounts = {};
+        for (let emoji of emojis) {
+            if (emoji in emojiCounts) {
+                emojiCounts[emoji]++;
+            } else {
+                emojiCounts[emoji] = 1;
+            }
+
+            if (emojiCounts[emoji] >= 2) {
+                return;
+            }
+        }
+    }
     const message = messagePrefix + (cleanedText.length > 60 ? `${data.uniqueId} dice ${messageSuffix}` : cleanedText);
+    if (text.length <= 3) {
+        console.log('filtrado');
+        return;
+    }
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
 
-    enviarMensaje(message);
+    if (sendDataCheckbox.checked) {
+        enviarMensaje(message);
+
+    }
     leerMensajes(message);
     onMessageReceived(message);
 }
@@ -213,112 +253,140 @@ function isValidUrl(string) {
 
 let lastEvent = null;
 let eventDivs = {};
-
-function createGiftDiv(data, repeatCount, userId) {
-    let giftDiv = document.createElement('div');
-    giftDiv.className = 'gift-div';
-
-    if (repeatCount <= 2) {
-        // Si repeatCount es 1 o 2, muestra la imagen del perfil
-        giftDiv.innerHTML = `
-            <img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;">
-            <img class="gift-image gift-animation" src="${data.giftPictureUrl}" style="border-radius: 50%;">`;
-    } else if (repeatCount >= 3) {
-        // Si repeatCount es mayor que 4, muestra solo la imagen del regalo
-        giftDiv.innerHTML = `
-            <img class="gift-image gift-animation" src="${data.giftPictureUrl}" style="border-radius: 50%;">`;
-    }
-
-    // Reinicia el contador para este usuario
-    giftCounters[userId] = 0;
-
-    return giftDiv;
-}
 let giftCounters = {};
 let lastFilteredPositions = [];
 let lastFilteredPositionIndex = 0;
 
-function addOverlayEvent(data, text, color, isGift, repeatCount) {
-    const eventContainer = document.getElementById('overlayEventContainer');
-    let userId = data.profilePictureUrl;
-    if (text === lastText) {
-        return;
+function testOverlay() {
+    // Obtener el valor del campo de entrada
+    const inputValue = document.getElementById('inputest').value;
+
+    // Dividir el valor del campo de entrada en palabras
+    const words = inputValue.split(' ');
+
+    // Buscar la primera palabra que sea un número
+    let numMessages = 1;
+    const messageWords = [];
+    for (const word of words) {
+        const num = Number(word);
+        if (!isNaN(num)) {
+            numMessages = num;
+        } else {
+            messageWords.push(word);
+        }
     }
 
+    // Si el número es mayor que 30, limitarlo a 30
+    if (numMessages > 30) {
+        numMessages = 30;
+    }
+
+    // Crear un objeto de datos ficticio para pasar a addOverlayEvent
+    const fakeData = {
+        profilePictureUrl: 'https://example.com/profile.jpg' // Reemplazar con una URL de imagen real
+    };
+
+    // Llamar a addOverlayEvent tantas veces como numMessages
+    const message = messageWords.join(' ');
+    for (let i = 0; i < numMessages; i++) {
+        const messageWithNumber = `${message} ${i + 1}`;
+        addOverlayEvent(fakeData, messageWithNumber, 'black', false, 1);
+    }
+}
+let comboCounters = {};
+let isImageLink = false;
+
+function addOverlayEvent(data, text, color, isGift, repeatCount) {
+    const eventContainer = document.getElementById('overlayEventContainer');
     // Update the last event and last text
     lastEvent = { text, isGift };
     lastText = text;
+    const spacing = 30;
 
-    let eventDiv = document.createElement('div');
-    eventDiv.className = 'event-div'; // Add class
-
-
-
-    // Si no es un regalo y no contiene 'sige' ni 'compartió', agregamos la clase 'marquee'
-    if (!isGift && !text.includes('sige') && !text.includes('compartió')) {
-        eventDiv.className += ' marquee';
-        eventDiv.innerHTML = `<span class="event-text text-animation" style="color: ${color};">${text}</span>`;
-    }
-    if (isGift) {
-        let userId = data.profilePictureUrl;
-        if (!giftCounters[userId]) {
-            giftCounters[userId] = 0;
-        }
-        if (repeatCount >= 2) {
-            giftCounters[userId]++;
-        }
-        if (giftCounters[userId] % 2 !== 0 || repeatCount < 2) {
-            let giftDiv = createGiftDiv(data, repeatCount, userId);
-            eventDiv.appendChild(giftDiv);
-        }
-    } else if (text.includes(`sige`) || text.includes('compartió')) {
-        eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><span class="event-text text-animation" style="color: ${color};">${text}</span>`;
-    } else {
-        eventDiv.innerHTML = `<span class="event-text text-animation" style="color: ${color};">${text}</span>`;
+    // Initialize comboCounters[text] if it doesn't exist
+    if (!comboCounters[text]) {
+        comboCounters[text] = { count: 0, timeout: null, div: null };
     }
 
-    // Get a random position for the div within the container
-    let top, left;
-    let filterWords = document.getElementById('filter-words').value.split(' ');
-    let lowerCaseText = text.toLowerCase();
-    let isFiltered = filterWords.some(word => word && lowerCaseText.includes(word.toLowerCase()));
-    if (isFiltered && lastFilteredPositions.length > 0) {
-        // If the text is filtered and there are last filtered positions, use one of them
-        top = lastFilteredPositions[lastFilteredPositionIndex].top;
-        left = lastFilteredPositions[lastFilteredPositionIndex].left;
-        // Increment the index, and reset it to 0 if it's greater than the length of lastFilteredPositions
-        lastFilteredPositionIndex = (lastFilteredPositionIndex + 1) % lastFilteredPositions.length;
-    } else {
-        // If the text is not filtered or there are no last filtered positions, generate a new one
-        ({ top, left } = getRandomPosition(eventContainer, eventDiv, 100));
-        if (isFiltered) {
-            // If the text is filtered, store the new position
-            lastFilteredPositions.push({ top, left });
-            if (lastFilteredPositions.length > 5) {
-                lastFilteredPositions.shift();
+    // Increment comboCounters[text]
+    comboCounters[text].count++;
+
+    let baseTime = isGift ? 12000 : 10000; // 5 seconds for gifts, 3 seconds for text
+    let totalTime = baseTime * Math.pow(1.01, comboCounters[text].count);
+    let imageExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
+    isImageLink = text && imageExtensions.some(ext => text.endsWith(ext)); // Update isImageLink here
+
+    let eventDiv; // Define eventDiv here
+
+    if (comboCounters[text].count > 1) {
+        // If we're in a combo, clear the existing timeout, update the existing div and set a new timeout
+        clearTimeout(comboCounters[text].timeout);
+        eventDiv = comboCounters[text].div; // Update eventDiv with the existing div
+        if (isImageLink) {
+            // If the text is an image link, display the image
+            eventDiv.innerHTML = `<img src="${text}" class="event-image"> x${comboCounters[text].count}`;
+            let left = Math.random() * (eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth - spacing);
+            eventDiv.style.left = `${left}px`; // Set left to a random value within the container
+        } else {
+            eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)} x${comboCounters[text].count}</span>`;
+        }
+        comboCounters[text].timeout = setTimeout(() => {
+            comboCounters[text].count = 0;
+            if (eventDiv.parentNode) {
+                eventContainer.removeChild(eventDiv);
             }
-        }
-    }
-    eventDiv.style.top = `${top}px`;
-    eventDiv.style.left = `${left}px`;
-
-    // Add the div to the container
-    eventContainer.appendChild(eventDiv);
-
-    // Determine the removal time based on the category
-    let removalTime;
-    if (isGift) {
-        removalTime = 20000; // 30 seconds for gifts
-    } else if (text.includes('sige') || text.includes('compartió')) {
-        removalTime = 15000; // 20 seconds for 'sige' and 'compartió'
+            comboCounters[text].div = null;
+        }, totalTime);
     } else {
-        removalTime = 15000; // 10 seconds for everything else
+        eventDiv = document.createElement('div'); // Assign a new div to eventDiv
+        eventDiv.className = 'event-div';
+        let { top, left } = getRandomPosition(eventContainer, eventDiv, 100);
+        eventDiv.style.top = `${top}px`;
+        eventDiv.style.left = `${(eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth) / 2}px`;
+        if (isImageLink) {
+            // If the text is an image link, display the image
+            eventDiv.innerHTML = `<img src="${text}" class="event-image">`;
+            let left = Math.random() * (eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth - spacing);
+            eventDiv.style.left = `${left}px`;
+        } else if (text && (text.includes('sige') || text.includes('compartió') || text.includes('gato') || text.includes('directo'))) {
+            eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><span class="event-text text-animation" style="color: ${color};">${text}</span>`;
+        } else if (isGift) {
+            let repeatCountElement = document.createElement('b');
+            repeatCountElement.style = isPendingStreak(data) ? 'color:red' : '';
+            repeatCountElement.textContent = `x${repeatCount.toLocaleString()}`;
+
+            eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><img class="gift-animation" src="${data.giftPictureUrl}" style="border-radius: 50%;">`;
+            eventDiv.appendChild(repeatCountElement);
+            eventDiv.className += ' zoom-in';
+
+            // Set a timeout to remove repeatCountElement after 5 seconds
+            setTimeout(() => {
+                if (repeatCountElement.parentNode) {
+                    repeatCountElement.parentNode.removeChild(repeatCountElement);
+                }
+            }, 5000);
+        } else {
+            eventDiv.className += ' marquee';
+            eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)}</span>`;
+            eventDiv.style.left = `${(eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth) / 2}px`;
+        }
+        // Add the div to the container
+        eventContainer.appendChild(eventDiv);
+        comboCounters[text].div = eventDiv;
     }
 
-    // Remove the div after the determined time
-    setTimeout(() => {
-        eventContainer.removeChild(eventDiv);
-    }, removalTime);
+    if (comboCounters[text].timeout) {
+        clearTimeout(comboCounters[text].timeout);
+    }
+
+    // Set a timeout to reset comboCounters[text] to 0 after totalTime
+    comboCounters[text].timeout = setTimeout(() => {
+        comboCounters[text].count = 0;
+        if (eventDiv.parentNode) {
+            eventContainer.removeChild(eventDiv);
+        }
+        comboCounters[text].div = null;
+    }, totalTime);
 }
 let grid = [];
 const gridSize = 100; // Tamaño de la celda de la cuadrícula en píxeles
@@ -355,24 +423,34 @@ function isNearCorner(row, column, gridRows, gridColumns) {
         (row >= gridRows - cornerMargin && column >= gridColumns - cornerMargin) // Esquina inferior derecha
     );
 }
+let existingPositions = [];
 
 function getRandomPosition() {
-    const elementSize = 500; // Define el tamaño del elemento que estás generando
+    const elementSize = 30; // Define el tamaño del elemento que estás generando
+    const spacing = 30; // Define el espaciado entre elementos
+    const maxAttempts = 100; // Define el número máximo de intentos para encontrar una nueva posición
 
-    // If precalculatedPositions is empty, generate a new random position
-    if (precalculatedPositions.length === 0) {
-        const container = document.getElementById('overlayEventContainer');
-        const containerRect = container.getBoundingClientRect();
-        return {
-            top: Math.random() * (containerRect.height - elementSize), // Resta elementSize del valor aleatorio generado para top
+    const container = document.getElementById('overlayEventContainer');
+    const containerRect = container.getBoundingClientRect();
+
+    for (let attempts = 0; attempts < maxAttempts; attempts++) {
+        // Generar una nueva posición
+        const newPosition = {
+            top: Math.random() * (containerRect.height - elementSize - spacing), // Resta elementSize y spacing del valor aleatorio generado para top
             left: Math.random() * (containerRect.width - elementSize) // Resta elementSize del valor aleatorio generado para left
         };
+
+        // Comprobar si la nueva posición está demasiado cerca de alguna de las posiciones existentes
+        if (!existingPositions.some(existingPosition => Math.abs(existingPosition.top - newPosition.top) < elementSize + spacing)) {
+            // Si la nueva posición no está demasiado cerca, añadirla a la lista de posiciones existentes y devolverla
+            existingPositions.push(newPosition);
+            return newPosition;
+        }
     }
 
-    // Get a random index from the precalculated positions
-    const index = Math.floor(Math.random() * precalculatedPositions.length);
-    // Remove the selected position from the array to avoid reusing it
-    return precalculatedPositions.splice(index, 1)[0];
+    // Si no se puede encontrar una nueva posición después de maxAttempts intentos, reiniciar la lista de posiciones existentes
+    existingPositions = [];
+    return getRandomPosition();
 }
 // Llamar a initializeGrid con el contenedor cuando la página se carga
 window.onload = function() {
@@ -391,7 +469,11 @@ function addGiftItem(data) {
     }
 
     let streakId = data.userId.toString() + '_' + data.giftId;
-
+    let totalDiamonds = data.diamondCount * data.repeatCount;
+    let giftIconSize = 150; // Tamaño base del icono del regalo
+    if (totalDiamonds > 100) {
+        giftIconSize += totalDiamonds; // Aumenta el tamaño del icono del regalo en 1 píxel por cada diamante
+    }
     const profilePictureUrl = isValidUrl(data.profilePictureUrl) ? data.profilePictureUrl : 'url_de_imagen_por_defecto';
     const giftPictureUrl = isValidUrl(data.giftPictureUrl) ? data.giftPictureUrl : 'url_de_imagen_por_defecto';
 
@@ -403,7 +485,7 @@ function addGiftItem(data) {
               <div>
                   <table>
                       <tr>
-                          <td><img class="gifticon" src="${giftPictureUrl}"></td>
+                          <td><img class="gifticon" src="${giftPictureUrl}" style="width: ${giftIconSize}px; height: ${giftIconSize}px;"></td>
                           <td>
                               <span><b style="${isPendingStreak(data) ? 'color:red' : ''}">x${data.repeatCount.toLocaleString()} : ${(data.diamondCount * data.repeatCount).toLocaleString()} Diamantes </b><span><br>
                           </td>
@@ -422,12 +504,22 @@ function addGiftItem(data) {
         container.append(html);
     }
 
-    if (data.repeatCount === 1) {
-        obtenerComandosYEnviarMensaje(data.giftName, "");
-        addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
-        createGiftDiv(data, data.giftPictureUrl, 'red', true, data.repeatCount);
-    }
 
+    addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+    if (sendDataCheckbox.checked) {
+        for (let i = 0; i < data.repeatCount; i++) {
+            obtenerComandosYEnviarMensaje(data.giftName, "");
+
+        }
+    }
+    let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
+
+    if (sendsoundCheckbox.checked) {
+        for (let i = 0; i < data.repeatCount; i++) {
+            playSound(data.giftName);
+        }
+    }
     container.stop();
     container.animate({
         scrollTop: container[0].scrollHeight
@@ -465,11 +557,15 @@ connection.on('like', (msg) => {
     // Check if user's like count has reached 10, 50, 200, 300, 500 or 1000
     // Check if user's like count is a multiple of 10 up to 500
     const likes = userLikes[msg.uniqueId];
-    if (likes % 25 === 0 && likes <= 500) {
-        obtenerComandosYEnviarMensaje(`${likes}LIKES`, likes);
-        console.log(`${likes}LIKES`);
-        if (likes >= 500) {
-            userLikes[msg.uniqueId] = 0; // Reset user's like count if it reaches 500
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+
+    if (sendDataCheckbox.checked) {
+        if (likes % 25 === 0 && likes <= 500) {
+            obtenerComandosYEnviarMensaje(`${likes}LIKES`, likes);
+            console.log(`${likes}LIKES`);
+            if (likes >= 500) {
+                userLikes[msg.uniqueId] = 0; // Reset user's like count if it reaches 500
+            }
         }
     }
 });
@@ -497,46 +593,8 @@ let messageRepetitions = {};
 connection.on('chat', (msg) => {
     if (window.settings.showChats === "0") return;
 
-    // Add the new comment to the list
-    let now = Date.now();
-    if (processedMessages[msg.comment] && now - processedMessages[msg.comment] < 30000) {
-        // Si el mensaje ya ha sido procesado hace menos de 30 segundos, no lo envíe
-        // a menos que no estemos en el proceso de reconexión
-        if (isReconnecting) {
-            return;
-        }
-    }
-    // Si el mensaje no ha sido procesado o fue procesado hace más de un minuto,
-    // añadirlo a la estructura de datos con la hora actual
-    processedMessages[msg.comment] = now;
-    lastComments.push(msg.comment);
-
-    // If the list has more than 20 elements, remove the oldest one
-    if (lastComments.length > 20) {
-        let removedComment = lastComments.shift();
-        messageRepetitions[removedComment]--;
-        if (messageRepetitions[removedComment] === 0) {
-            delete messageRepetitions[removedComment];
-        }
-    }
-
-    // Calculate the message rate
-    let currentTime = Date.now();
-    let messageRate = 10000 / (currentTime - lastCommentTime);
-    lastCommentTime = currentTime;
-
-    // Check the repetition count
-    if (!messageRepetitions[msg.comment]) {
-        messageRepetitions[msg.comment] = 0;
-    }
-    messageRepetitions[msg.comment]++;
-
-    // If the message rate is high and the message has been repeated many times, filter it
-    if (messageRate > 1 && messageRepetitions[msg.comment] > 10) {
-        return;
-    }
-
     addChatItem('', msg, msg.comment);
+
     // After processing a message, if we were reconnecting, we're not anymore
     if (isReconnecting) {
         isReconnecting = false;
@@ -563,23 +621,28 @@ connection.on('social', (data) => {
 
     let color;
     let message;
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
 
+    if (sendDataCheckbox.checked) {
+        if (data.displayType.includes('follow')) {
+            obtenerComandosYEnviarMensaje('follow', "");
+        } else if (data.displayType.includes('share')) {
+            obtenerComandosYEnviarMensaje('share', "");
+        }
+    }
     if (data.displayType.includes('follow')) {
         color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
         if (!seguidores.has(data.uniqueId)) {
             seguidores.add(data.uniqueId);
-            message = `${data.uniqueId} te acaba de seguir`;
-            obtenerComandosYEnviarMensaje('follow', "");
+            message = `${data.uniqueId} es un gato mas`;
         }
     } else if (data.displayType.includes('share')) {
         color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
         message = `${data.uniqueId} compartió el directo`;
-        obtenerComandosYEnviarMensaje('share', "");
     } else {
         color = '#CDA434'; // Color por defecto
         message = data.label.replace('{0:user}', '');
     }
-
     addChatItem(color, data, message);
 });
 connection.on('streamEnd', () => {
@@ -606,6 +669,10 @@ function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = f
 
     ultimaVezGiftname[giftname] = ahora;
     contadorGiftname[giftname]++;
+    if (!giftname) {
+        console.error('El nombre del regalo no puede estar vacío o ser nulo');
+        return; // Salir de la función si giftname está vacío o es nulo
+    }
 
     const pageSize = 100; // Cantidad de comandos a devolver por página
     let skip = 0; // Comenzar desde el primer comando
@@ -629,7 +696,12 @@ function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = f
                     obtenerPaginaDeComandos();
                 } else {
                     // Se han obtenido todos los comandos, imprimirlos
-                    listaComandos.forEach(cmd => {});
+                    listaComandos.forEach(cmd => {
+                        if (!cmd || cmd < 1) {
+                            console.error('Comando ignorado:', cmd);
+                            return;
+                        }
+                    });
 
                     // Buscar el ID del comando según el nombre
                     const comandosEncontrados = listaComandos.filter(cmd => cmd.Name.toLowerCase().includes(giftname.toLowerCase()) || cmd.Name.toLowerCase().includes(`${likes}likes`.toLowerCase()));
@@ -650,6 +722,10 @@ function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = f
                     function enviarMensajeConRetraso() {
                         if (index < comandosEncontrados.length) {
                             const comando = comandosEncontrados[index];
+                            if (!comando || comando < 1) {
+                                console.error('Comando ignorado:', cmd);
+                                return;
+                            }
                             fetch(`http://localhost:8911/api/commands/${comando.ID}`, {
                                     method: "POST",
                                     headers: {
@@ -686,6 +762,47 @@ function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = f
     obtenerPaginaDeComandos(); // Llamada a la función para iniciar la secuencia
 }
 
+window.isIframePlaying = false;
+
+function mostrarOverlay() {
+    const overlayContainer = document.getElementById("overlayEventContainer");
+    let iframeElement = document.getElementById("overlay-frame");
+
+    // Si el iframe ya existe, no hagas nada
+    if (iframeElement) return;
+
+    // Crear y configurar el iframe
+    iframeElement = document.createElement("iframe");
+    iframeElement.id = "overlay-frame";
+    iframeElement.src = "http://localhost:8111/overlay/";
+    iframeElement.frameborder = "0";
+    iframeElement.style.width = "100%";
+    iframeElement.style.height = "100%";
+    iframeElement.allow = "autoplay";
+
+
+    // Agregar el iframe al contenedor del overlay
+    overlayContainer.appendChild(iframeElement);
+
+    // Mostrar el contenedor del overlay
+    overlayContainer.style.display = "flex";
+    window.isIframePlaying = true;
+}
+
+function ocultarOverlay() {
+    const overlayContainer = document.getElementById("overlayEventContainer");
+    const iframeElement = document.getElementById("overlay-frame");
+
+    // Si el iframe no existe, no hagas nada
+    if (!iframeElement) return;
+
+    // Eliminar el iframe
+    overlayContainer.removeChild(iframeElement);
+
+    // Ocultar el contenedor del overlay
+    overlayContainer.style.display = "none";
+}
+
 var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;
 
 const TTS_API_ENDPOINT = 'https://api.streamelements.com/kappa/v2/speech?'; // unprotected API - use with caution
@@ -712,8 +829,12 @@ var CHANNEL_BLACKLIST = [
     'deepbot',
 ];
 var VOICE_LIST = {
-    "Miguel (Spanish, American)": "Miguel",
     "Penélope (Spanish, American)": "Penelope",
+    "Miguel (Spanish, American)": "Miguel",
+    "Enrique (Spanish, European)": "Enrique",
+    "Conchita (Spanish, European)": "Conchita",
+    "Mia (Spanish, Mexican)": "Mia",
+    "Rosalinda (Spanish, Castilian)": "es-ES-Standard-A",
     "Brian (English, British)": "Brian",
     "Amy (English, British)": "Amy",
     "Emma (English, British)": "Emma",
@@ -761,9 +882,6 @@ var VOICE_LIST = {
     "Carmen (Romanian)": "Carmen",
     "Maxim (Russian)": "Maxim",
     "Tatyana (Russian)": "Tatyana",
-    "Enrique (Spanish, European)": "Enrique",
-    "Conchita (Spanish, European)": "Conchita",
-    "Mia (Spanish, Mexican)": "Mia",
     "Astrid (Swedish)": "Astrid",
     "Filiz (Turkish)": "Filiz",
     "Gwyneth (Welsh)": "Gwyneth",
@@ -873,7 +991,6 @@ var VOICE_LIST = {
     "Пётр (Petr) (Russian)": "ru-RU-Wavenet-D",
     "Aleksandra (Serbian)": "sr-rs-Standard-A",
     "Eliska (Slovak)": "sk-SK-Wavenet-A",
-    "Rosalinda (Spanish, Castilian)": "es-ES-Standard-A",
     "Elsa (Swedish)": "sv-SE-Standard-A",
     "Zehra (Turkish)": "tr-TR-Standard-A",
     "Yagmur (Turkish)": "tr-TR-Wavenet-A",
@@ -994,11 +1111,54 @@ function leerMensajes(text) {
     }
 }
 
-const readMessages = new Set();
+let audioQueue = [];
+let lastReadText = null;
+let audioMap = {};
+let audioKeys = [];
+let lastSelectedVoice = null;
 
-async function fetchAudio(txt, voice) {
+function calculatePercentageOfAlphabets(text) {
+    let alphabetCount = 0;
+    for (let i = 0; i < text.length; i++) {
+        if (/^[a-z]$/i.test(text[i])) {
+            alphabetCount++;
+        }
+    }
+    return (alphabetCount / text.length) * 100;
+}
+let lastTwoSelectedVoices = [null, null];
+
+async function fetchAudio(txt) {
     try {
-        const selectedVoice = selectVoice(language);
+        // Si el texto es igual al último texto leído, simplemente retornar
+        if (txt === lastReadText) {
+            return;
+        }
+
+        // Actualizar el último texto leído
+        lastReadText = txt;
+
+        // Si el audio ya existe en el mapa, usarlo
+        if (audioMap[txt]) {
+            return audioMap[txt];
+        }
+
+        // Si menos del 80% del texto está en el rango de 'a' a 'z', usar la voz anterior que es distinta a la actual
+        // Si menos del 80% del texto está en el rango de 'a' a 'z', usar la segunda voz anterior que sea distinta a la actual
+        let selectedVoice;
+        if (calculatePercentageOfAlphabets(txt) < 80) {
+            selectedVoice = lastTwoSelectedVoices[1];
+        } else {
+            // Seleccionar una nueva voz que no sea la última voz seleccionada ni la segunda voz anterior
+            do {
+                selectedVoice = selectVoice(language);
+            } while (selectedVoice === lastSelectedVoice || selectedVoice === lastTwoSelectedVoices[1]);
+            lastTwoSelectedVoices[0] = lastSelectedVoice;
+            lastTwoSelectedVoices[1] = selectedVoice;
+            lastSelectedVoice = selectedVoice;
+        }
+
+        // Si el audio no existe en el mapa, solicitar un nuevo audio
         const resp = await fetch(TTS_API_ENDPOINT + makeParameters({ voice: selectedVoice, text: txt }));
         if (resp.status !== 200) {
             console.error("Mensaje incorrecto");
@@ -1007,6 +1167,16 @@ async function fetchAudio(txt, voice) {
 
         const blob = await resp.blob();
         const blobUrl = URL.createObjectURL(blob);
+
+        // Agregar el nuevo audio al mapa
+        audioMap[txt] = blobUrl;
+        audioKeys.push(txt);
+
+        // Si el mapa tiene más de 30 audios, eliminar el audio más antiguo
+        if (audioKeys.length > 30) {
+            const keyToRemove = audioKeys.shift();
+            delete audioMap[keyToRemove];
+        }
 
         return blobUrl;
     } catch (error) {
@@ -1058,6 +1228,278 @@ function kickstartPlayer() {
     audio.onended = function() {
         kickstartPlayer();
     };
+}
+// Crear una base de datos IndexedDB
+let openRequest = indexedDB.open("audioDB", 1);
+
+openRequest.onupgradeneeded = function() {
+    let db = openRequest.result;
+    if (!db.objectStoreNames.contains('audios')) {
+        db.createObjectStore('audios');
+    }
+}
+
+openRequest.onerror = function() {
+    console.error("Error", openRequest.error);
+};
+
+openRequest.onsuccess = function() {
+    let db = openRequest.result;
+    db.onversionchange = function() {
+        db.close();
+        alert("La base de datos está obsoleta, por favor, recargue la página.");
+    };
+};
+
+// Guardar un audio en la base de datos
+function saveAudio(audioName, audioData) {
+    let db = openRequest.result;
+    let transaction = db.transaction("audios", "readwrite");
+    let audios = transaction.objectStore("audios");
+    let request = audios.put(audioData, audioName);
+
+    request.onsuccess = function() {
+        console.log("Audio guardado con éxito.");
+    };
+
+    request.onerror = function() {
+        console.log("Error al guardar el audio.", request.error);
+    };
+}
+
+// Obtener un audio de la base de datos
+function getAudio(audioName) {
+    let db = openRequest.result;
+    let transaction = db.transaction("audios", "readonly");
+    let audios = transaction.objectStore("audios");
+    let request = audios.get(audioName);
+
+    request.onsuccess = function() {
+        if (request.result) {
+            console.log("Audio encontrado.");
+            playAudio(request.result);
+        } else {
+            console.log("No se encontró el audio.");
+        }
+    };
+
+    request.onerror = function() {
+        console.log("Error al obtener el audio.", request.error);
+    };
+}
+
+// Reproducir un audio
+function playAudio(audioData) {
+    let audio = new Audio(audioData);
+    audio.play();
+}
+
+
+function isValidUrl(string) {
+    try {
+        new URL(string);
+    } catch (_) {
+        return false;
+    }
+
+    return true;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    let soundList = document.getElementById('soundList');
+
+    // Load existing sounds
+    for (let i = 0; i < localStorage.length; i++) {
+        let giftName = localStorage.key(i);
+        addSoundToList(giftName, soundList);
+    }
+
+    soundList.addEventListener('click', function(event) {
+        if (event.target.matches('.deleteButton')) {
+            handleDelete(event);
+        } else if (event.target.matches('.renameButton')) {
+            handleRename(event);
+        }
+        event.stopPropagation(); // Stop event propagation
+    });
+
+    // Hide soundList when clicking outside of it
+    document.addEventListener('click', function() {
+        soundList.style.display = 'none';
+    });
+});
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('soundForm').addEventListener('submit', function(event) {
+        event.preventDefault(); // Evita que el formulario se envíe y la página se recargue
+        let soundFiles = document.getElementById('soundFiles').files;
+        for (let i = 0; i < soundFiles.length; i++) {
+            let soundFile = soundFiles[i];
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                let soundData = e.target.result;
+                let soundName = soundFile.name;
+                localStorage.setItem(soundName, soundData);
+                addSoundToList(soundName, document.getElementById('soundList'));
+            };
+            reader.readAsDataURL(soundFile);
+        }
+    });
+});
+
+function addSoundToList(giftName, soundList) {
+    let listItem = document.createElement('li');
+    listItem.textContent = giftName;
+
+    let deleteButton = document.createElement('button');
+    deleteButton.textContent = 'X';
+    deleteButton.className = 'deleteButton';
+
+    let renameButton = document.createElement('button');
+    renameButton.textContent = 'Renombrar';
+    renameButton.className = 'renameButton';
+
+    let playButton = document.createElement('button'); // Crear el botón de reproducción
+    playButton.textContent = '';
+    playButton.className = 'playButton';
+    playButton.addEventListener('click', function() { // Agregar un controlador de eventos al botón
+        playSound(giftName);
+    });
+
+    listItem.prepend(playButton); // Agregar el botón de reproducción al elemento de la lista
+    listItem.prepend(renameButton);
+    listItem.prepend(deleteButton);
+    soundList.appendChild(listItem);
+}
+
+function handleDelete(event) {
+    let giftName = event.target.parentElement.dataset.giftName; // Obtener el nombre del sonido del atributo de datos
+    if (confirm('¿Estás seguro de que quieres eliminar este sonido?')) {
+        localStorage.removeItem(giftName);
+        event.target.parentElement.remove();
+    }
+}
+
+function handleRename(event) {
+    let listItem = event.target.parentElement;
+    let giftName = listItem.dataset.giftName; // Obtener el nombre del sonido del atributo de datos
+    let newName = prompt('Introduce el nuevo nombre para el sonido:', giftName);
+    if (newName && newName !== giftName) {
+        let audioSrc = localStorage.getItem(giftName);
+        localStorage.removeItem(giftName);
+        localStorage.setItem(newName, audioSrc);
+        listItem.dataset.giftName = newName; // Actualizar el nombre del sonido en el atributo de datos
+        listItem.firstChild.textContent = newName; // Actualizar el texto del elemento de la lista
+    }
+}
+
+function playSound(giftName) {
+    // Convertir el nombre del regalo a minúsculas
+    let lowerCaseGiftName = giftName.toLowerCase();
+    let audioSrc = localStorage.getItem(giftName);
+    let audio = new Audio(audioSrc);
+    // Buscar en el almacenamiento local un sonido que contenga el nombre del regalo en su nombre
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+
+        // Convertir la clave a minúsculas antes de hacer la comparación
+        if (key.toLowerCase().includes(lowerCaseGiftName)) {
+            let audioSrc = localStorage.getItem(key);
+
+            // Agregar el audio a la cola de audioqueue
+            audioqueue.enqueue(audioSrc);
+
+            // Si el audio no está reproduciéndose, iniciar el reproductor
+            if (!isPlaying) {
+                kickstartPlayer();
+            }
+        }
+    }
+}
+
+let lastAudioSrc = null; // Variable para almacenar el último audio añadido a la cola
+
+function playSoundByText(text) {
+    // Convertir el texto a minúsculas
+    let lowerCaseText = text.toLowerCase();
+
+    // Verificar si el texto tiene una longitud mínima y máxima
+    let minLength = 1; // Define tu longitud mínima aquí
+    let maxLength = 20; // Define tu longitud máxima aquí
+    if (lowerCaseText.length < minLength || lowerCaseText.length > maxLength) {
+        return;
+    }
+    // Buscar en el almacenamiento local un sonido que contenga el texto en su nombre
+    for (let i = 0; i < localStorage.length; i++) {
+        let key = localStorage.key(i);
+
+        // Convertir la clave a minúsculas antes de hacer la comparación
+        if (key.toLowerCase().includes(lowerCaseText)) {
+            let audioSrc = localStorage.getItem(key);
+
+            // Si el audio es el mismo que el último añadido a la cola, no lo añade
+            if (audioSrc === lastAudioSrc) {
+                console.log('El audio es el mismo que el último añadido a la cola');
+                return;
+            }
+
+            console.log('audio al texto:', text);
+
+            // Agregar el audio a la cola de audioqueue
+            audioqueue.enqueue(audioSrc);
+            lastAudioSrc = audioSrc; // Actualizar el último audio añadido a la cola
+
+            // Si el audio no está reproduciéndose, iniciar el reproductor
+            if (!isPlaying) {
+                kickstartPlayer();
+            }
+
+            // Salir de la función después de encontrar el primer audio que coincide
+            return;
+        }
+    }
+}
+
+function exportSettings() {
+    // Convertir las configuraciones y sonidos a una cadena JSON
+    let settings = JSON.stringify(localStorage);
+
+    // Crear un elemento 'a' invisible
+    let element = document.createElement('a');
+    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings));
+    element.setAttribute('download', 'settings.json');
+
+    // Simular un click en el elemento 'a' para descargar el archivo
+    element.style.display = 'none';
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+}
+
+function importSettings() {
+    // Show the loading indicator
+    document.getElementById('loadingIndicator').style.display = 'inline';
+
+    // Read the file uploaded by the user
+    let file = document.getElementById('importButton').files[0];
+    if (file) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+            // Parse the file content to a JavaScript object
+            let settings = JSON.parse(e.target.result);
+
+            // Store the settings and sounds in localStorage
+            for (let key in settings) {
+                localStorage.setItem(key, settings[key]);
+            }
+
+            // Hide the loading indicator
+            document.getElementById('loadingIndicator').style.display = 'none';
+        };
+        reader.readAsText(file);
+    } else {
+        // Hide the loading indicator
+        document.getElementById('loadingIndicator').style.display = 'none';
+    }
 }
 window.onload = async function() {
     try {
