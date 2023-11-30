@@ -57,6 +57,9 @@ antiguo
 [![English](https://img.shields.io/badge/English--blue.svg)](READMEEN.md) [![Español](https://img.shields.io/badge/Español--red.svg)](README.md)
 nuevo 
 ![Screenshot](TIKTOKWEBMINIATURA.jpg)
+![vista actualmente](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/5aaef27a-9d90-418c-90d4-36dad13a5959)
+
+![activarDEVELOPERAPI](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/e94c8465-1433-4fc4-8245-52cb9a7fa66a)
 
 ---
 
