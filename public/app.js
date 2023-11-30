@@ -143,6 +143,8 @@ function isPendingStreak(data) {
 /**
  * Add a new message to the chat container
  */
+let lastMessage = "";
+
 function addChatItem(color, data, text, summarize) {
     let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer');
 
@@ -192,7 +194,6 @@ function addChatItem(color, data, text, summarize) {
     }
     let emojiRegex = /[\u{1F600}-\u{1F64F}]/gu;
     let emojis = text && text.match(emojiRegex);
-
     if (emojis) {
         let emojiCounts = {};
         for (let emoji of emojis) {
@@ -212,11 +213,19 @@ function addChatItem(color, data, text, summarize) {
         console.log('filtrado');
         return;
     }
+    if (message === lastMessage) {
+        return;
+    }
+    lastMessage = message;
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
 
     if (sendDataCheckbox.checked) {
         enviarMensaje(message);
 
+    }
+    if (message.length <= 3) {
+        console.log('filtrado');
+        return;
     }
     leerMensajes(message);
     onMessageReceived(message);
@@ -260,6 +269,8 @@ let lastFilteredPositionIndex = 0;
 function testOverlay() {
     // Obtener el valor del campo de entrada
     const inputValue = document.getElementById('inputest').value;
+    var overlay = document.createElement('div');
+    overlay.style.position = 'absolute';
 
     // Dividir el valor del campo de entrada en palabras
     const words = inputValue.split(' ');
@@ -509,7 +520,7 @@ function addGiftItem(data) {
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
     if (sendDataCheckbox.checked) {
         for (let i = 0; i < data.repeatCount; i++) {
-            obtenerComandosYEnviarMensaje(data.giftName, "");
+            obtenerComandosYEnviarComando(data.giftName, "");
 
         }
     }
@@ -535,6 +546,7 @@ connection.on('roomUser', (msg) => {
 })
 let userLikes = {};
 let userTotalLikes = {};
+let userMilestone = {};
 
 connection.on('like', (msg) => {
     if (typeof msg.totalLikeCount === 'number') {
@@ -554,17 +566,23 @@ connection.on('like', (msg) => {
     }
     userTotalLikes[msg.uniqueId] += msg.likeCount;
 
-    // Check if user's like count has reached 10, 50, 200, 300, 500 or 1000
-    // Check if user's like count is a multiple of 10 up to 500
+    // Initialize user's milestone
+    if (!userMilestone[msg.uniqueId]) {
+        userMilestone[msg.uniqueId] = 50;
+    }
+
+    // Check if user's like count has reached the milestone
     const likes = userLikes[msg.uniqueId];
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
 
     if (sendDataCheckbox.checked) {
-        if (likes % 25 === 0 && likes <= 500) {
-            obtenerComandosYEnviarMensaje(`${likes}LIKES`, likes);
-            console.log(`${likes}LIKES`);
-            if (likes >= 500) {
-                userLikes[msg.uniqueId] = 0; // Reset user's like count if it reaches 500
+        if (likes >= userMilestone[msg.uniqueId] && userMilestone[msg.uniqueId] <= 300) {
+            obtenerComandosYEnviarComando(`${userMilestone[msg.uniqueId]}LIKES`, likes);
+            console.log(`${userMilestone[msg.uniqueId]}LIKES`);
+            userMilestone[msg.uniqueId] += 50; // Increase the milestone
+            if (userMilestone[msg.uniqueId] > 300) {
+                userLikes[msg.uniqueId] = 0; // Reset user's like count if it reaches 300
+                userMilestone[msg.uniqueId] = 50; // Reset the milestone
             }
         }
     }
@@ -625,9 +643,9 @@ connection.on('social', (data) => {
 
     if (sendDataCheckbox.checked) {
         if (data.displayType.includes('follow')) {
-            obtenerComandosYEnviarMensaje('follow', "");
+            obtenerComandosYEnviarComando('follow', "");
         } else if (data.displayType.includes('share')) {
-            obtenerComandosYEnviarMensaje('share', "");
+            obtenerComandosYEnviarComando('share', "");
         }
     }
     if (data.displayType.includes('follow')) {
@@ -655,24 +673,27 @@ connection.on('streamEnd', () => {
         }, 30000);
     }
 })
-let contadorGiftname = {};
+let contadorGiftname = new Map();
 let ultimaVezGiftname = {};
+let ultimoComandoEnviado = "";
+let colaComandos = [];
 
-function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = false) {
+function obtenerComandosYEnviarComando(giftname, likes, message = "", isGift = false) {
     let ahora = Date.now();
 
-    if (contadorGiftname[giftname] === undefined) {
-        contadorGiftname[giftname] = 0;
-    } else if (ahora - ultimaVezGiftname[giftname] < 4000 && contadorGiftname[giftname] >= 2) {
-        contadorGiftname[giftname]--;
-    }
-
-    ultimaVezGiftname[giftname] = ahora;
-    contadorGiftname[giftname]++;
     if (!giftname) {
         console.error('El nombre del regalo no puede estar vacío o ser nulo');
         return; // Salir de la función si giftname está vacío o es nulo
     }
+
+    if (!contadorGiftname.has(giftname)) {
+        contadorGiftname.set(giftname, 0);
+    } else if (ahora - ultimaVezGiftname[giftname] < 4000 && contadorGiftname.get(giftname) >= 2) {
+        contadorGiftname.set(giftname, contadorGiftname.get(giftname) - 1);
+    }
+
+    ultimaVezGiftname[giftname] = ahora;
+    contadorGiftname.set(giftname, contadorGiftname.get(giftname) + 1);
 
     const pageSize = 100; // Cantidad de comandos a devolver por página
     let skip = 0; // Comenzar desde el primer comando
@@ -703,26 +724,26 @@ function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = f
                         }
                     });
 
-                    // Buscar el ID del comando según el nombre
-                    const comandosEncontrados = listaComandos.filter(cmd => cmd.Name.toLowerCase().includes(giftname.toLowerCase()) || cmd.Name.toLowerCase().includes(`${likes}likes`.toLowerCase()));
+                    const MAX_COMMANDS = 30;
+                    const comandosEncontrados = listaComandos.filter(cmd =>
+                        cmd.Name.toLowerCase().includes(giftname.toLowerCase()) ||
+                        cmd.Name.toLowerCase().includes(`${likes}likes`.toLowerCase())
+                    );
                     if (comandosEncontrados.length === 0) {
                         console.error(`No se encontró ningún comando con el nombre que contiene: ${giftname}`);
                         return; // Salir de la función si no se encuentran comandos
                     }
 
-                    // Enviar el mensaje con el ID de cada comando encontrado
-                    const chat_message = {
-                        Message: message,
-                        Platform: "Twitch",
-                        SendAsStreamer: true
-                    };
+                    // Limitar la cantidad de comandos encontrados
+                    const comandosLimitados = comandosEncontrados.slice(0, MAX_COMMANDS);
 
                     let index = 0;
+                    let ultimoComandoEnviado = "";
 
-                    function enviarMensajeConRetraso() {
-                        if (index < comandosEncontrados.length) {
-                            const comando = comandosEncontrados[index];
-                            if (!comando || comando < 1) {
+                    function enviarcomandoConRetraso() {
+                        if (index < comandosLimitados.length) {
+                            const comando = comandosLimitados[index];
+                            if (!comando || comando < 1 || !comando.Name) {
                                 console.error('Comando ignorado:', cmd);
                                 return;
                             }
@@ -730,28 +751,35 @@ function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = f
                                     method: "POST",
                                     headers: {
                                         "Content-Type": "application/json"
-                                    },
-                                    body: JSON.stringify(chat_message)
+                                    }
                                 })
                                 .then(function(response) {
                                     if (response.ok) {
                                         // La solicitud se realizó correctamente
-                                        // Hacer algo con la respuesta si es necesario
+                                        // Eliminar el comando de la cola
+                                        colaComandos.shift();
                                     } else {
-                                        throw new Error('Error al enviar el mensaje');
+                                        throw new Error('Error al enviar el comando');
                                     }
                                 })
                                 .catch(function(error) {
-                                    console.error('Error al enviar el mensaje:', error);
+                                    console.error('Error al enviar el comando:', error);
                                 })
                                 .finally(function() {
                                     index++;
-                                    setTimeout(enviarMensajeConRetraso, 2000); // Esperar 2 segundos antes de enviar el siguiente mensaje
+                                    let delay;
+                                    if (colaComandos.length <= 30) {
+                                        delay = comando.Name === ultimoComandoEnviado ? 5000 : 2000;
+                                    } else {
+                                        delay = comando.Name === ultimoComandoEnviado ? 10000 : 4000;
+                                    }
+                                    ultimoComandoEnviado = comando.Name;
+                                    setTimeout(enviarcomandoConRetraso, delay);
                                 });
                         }
                     }
 
-                    enviarMensajeConRetraso();
+                    enviarcomandoConRetraso();
                 }
             })
             .catch(error => {
@@ -759,9 +787,9 @@ function obtenerComandosYEnviarMensaje(giftname, likes, message = "", isGift = f
             });
     }
 
-    obtenerPaginaDeComandos(); // Llamada a la función para iniciar la secuencia
-}
+    obtenerPaginaDeComandos();
 
+}
 window.isIframePlaying = false;
 
 function mostrarOverlay() {
