@@ -63,7 +63,16 @@
         
         .tabcontent {
             display: flex;
-            border: none;
+            flex-direction: column;
+            max-height: 100vw;
+            max-width: 100vw;
+            padding-top: 1%;
+            /* 100vw es el 100% del ancho de la pantalla */
+            /* 100px de padding superior e inferior, 0 de padding izquierdo y derecho */
+            overflow: auto;
+            overflow-x: hidden;
+            /* Para permitir el desplazamiento si el contenido es más grande que el contenedor */
+            /* Para permitir el desplazamiento vertical si el contenido es más grande que el contenedor */
         }
     </style>
     <link rel="stylesheet" href="style.css">
@@ -263,72 +272,66 @@
 
     </div>
     <div id="Tab4" class="tabcontent">
-        <div id="overlayEventContainer" style="width: 100%; height: 100vh; position: relative; border: 1px solid rgba(0, 128, 0, 0.179);"></div>
-        <button onclick="mostrarOverlay()">Mostrar Overlay</button>
-        <button onclick="ocultarOverlay()">Ocultar Overlay</button>
-        <a href="#" onclick="generateOverlay()">OverlayURL</a>
-        <input type="text" id="inputest"><button onclick="testOverlay()">overlay position</button>
-        <script>
-            function generateOverlay() {
-                let username = $('#uniqueIdInput').val();
-                let url = `obs.html?username=${username}&showLikes=1&showChats=1&showGifts=1&showFollows=1&showJoins=1&bgColor=rgb(24,23,28)&fontColor=rgb(227,229,235)&fontSize=1.3em`;
+        <div style="padding-top: 10px;">
+            <button onclick="mostrarOverlay()">Mostrar Overlay</button>
+            <button onclick="ocultarOverlay()">Ocultar Overlay</button>
+            <a href="#" onclick="generateOverlay()">overlay</a>
+            <input type="text" id="inputest"><button onclick="testOverlay()">testOverlay</button>
+            <script>
+                function generateOverlay() {
+                    let username = $('#uniqueIdInput').val();
+                    let url = `obs.html?username=${username}&showLikes=1&showChats=1&showGifts=1&showFollows=1&showJoins=1&bgColor=rgb(24,23,28)&fontColor=rgb(227,229,235)&fontSize=1.3em`;
 
-                if (username) {
-                    window.open(url, '_blank');
-                } else {
-                    alert("Enter username");
+                    if (username) {
+                        window.open(url, '_blank');
+                    } else {
+                        alert("Enter username");
+                    }
                 }
+            </script>
+            <div id="overlayEventContainer" style="width: 100%; height: 100vh; position: relative; display: flexbox; border: 1px solid rgb(0, 255, 42);"></div>
+
+        </div>
+        <script>
+            function openTab(evt, tabName) {
+                var i, tabcontent, tablinks;
+                tabcontent = document.getElementsByClassName("tabcontent");
+                for (i = 0; i < tabcontent.length; i++) {
+                    tabcontent[i].style.display = "none";
+                }
+                tablinks = document.getElementsByClassName("tablinks");
+                for (i = 0; i < tablinks.length; i++) {
+                    tablinks[i].className = tablinks[i].className.replace(" active", "");
+                }
+                document.getElementById(tabName).style.display = "block";
+                evt.currentTarget.className += " active";
+            }
+
+            // Llama a openTab para mostrar Tab1 por defecto
+            openTab({
+                currentTarget: document.querySelector('.tablinks')
+            }, 'Tab1');
+        </script>
+        <script>
+            const uniqueIdInput = document.getElementById('uniqueIdInput');
+            const connectButton = document.getElementById('connectButton');
+
+            // Load the last entered value from localStorage
+            const lastValue = localStorage.getItem('lastValue');
+            if (lastValue) {
+                uniqueIdInput.value = lastValue;
+            }
+
+            if (connectButton) {
+                connectButton.addEventListener('click', () => {
+                    const currentValue = uniqueIdInput.value;
+                    if (currentValue) {
+                        // Store the current value in localStorage
+                        localStorage.setItem('lastValue', currentValue);
+                    }
+                });
             }
         </script>
-        <input type="color" id="colorPicker" value="#ffffff">
-
-    </div>
-
-    <script>
-        document.getElementById('colorPicker').addEventListener('change', function() {
-            document.getElementById('overlayEventContainer').style.backgroundColor = this.value;
-        });
-    </script>
-    <script>
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";
-            }
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
-            }
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.className += " active";
-        }
-
-        // Llama a openTab para mostrar Tab1 por defecto
-        openTab({
-            currentTarget: document.querySelector('.tablinks')
-        }, 'Tab1');
-    </script>
-    <script>
-        const uniqueIdInput = document.getElementById('uniqueIdInput');
-        const connectButton = document.getElementById('connectButton');
-
-        // Load the last entered value from localStorage
-        const lastValue = localStorage.getItem('lastValue');
-        if (lastValue) {
-            uniqueIdInput.value = lastValue;
-        }
-
-        if (connectButton) {
-            connectButton.addEventListener('click', () => {
-                const currentValue = uniqueIdInput.value;
-                if (currentValue) {
-                    // Store the current value in localStorage
-                    localStorage.setItem('lastValue', currentValue);
-                }
-            });
-        }
-    </script>
 </body>
 
 </html>

@@ -7,11 +7,27 @@ body {
     overflow-x: hidden;
 }
 
+.tabcontent::-webkit-scrollbar {
+    width: 10px;
+    /* Ancho de la barra de desplazamiento */
+}
+
+.tabcontent::-webkit-scrollbar-track {
+    background: transparent;
+    /* Color de fondo de la barra de desplazamiento */
+}
+
+.tabcontent::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0);
+    /* Color de la barra de desplazamiento */
+    /* Borde de la barra de desplazamiento */
+}
+
 
 /* Estilo para los recuadros */
 
 input[type="text"] {
-    min-height: 50px;
+    min-height: 40px;
     font-size: 15px;
     font-weight: bolder;
     color: #f1f1f1;
@@ -24,8 +40,8 @@ input[type="text"] {
 /* Estilo para los botones */
 
 button {
-    padding: 0.75em;
-    min-height: 50px;
+    padding: 0.55em;
+    min-height: 40px;
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
     background-color: #5e4dcd;
@@ -41,7 +57,7 @@ button:hover {
 }
 
 input[type="button"] {
-    min-height: 50px;
+    min-height: 40px;
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
     background-color: #5e4dcd;
@@ -237,21 +253,21 @@ a {
     display: flex;
     flex-direction: row-reverse;
     /* Invierte el orden de los elementos */
-    padding-top: 10px;
+    padding-top: 5px;
     border-bottom: 1px solid #ddd;
     margin: 1px;
 }
 
 #dropdownMenu div:last-child {
     gap: 1;
-    padding-top: 10px;
+    padding-top: 5px;
 }
 
 #dropdownMenu span {
     flex: 1;
     overflow: hidden;
     white-space: nowrap;
-    padding-top: 10px;
+    padding-top: 5px;
     text-overflow: ellipsis;
     text-align: left;
     /* Alinea el texto a la derecha */
@@ -269,17 +285,6 @@ a {
 #dropdownMenu button:hover {
     transition-duration: .3s;
     align-items: center;
-}
-
-button {
-    background-color: #6bff00;
-    color: rgb(0, 0, 0);
-    font-weight: bolder;
-    padding: 5px 10px;
-    margin: 8px 0;
-    border: none;
-    cursor: pointer;
-    width: auto;
 }
 
 button:hover {
@@ -377,7 +382,7 @@ body.overlay {
 }
 
 #voiceSelectContainer select {
-    min-height: 50px;
+    min-height: 30px;
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
     background-color: transparent;
@@ -449,10 +454,10 @@ audio::-webkit-media-controls-panel {
 
 .toggleWrapper {
     position: absolute;
-    top: 5%;
-    left: 80%;
+    top: 12%;
+    left: 50%;
     overflow: hidden;
-    padding: 0 200px;
+    padding: 0 40px;
     transform: translate3d(-50%, -50%, 0);
     color: white;
 }
@@ -476,18 +481,20 @@ audio::-webkit-media-controls-panel {
 .toggle:before {
     content: 'AM';
     position: absolute;
-    left: -50px;
+    left: -32px;
     top: 15px;
     font-size: 18px;
+    pointer-events: inherit;
 }
 
 .toggle:after {
     content: 'PM';
     position: absolute;
-    right: -48px;
+    right: -32px;
     top: 15px;
     font-size: 18px;
     color: #749ed7;
+    pointer-events: inherit;
 }
 
 .toggle__handler {
@@ -852,7 +859,7 @@ input:checked+.toggle .star--6 {
 .playButton {
     padding: 0;
     width: 40px;
-    height: 40px;
+    height: 35px;
     color: #f1f1f1;
     border: 1px solid #3c20f4;
     border-radius: 50%;
