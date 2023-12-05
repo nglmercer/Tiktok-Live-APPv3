@@ -33,10 +33,7 @@ class TikTokIOConnection {
             }
         });
     }
-    connectFromUrl(url) {
-        const username = url.split('/@')[1];
-        return this.connect(username);
-    }
+
     connect(uniqueId, options) {
         this.uniqueId = uniqueId;
         this.options = options || {};
@@ -49,7 +46,7 @@ class TikTokIOConnection {
 
             setTimeout(() => {
                 reject('Connection Timeout');
-            }, 60000)
+            }, 15000)
         })
     }
 
