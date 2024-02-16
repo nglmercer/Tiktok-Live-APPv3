@@ -2,7 +2,8 @@
   "name": "my-project",
   "scripts": {
     "start": "node server.js",
-    "build": "node server.js"
+    "build": "babel src -d lib",
+    "test": "jest"
   },
   "dependencies": {
     "dotenv": "^16.4.4",
