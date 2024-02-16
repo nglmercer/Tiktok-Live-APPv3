@@ -1,5 +1,4 @@
 require('dotenv').config();
-const sqlite3 = require('sqlite3').verbose();
 const express = require('express');
 const { createServer } = require('http');
 const { Server } = require("socket.io");
