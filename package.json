@@ -1,9 +1,13 @@
 {
+  "name": "my-project",
+  "scripts": {
+    "start": "node server.js",
+    "build": "node server.js"
+  },
   "dependencies": {
-    "dotenv": "^16.0.0",
+    "dotenv": "^16.4.4",
     "express": "^4.17.2",
     "socket.io": "^4.4.1",
     "tiktok-live-connector": "^1.0.0"
   }
 }
-
