@@ -1,9 +1,8 @@
 // This will use the demo backend if you open index.html locally via file://, otherwise your server will be used
 let backendUrl = location.protocol === 'file:' ? "https://tiktok-chat-reader.zerody.one/" : undefined;
+
 let connection = new TikTokIOConnection(backendUrl);
-const chatContainer = document.getElementById('chatContainer');
-const playButton = document.getElementById('playButton');
-// Counter
+
 let viewerCount = 0;
 let likeCount = 0;
 let diamondsCount = 0;
@@ -12,113 +11,84 @@ let previousLikeCount = 0;
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
 document.addEventListener('DOMContentLoaded', (event) => {
+    document.body.addEventListener('mouseover', () => {
+        // Cuando el cursor está sobre el cuerpo del documento, aplicar el tema oscuro
+        if (document.body.className !== 'theme-dark') {
+            document.body.className = 'theme-light-hover';
+        }
+    });
+
+    document.body.addEventListener('mouseout', () => {
+        // Cuando el cursor no está sobre el cuerpo del documento, hacerlo transparente
+        if (document.body.className === 'theme-light-hover') {
+            document.body.className = 'theme-light';
+        }
+    });
     const toggleButton = document.getElementById('dn');
 
     // Check if running in OBS
     if (window.obsstudio) {
         document.body.style.backgroundColor = 'transparent';
     } else {
-        // Cargar el tema actual desde localStorage
-        const currentTheme = localStorage.getItem('theme');
-        if (currentTheme) {
-            document.body.className = currentTheme;
-            toggleButton.checked = currentTheme === 'theme-dark';
-        }
-
         toggleButton.addEventListener('change', () => {
             if (toggleButton.checked) {
                 // Si el botón de alternancia está marcado, aplicar el tema oscuro
                 document.body.className = 'theme-dark';
-                localStorage.setItem('theme', 'theme-dark');
             } else {
                 // Si el botón de alternancia no está marcado, aplicar el tema claro
                 document.body.className = 'theme-light';
-                localStorage.setItem('theme', 'theme-light');
             }
         });
     }
 });
+
 $(document).ready(() => {
     $('#connectButton').click(connect);
-    $('#uniqueIdInput').on('keyup', function(e) {
+    $('#uniqueIdInput').on('keyup', function (e) {
         if (e.key === 'Enter') {
             connect();
         }
     });
 
-    if (window.settings.username) {
-        $('#connectButton').prop('disabled', true); // Desactivar el botón hasta que se establezca la conexión
-        connect();
-    }
-});
+    if (window.settings.username) connect();
+})
 let isConnected = false;
-
 let currentRoomId = null;
-let isReconnecting = false;
+let currentUniqueId = null;
 
 function connect() {
-    let uniqueId = $('#uniqueIdInput').val();
-    isReconnecting = true;
-    console.log('Iniciando conexión...');
+    let uniqueId = window.settings.username || $('#uniqueIdInput').val();
     if (uniqueId !== '') {
-        $('#stateText').text('Conectando...');
-        $('#connectButton').prop('disabled', true); // Desactivar el botón durante la conexión
-        console.log('Botón desactivado');
 
-        // Si ya está conectado y el uniqueId es diferente, desconectar la conexión actual
-        if (isConnected && uniqueId !== currentUniqueId) {
-            console.log('Desconectando conexión actual...');
-            isConnected = false;
-        }
+        $('#stateText').text('Connecting...');
 
-        // Si no está conectado, establecer una nueva conexión
-        if (!isConnected) {
-            console.log('Estableciendo nueva conexión...');
-            connection.connect(uniqueId, {
-                enableExtendedGiftInfo: true
-            }).then(state => {
-                if (currentRoomId && currentRoomId === state.roomId) {
-                    console.log('Ya estás conectado a esta sala');
-                    alert('Ya estás conectado a esta sala');
-                    $('#connectButton').prop('disabled', false); // Reactivar el botón si ya está conectado
-                    return;
-                }
-                currentRoomId = state.roomId;
-                $('#stateText').text(`Conectado a la sala ${state.roomId}`);
-                console.log(`Conectado a la sala ${state.roomId}`);
+        connection.connect(uniqueId, {
+            enableExtendedGiftInfo: true
+        }).then(state => {
+            $('#stateText').text(`Connected to roomId ${state.roomId}`);
+            sendToServer('connected', uniqueId);
+            // reset stats
+            viewerCount = 0;
+            likeCount = 0;
+            diamondsCount = 0;
+            updateRoomStats();
 
-                // Habilitar el botón después de establecer la conexión
-                $('#connectButton').prop('disabled', false);
-                console.log('Botón reactivado');
-                isConnected = true;
-                currentUniqueId = uniqueId; // Guardar el uniqueId actual
+        }).catch(errorMessage => {
+            $('#stateText').text(errorMessage);
 
-            }).catch(errorMessage => {
-                console.log(`Error: ${errorMessage}`);
-                $('#stateText').text(errorMessage);
+            // schedule next try if obs username set
+            if (window.settings.username) {
+                setTimeout(() => {
+                    connect(window.settings.username);
+                }, 30000);
+            }
+        })
 
-                // programar próximo intento si se establece el nombre de usuario obs
-                if (window.settings.username) {
-                    console.log('Programando próximo intento...');
-                    setTimeout(() => {
-                        connect(window.settings.username);
-                    }, 30000);
-                }
-
-                // Habilitar el botón en caso de error
-                $('#connectButton').prop('disabled', false);
-                console.log('Botón reactivado');
-            });
-        } else {
-            console.log('Ya estás conectado');
-            alert('Ya estás conectado');
-            $('#connectButton').prop('disabled', false); // Reactivar el botón si ya está conectado
-        }
     } else {
-        console.log('No se ingresó nombre de usuario');
-        alert('No se ingresó nombre de usuario');
+        alert('no username entered');
     }
 }
+
 // Prevent Cross site scripting (XSS)
 function sanitize(text) {
     if (text) { // Verifica si la entrada no es undefined
@@ -139,19 +109,19 @@ function generateUsernameLink(data) {
 function isPendingStreak(data) {
     return data.giftType === 1 && !data.repeatEnd;
 }
-
 /**
  * Add a new message to the chat container
  */
 let lastMessage = "";
+let lastNickname = "";
+const ignoredUser = "buttowski";
 
 function addChatItem(color, data, text, summarize) {
-    let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer');
-
+    let container = location && location.href ? (location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer')) : $('.chatcontainer');
     if (container.find('div').length > 500) {
         container.find('div').slice(0, 200).remove();
     }
-
+   
     // Modificación para eliminar o reemplazar los caracteres especiales
     container.find('.temporary').remove();;
 
@@ -159,8 +129,9 @@ function addChatItem(color, data, text, summarize) {
         <div class=${summarize ? 'temporary' : 'static'}>
             <img class="miniprofilepicture" src="${data.profilePictureUrl}">
             <span>
-                <b>${generateUsernameLink(data)}:</b>   
+                <b>${generateUsernameLink(data)}:</b> 
                 <span style="color:${color}">${sanitize(text)}</span>
+
             </span>
         </div>
     `);
@@ -169,21 +140,85 @@ function addChatItem(color, data, text, summarize) {
         scrollTop: container[0].scrollHeight
     }, 400);
     addOverlayEvent(data, text, color, false);
-    let filterWords = document.getElementById('filter-words').value.split(' ');
-    // Convertir el texto a minúsculas para la comparación
-    let lowerCaseText = text && text.toLowerCase();
+
+    let filterWordsInput = document.getElementById('filter-words').value;
+    let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
+    let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
+    filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
+    let lowerCaseText = text && text.toLowerCase() && text.replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
     let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
-
+    if (!userPoints[data.nickname]) {
+        userPoints[data.nickname] = 20; // Asignar 10 puntos por defecto
+        console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
+    }
     if (sendsoundCheckbox.checked) {
-
         playSoundByText(text);
     }
-    // Verificar si el texto contiene alguna de las palabras para filtrar
-    for (let word of filterWords) {
+    
+    const customFilterWords = [
+        "opahsaron", "tedesku", "unanimalh", "doketesam", "unmachetedesfigurolacara",
+        "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh", "tihtuh", "demih", "petatemah",
+        "tonash", "klezyanas", "onunasko", "melavosh", "tttthummamma", "vansokonun", "beshilketiensh",
+        "ghram", "thekomeshtu", "phuto", "bherga", "chivholitos", "endopreh", "ejakah", "nenegrho",
+        "pordio0", "ñateh", "graphuta", "portuhkabeh", "poniatazo", "tumamalaneh", "belkuh", "lodedah", "satejar",
+        "eztesujeto", "miliah", "datufa",
+        "chupa", "phinga", "haciah", "tiradoenelpuen", "tolasvo", "pidocalen", "péné",
+        "joshua.ticona", "welcome", "wó", "jaja", "30hp", "phyngal", "0hp", "ijodephutha",
+        "tucuh", "darunapa", "belkun", "ª", "teboyasacarlamih", "nodeni", "narentukara",
+        "pides", "graphuta", "tumamalaneh", "mentirachupamibhrgha", "ilagranpehra",
+        "rretiyeroijoepuhta", "astakeh", "directo", "comparti", "kameh", "neenunaba",
+        "gobioh", "@admin", "comerh", "azekkk", "kometeh", "miqaqa", "mabaslapin",
+        "íbamaos", "sigue", "éramoschivolitos", "enguyete", "soychih", "Yaaaaaaa",
+        "grospeh", "tolaphin", "enapretadi", "ginadebe", "gokareka", "medarisaestepela",
+        "drehesunazohrra", "unahpros", "🐈‍⬛", "kuloh", "kasinoh", "muchosh", "babhosoh",
+        "nalditha", "wª", "bahsura", "anopahsaron", "tedesku", "unanimalh", "doketesam",
+        "unmachetedesfigurolacara", "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh",
+        "tihtuh", "demih", "petatemah", "tonash", "klezyanas", "onunasko", "wibond", "kalateate",
+        "grabadazo", "sinenbargo", "correte", "manko", "gueh", "pohortah", "queh", "rashpeh",
+        "latemueh", "grih", "mhih", "ardhah", "vah", "llah", "driya", "temuh", "wi bom",
+        "feh ih", "ih toh", "neh grih", "grih toh", "yosi tepar", "tola kah", "kah beza", "beza deum", "iasi temuh",
+        "zojar jacha", "driya zojar", "lah driya", "+tur", "tu boca escuchaste", "ohn tu boca",
+        "harda", "", "", "", "", "", "", "", "", "", "", "",
+        "", "", "", "", "", "", "", "", "", "", "", "",
+        "", "", "", "", "", "", "", "", "", "", "", "",
+
+      ];
+      
+    for (let word of customFilterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            return;
+            if (userPoints[data.nickname] <= 0) {
+                console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                return;
+            } 
+            if (userPoints[data.nickname] >= 1) {
+                userPoints[data.nickname] -= 1;
+                userPoints[data.nickname]--;
+                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+            }
         }
     }
+
+    const regex = /(.)\1{7,}/g;
+    const matches = lowerCaseText.match(regex);
+    
+    if (matches && matches.length > 0) {
+      console.log(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
+      return;
+    }
+        
+    for (let word of filterWords) {
+        if (word && lowerCaseText.includes(word.toLowerCase())) {
+            if (userPoints[data.nickname] <= 2) {
+                console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                return;
+            } 
+            if (userPoints[data.nickname] >= 2) {
+                userPoints[data.nickname]--;
+                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+            }
+        }
+    }
+
     const specialChars = /[#$%^&*()/,.?":{}|<>]/;
     const startsWithSpecialChar = specialChars.test(text.charAt(0));
     const messagePrefix = startsWithSpecialChar ? "!" : "";
@@ -192,7 +227,8 @@ function addChatItem(color, data, text, summarize) {
     if (startsWithSpecialChar) {
         cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
     }
-    let emojiRegex = /[\u{1F600}-\u{1F64F}]/gu;
+    cleanedText = text.replace(/[#$%^&*/,.":{}|<>]/, "");
+    let emojiRegex = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/ug;
     let emojis = text && text.match(emojiRegex);
     if (emojis) {
         let emojiCounts = {};
@@ -208,7 +244,9 @@ function addChatItem(color, data, text, summarize) {
             }
         }
     }
-    const message = messagePrefix + (cleanedText.length > 60 ? `${data.uniqueId} dice ${messageSuffix}` : cleanedText);
+    const message = messagePrefix + (cleanedText.length > 60 ? `${data.nickname} dice ${messageSuffix}` : cleanedText);
+    let nickname = data.nickname
+    
     if (text.length <= 3) {
         console.log('filtrado');
         return;
@@ -216,37 +254,40 @@ function addChatItem(color, data, text, summarize) {
     if (message === lastMessage) {
         return;
     }
+    // Filtrar mensajes de usuarios con pocos puntos
+
     lastMessage = message;
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
 
     if (sendDataCheckbox.checked) {
+        if (startsWithSpecialChar) {
+            if (userPoints[data.nickname] <= 3) {
+                console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+                return;
+            }
+            userPoints[data.nickname] -= 3;
+            console.log('Usuario con puntos:', data.nickname, userPoints[data.nickname]);
+        }
         enviarMensaje(message);
-
     }
     if (message.length <= 3) {
         console.log('filtrado');
         return;
     }
     leerMensajes(message);
-    onMessageReceived(message);
-}
-// Supongamos que tienes una lista de nombres de videos
-let videoNames = ["video1.mp4", "video2.mp4", "video3.mp4"];
 
-function onMessageReceived(message) {
-    for (let videoName of videoNames) {
-        if (message.includes(videoName)) {
-            let video = document.createElement("video");
-            video.src = videoName;
-            video.style.position = "fixed";
-            video.style.zIndex = "1000";
-            video.style.width = "100%";
-            video.style.height = "100%";
-            console.log(videoName);
-            document.body.appendChild(video);
-            video.play();
-            break;
+    if (sendDataCheckbox.checked) {
+        if (userPoints[data.nickname] <= 3) {
+            console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+            return;
         }
+        if (nickname === lastNickname) {
+            console.log('anti spam commandos');
+            return;
+        }
+        userPoints[data.nickname] -= 3;
+        obtenerYenviarCommandID({ eventType: 'chat', string: message });
+        lastNickname = nickname
     }
 }
 
@@ -304,6 +345,40 @@ function testOverlay() {
         addOverlayEvent(fakeData, messageWithNumber, 'black', false, 1);
     }
 }
+let userStats = {};
+
+connection.on('like', (msg) => {
+    if (typeof msg.totalLikeCount === 'number') {
+        likeCount = msg.totalLikeCount;
+        updateRoomStats();
+    }
+    // Initialize user's stats
+    if (!userStats[msg.uniqueId]) {
+        userStats[msg.uniqueId] = { likes: 0, totalLikes: 0, milestone: 50 };
+    }
+
+    // Increment user's like count and total like count
+    userStats[msg.uniqueId].likes += msg.likeCount;
+    userStats[msg.uniqueId].totalLikes += msg.likeCount;
+
+    // Check if user's like count has reached the milestone
+    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+    while (sendDataCheckbox.checked && userStats[msg.uniqueId].likes >= userStats[msg.uniqueId].milestone && userStats[msg.uniqueId].milestone <= 300) {
+        const milestoneLikes = `${userStats[msg.uniqueId].milestone}LIKES`;
+        sendToServer('likes', msg, milestoneLikes, "color", "msg", "message");
+        console.log(milestoneLikes);
+        obtenerYenviarCommandID({ eventType: 'likes', string: milestoneLikes });
+
+        // Send data or msg.uniqueId and $ likes
+        addOverlayEvent(msg, `${userStats[msg.uniqueId].milestone} likes`, 'blue', false, 1);
+
+        userStats[msg.uniqueId].likes -= userStats[msg.uniqueId].milestone; // Deduct milestone likes from user's like count
+        userStats[msg.uniqueId].milestone += 50; // Increase the milestone
+        if (userStats[msg.uniqueId].milestone > 300) {
+            userStats[msg.uniqueId].milestone = 50; // Reset the milestone
+        }
+    }
+});
 let comboCounters = {};
 let isImageLink = false;
 
@@ -322,7 +397,7 @@ function addOverlayEvent(data, text, color, isGift, repeatCount) {
     // Increment comboCounters[text]
     comboCounters[text].count++;
 
-    let baseTime = isGift ? 12000 : 10000; // 5 seconds for gifts, 3 seconds for text
+    let baseTime = isGift ? 20000 : 18000; // 5 seconds for gifts, 3 seconds for text
     let totalTime = baseTime * Math.pow(1.01, comboCounters[text].count);
     let imageExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
     isImageLink = text && imageExtensions.some(ext => text.endsWith(ext)); // Update isImageLink here
@@ -335,11 +410,11 @@ function addOverlayEvent(data, text, color, isGift, repeatCount) {
         eventDiv = comboCounters[text].div; // Update eventDiv with the existing div
         if (isImageLink) {
             // If the text is an image link, display the image
-            eventDiv.innerHTML = `<img src="${text}" class="event-image"> x${comboCounters[text].count}`;
+            eventDiv.innerHTML = `<img src="${text}" class="event-image"><img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"> <span style="color:red;">x${comboCounters[text].count}</span>`;
             let left = Math.random() * (eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth - spacing);
             eventDiv.style.left = `${left}px`; // Set left to a random value within the container
         } else {
-            eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)} x${comboCounters[text].count}</span>`;
+            eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)} <span style="color:red;">x${comboCounters[text].count}</span></span>`;
         }
         comboCounters[text].timeout = setTimeout(() => {
             comboCounters[text].count = 0;
@@ -356,26 +431,12 @@ function addOverlayEvent(data, text, color, isGift, repeatCount) {
         eventDiv.style.left = `${(eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth) / 2}px`;
         if (isImageLink) {
             // If the text is an image link, display the image
-            eventDiv.innerHTML = `<img src="${text}" class="event-image">`;
+            eventDiv.innerHTML = `<img src="${text}" class="event-image"><img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;">`;
             let left = Math.random() * (eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth - spacing);
             eventDiv.style.left = `${left}px`;
-        } else if (text && (text.includes('sige') || text.includes('compartió') || text.includes('gato') || text.includes('directo'))) {
+        } else if (text && (text.includes('sige') || text.includes('compartió') || text.includes('gato') || text.includes('directo') || text && text.includes('likes'))) {
             eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><span class="event-text text-animation" style="color: ${color};">${text}</span>`;
-        } else if (isGift) {
-            let repeatCountElement = document.createElement('b');
-            repeatCountElement.style = isPendingStreak(data) ? 'color:red' : '';
-            repeatCountElement.textContent = `x${repeatCount.toLocaleString()}`;
 
-            eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><img class="gift-animation" src="${data.giftPictureUrl}" style="border-radius: 50%;">`;
-            eventDiv.appendChild(repeatCountElement);
-            eventDiv.className += ' zoom-in';
-
-            // Set a timeout to remove repeatCountElement after 5 seconds
-            setTimeout(() => {
-                if (repeatCountElement.parentNode) {
-                    repeatCountElement.parentNode.removeChild(repeatCountElement);
-                }
-            }, 5000);
         } else {
             eventDiv.className += ' marquee';
             eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)}</span>`;
@@ -410,7 +471,7 @@ function initializeGrid(container) {
     grid = new Array(gridRows).fill(0).map(() => new Array(gridColumns).fill(false));
 
     // Precalculate 50 random positions
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 30; i++) {
         let row, column;
         do {
             row = Math.floor(Math.random() * gridRows);
@@ -437,9 +498,9 @@ function isNearCorner(row, column, gridRows, gridColumns) {
 let existingPositions = [];
 
 function getRandomPosition() {
-    const elementSize = 30; // Define el tamaño del elemento que estás generando
-    const spacing = 30; // Define el espaciado entre elementos
-    const maxAttempts = 100; // Define el número máximo de intentos para encontrar una nueva posición
+    const elementSize = 50; // Define el tamaño del elemento que estás generando
+    const spacing = 50; // Define el espaciado entre elementos
+    const maxAttempts = 50; // Define el número máximo de intentos para encontrar una nueva posición
 
     const container = document.getElementById('overlayEventContainer');
     const containerRect = container.getBoundingClientRect();
@@ -516,19 +577,12 @@ function addGiftItem(data) {
     }
 
 
-    addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
-    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
-    if (sendDataCheckbox.checked) {
-        for (let i = 0; i < data.repeatCount; i++) {
-            obtenerComandosYEnviarComando(data.giftName, "");
-
-        }
-    }
     let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
 
     if (sendsoundCheckbox.checked) {
         for (let i = 0; i < data.repeatCount; i++) {
             playSound(data.giftName);
+
         }
     }
     container.stop();
@@ -544,52 +598,11 @@ connection.on('roomUser', (msg) => {
         updateRoomStats();
     }
 })
-let userLikes = {};
-let userTotalLikes = {};
-let userMilestone = {};
 
-connection.on('like', (msg) => {
-    if (typeof msg.totalLikeCount === 'number') {
-        likeCount = msg.totalLikeCount;
-        updateRoomStats();
-    }
-
-    // Increment user's like count
-    if (!userLikes[msg.uniqueId]) {
-        userLikes[msg.uniqueId] = 0;
-    }
-    userLikes[msg.uniqueId] += msg.likeCount;
-
-    // Increment user's total like count
-    if (!userTotalLikes[msg.uniqueId]) {
-        userTotalLikes[msg.uniqueId] = 0;
-    }
-    userTotalLikes[msg.uniqueId] += msg.likeCount;
-
-    // Initialize user's milestone
-    if (!userMilestone[msg.uniqueId]) {
-        userMilestone[msg.uniqueId] = 50;
-    }
-
-    // Check if user's like count has reached the milestone
-    const likes = userLikes[msg.uniqueId];
-    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
-
-    if (sendDataCheckbox.checked) {
-        if (likes >= userMilestone[msg.uniqueId] && userMilestone[msg.uniqueId] <= 300) {
-            obtenerComandosYEnviarComando(`${userMilestone[msg.uniqueId]}LIKES`, likes);
-            console.log(`${userMilestone[msg.uniqueId]}LIKES`);
-            userMilestone[msg.uniqueId] += 50; // Increase the milestone
-            if (userMilestone[msg.uniqueId] > 300) {
-                userLikes[msg.uniqueId] = 0; // Reset user's like count if it reaches 300
-                userMilestone[msg.uniqueId] = 50; // Reset the milestone
-            }
-        }
-    }
-});
 // Member join
 let joinMsgDelay = 0;
 connection.on('member', (msg) => {
+
     if (window.settings.showJoins === "0") return;
 
     let addDelay = 250;
@@ -601,26 +614,81 @@ connection.on('member', (msg) => {
     setTimeout(() => {
         joinMsgDelay -= addDelay;
         addChatItem('#CDA434', msg, 'welcome', true);
+        message = msg.uniqueId;
+        sendToServer('welcome', msg, message, null, msg);
     }, joinMsgDelay);
 })
 let processedMessages = {};
-// New chat comment received
 let lastComments = [];
-let messageRepetitions = {};
+let lastTenMessages = [];
+let userPoints = {};
 
-connection.on('chat', (msg) => {
+connection.on('chat', (data) => {
+    let message = data.comment;
+    
+    let filterWordsInput = document.getElementById('filter-words').value;
+    let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
+    // Eliminar estas secuencias del texto de entrada
+    let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
+    // Dividir el texto restante por espacios y añadir las palabras al array
+    filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
+    let lowerCaseText = message.toLowerCase();
+    for (let word of filterWords) {
+        if (word && lowerCaseText.includes(word.toLowerCase())) {
+            return;
+        }
+    }
+    if (!userPoints[data.nickname]) {
+        userPoints[data.nickname] = 20; // Asignar 10 puntos por defecto
+        console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
+    }
+    if (userPoints[data.nickname] <= -500) {
+        console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+        userPoints[data.nickname] += 200;
+        userPoints[data.nickname] + 200;    
+        return;
+    } 
+    if (userPoints[data.nickname] >= 1) {
+        userPoints[data.nickname] -= 1;
+        userPoints[data.nickname]--;
+        console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+    } 
+
     if (window.settings.showChats === "0") return;
 
-    addChatItem('', msg, msg.comment);
+    addChatItem('', data, message);
+    sendToServer('chat', data, message, null, msg);
 
-    // After processing a message, if we were reconnecting, we're not anymore
-    if (isReconnecting) {
-        isReconnecting = false;
+    if (message === lastMessage) {
+        return;
     }
-});
 
+    lastMessage = message;
+    let tiempoActual = Math.floor(Date.now() / 1000);
+
+    if (tiempoActual - data.ultimoTiempo <= 60) {
+        return data.nickname; // Retorna la cantidad actual de puntos sin cambios
+    }
+    if (data.nickname < 20) {
+        data.nickname += 5;
+    }
+    data.ultimoTiempo = tiempoActual;
+    return data.nickname;
+});
 // New gift received
 connection.on('gift', (data) => {
+    if (!userPoints[data.nickname]) {
+        userPoints[data.nickname] = 10; // Asignar 10 puntos por defecto
+    } else if (userPoints[data.nickname] >= 1) {
+        userPoints[data.nickname] += 20;
+        userPoints[data.nickname] + 10;
+        console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
+    }
+    if (sendDataCheckbox.checked) {
+    obtenerYenviarCommandID({ eventType: 'gift', string: data.giftName });
+    }
+    addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
+    sendToServer('gift', data, null, null, data);
     if (!isPendingStreak(data) && data.diamondCount > 0) {
         diamondsCount += (data.diamondCount * data.repeatCount);
 
@@ -636,34 +704,40 @@ let seguidores = new Set();
 
 connection.on('social', (data) => {
     if (window.settings.showFollows === "0") return;
-
     let color;
     let message;
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
 
-    if (sendDataCheckbox.checked) {
-        if (data.displayType.includes('follow')) {
-            obtenerComandosYEnviarComando('follow', "");
-        } else if (data.displayType.includes('share')) {
-            obtenerComandosYEnviarComando('share', "");
-        }
-    }
     if (data.displayType.includes('follow')) {
         color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
-        if (!seguidores.has(data.uniqueId)) {
-            seguidores.add(data.uniqueId);
-            message = `${data.uniqueId} es un gato mas`;
+        message = `${data.nickname} te sige`;
+        if (sendDataCheckbox.checked) {
+            if (!seguidores.has(data.nickname)) {
+                obtenerYenviarCommandID({ eventType: 'follow', string: `follow` });
+                console.log(`${data.nickname} es un gato mas`);
+                seguidores.add(data.nickname);
+                // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
+                setTimeout(() => {
+                    seguidores.delete(data.nickname);
+                }, 60000); // 5 minutos
+            }
         }
     } else if (data.displayType.includes('share')) {
         color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
-        message = `${data.uniqueId} compartió el directo`;
+        message = `${data.nickname} compartió el directo`;
+        if (sendDataCheckbox.checked) {
+            obtenerYenviarCommandID({ eventType: 'share', string: `share` });
+        }
     } else {
         color = '#CDA434'; // Color por defecto
         message = data.label.replace('{0:user}', '');
     }
+
     addChatItem(color, data, message);
+    sendToServer('social', data, null, color, message);
 });
 connection.on('streamEnd', () => {
+
     $('#stateText').text('Transmisión terminada.');
 
     // schedule next try if obs username set
@@ -672,33 +746,50 @@ connection.on('streamEnd', () => {
             connect(window.settings.username);
         }, 30000);
     }
+    message = 'Transmisión terminada.';
+
+    // Send data to server
+    sendToServer('streamEnd', message);
 })
-let contadorGiftname = new Map();
-let ultimaVezGiftname = {};
-let ultimoComandoEnviado = "";
-let colaComandos = [];
 
-function obtenerComandosYEnviarComando(giftname, likes, message = "", isGift = false) {
-    let ahora = Date.now();
+connection.on('questionNew', (data) => {
+    console.log(`${data.uniqueId} asks ${data.questionText}`);
 
-    if (!giftname) {
-        console.error('El nombre del regalo no puede estar vacío o ser nulo');
-        return; // Salir de la función si giftname está vacío o es nulo
+})
+connection.on('linkMicBattle', (data) => {
+
+    console.log(`New Battle: ${data.battleUsers[0].uniqueId} VS ${data.battleUsers[1].uniqueId}`);
+
+})
+connection.on('linkMicArmies', (data) => {
+    console.log('linkMicArmies', data);
+    console.log(`${data.uniqueId} linkMicArmies!`);
+})
+connection.on('liveIntro', (msg) => {
+    console.log(msg);
+})
+connection.on('emote', (data) => {
+    console.log(`${data.uniqueId} emote!`);
+    console.log('emote received', data);
+})
+connection.on('envelope', (data) => {
+    console.log(`${data.uniqueId} envelope!`);
+    console.log('envelope received', data);
+})
+connection.on('subscribe', (data) => {
+    console.log(`${data.uniqueId} subscribe!`);
+})
+
+function obtenerYenviarCommandID(event) {
+    const { eventType, likes, giftname, message, follow, share, string } = event;
+    if (string && string.length > 20) {
+        console.error('El string es demasiado largo:', string);
+        return;
     }
-
-    if (!contadorGiftname.has(giftname)) {
-        contadorGiftname.set(giftname, 0);
-    } else if (ahora - ultimaVezGiftname[giftname] < 4000 && contadorGiftname.get(giftname) >= 2) {
-        contadorGiftname.set(giftname, contadorGiftname.get(giftname) - 1);
-    }
-
-    ultimaVezGiftname[giftname] = ahora;
-    contadorGiftname.set(giftname, contadorGiftname.get(giftname) + 1);
-
-    const pageSize = 100; // Cantidad de comandos a devolver por página
-    let skip = 0; // Comenzar desde el primer comando
-
     const listaComandos = [];
+    const pageSize = 100;
+    let skip = 0;
+
 
     function obtenerPaginaDeComandos() {
         fetch(`http://localhost:8911/api/v2/commands?skip=${skip}&pageSize=${pageSize}`)
@@ -711,12 +802,10 @@ function obtenerComandosYEnviarComando(giftname, likes, message = "", isGift = f
                 const comandos = data.Commands;
                 listaComandos.push(...comandos);
 
-                // Si hay más comandos, pasar a la siguiente página
                 if (comandos.length === pageSize) {
                     skip += pageSize;
                     obtenerPaginaDeComandos();
                 } else {
-                    // Se han obtenido todos los comandos, imprimirlos
                     listaComandos.forEach(cmd => {
                         if (!cmd || cmd < 1) {
                             console.error('Comando ignorado:', cmd);
@@ -724,17 +813,27 @@ function obtenerComandosYEnviarComando(giftname, likes, message = "", isGift = f
                         }
                     });
 
-                    const MAX_COMMANDS = 30;
-                    const comandosEncontrados = listaComandos.filter(cmd =>
-                        cmd.Name.toLowerCase().includes(giftname.toLowerCase()) ||
-                        cmd.Name.toLowerCase().includes(`${likes}likes`.toLowerCase())
-                    );
-                    if (comandosEncontrados.length === 0) {
-                        console.error(`No se encontró ningún comando con el nombre que contiene: ${giftname}`);
-                        return; // Salir de la función si no se encuentran comandos
+                    const MAX_COMMANDS = 50;
+                    let filterCondition;
+                    if (string) {
+                        filterCondition = cmd => {
+                            if (eventType === 'gift') {
+                                console.log('Filtrando comandos para giftname. Valor de string:', string); // Nuevo registro de consola
+                                return cmd.Name.toLowerCase().includes(string.toLowerCase());
+                            } else {
+                                return cmd.Name.toLowerCase().split(' ').includes(string.toLowerCase());
+                            }
+                        };
+                    } else {
+                        filterCondition = () => true;
                     }
 
-                    // Limitar la cantidad de comandos encontrados
+                    const comandosEncontrados = listaComandos.filter(filterCondition);
+                    if (comandosEncontrados.length === 0) {
+                        console.error(`No hay comando con: ${string}`);
+                        return;
+                    }
+
                     const comandosLimitados = comandosEncontrados.slice(0, MAX_COMMANDS);
 
                     let index = 0;
@@ -747,49 +846,64 @@ function obtenerComandosYEnviarComando(giftname, likes, message = "", isGift = f
                                 console.error('Comando ignorado:', cmd);
                                 return;
                             }
-                            fetch(`http://localhost:8911/api/commands/${comando.ID}`, {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json"
-                                    }
-                                })
-                                .then(function(response) {
-                                    if (response.ok) {
-                                        // La solicitud se realizó correctamente
-                                        // Eliminar el comando de la cola
-                                        colaComandos.shift();
-                                    } else {
-                                        throw new Error('Error al enviar el comando');
-                                    }
-                                })
-                                .catch(function(error) {
-                                    console.error('Error al enviar el comando:', error);
-                                })
-                                .finally(function() {
-                                    index++;
-                                    let delay;
-                                    if (colaComandos.length <= 30) {
-                                        delay = comando.Name === ultimoComandoEnviado ? 5000 : 2000;
-                                    } else {
-                                        delay = comando.Name === ultimoComandoEnviado ? 10000 : 4000;
-                                    }
-                                    ultimoComandoEnviado = comando.Name;
-                                    setTimeout(enviarcomandoConRetraso, delay);
-                                });
+                            if (typeof comando.Name !== 'string') {
+                                console.error('El nombre del comando no es un string');
+                                return;
+                            }
+                            if (comando.Name === ultimoComandoEnviado && eventType !== 'gift') {
+                                console.error('El comando no puede ser repetido:', comando.Name);
+                                return;
+                            }
+                            let delay;
+                            if (comandosLimitados.length > 20) {
+                                delay = comando.Name === ultimoComandoEnviado ? 20000 : 10000;
+                            } else if (comandosLimitados.length > 10) {
+                                delay = comando.Name === ultimoComandoEnviado ? 15000 : 7000;
+                            } else {
+                                delay = 0;
+                            }
+
+                            setTimeout(() => {
+                                fetch(`http://localhost:8911/api/commands/${comando.ID}`, {
+                                        method: "POST",
+                                        headers: {
+                                            "Content-Type": "application/json"
+                                        },
+                                        body: JSON.stringify({
+                                            id: comando.ID,
+                                            name: comando.Name,
+                                        })
+                                    })
+                                    .then(response => {
+                                        if (!response.ok) {
+                                            throw new Error(`HTTP error! status: ${response.status}`);
+                                        }
+                                        ultimoComandoEnviado = comando.Name;
+                                        index++;
+                                        enviarcomandoConRetraso();
+                                    })
+                                    .catch(error => {
+                                        console.error('Error al enviar el comando:', error);
+                                        // Si el servidor responde con un error 404, incrementa el índice y llama a enviarcomandoConRetraso
+                                        if (error.message.includes('404')) {
+                                            index++;
+                                            enviarcomandoConRetraso();
+                                        }
+                                    });
+                            }, delay);
                         }
                     }
-
                     enviarcomandoConRetraso();
                 }
             })
             .catch(error => {
-                console.error('Error al obtener los comandos:', error);
+                console.error('Error al obtener la página de comandos:', error);
             });
     }
 
     obtenerPaginaDeComandos();
-
 }
+
 window.isIframePlaying = false;
 
 function mostrarOverlay() {
@@ -1088,6 +1202,7 @@ let lastCommentTime = 0;
 
 
 function enviarMensaje(message) {
+
     // Enviar el mensaje
     fetch("http://localhost:8911/api/v2/chat/message", {
             method: "POST",
@@ -1102,7 +1217,6 @@ function enviarMensaje(message) {
         .catch(function(error) {
             console.error('Error al enviar el mensaje:', error);
         });
-    leerMensajes(); // Llama a leerMensajes() después de agregar un mensaje a la cola
 
     lastComment = message;
     lastCommentTime = Date.now();
@@ -1529,6 +1643,81 @@ function importSettings() {
         document.getElementById('loadingIndicator').style.display = 'none';
     }
 }
+
+const sentData = new Set(); // Conjunto para almacenar los datos enviados
+
+async function sendToServer(eventType, data, text, color, msg, message) {
+  const ports = [3000, 3001];
+  let retryCount = 0;
+  let lastRetryTimestamp = 0;
+
+  // Función para verificar si el servidor está disponible
+  async function isServerAvailable(port) {
+    return new Promise((resolve) => {
+      setTimeout(async () => {
+          const response = await fetch(`http://localhost:${port}/api/health`);
+          if (response.ok) {
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+      }, 5000); // Retraso de 5 segundos (ajusta el valor según tus necesidades)
+    });
+  }
+
+  // Verificar si ha pasado al menos un minuto desde el último intento
+  const currentTimestamp = Date.now();
+  if (currentTimestamp - lastRetryTimestamp >= 60000) {
+    retryCount = 0; // Reiniciar el conteo de intentos si ha pasado un minuto
+  }
+
+  // Hacer hasta 20 intentos en un minuto
+  while (retryCount < 2) {
+    let serverAvailable = false;
+
+    for (const port of ports) {
+      serverAvailable = await isServerAvailable(port);
+
+      if (serverAvailable) {
+        const dataKey = JSON.stringify({ eventType, data, text, color, msg, message });
+
+        // Verificar si los datos ya se enviaron previamente
+        if (sentData.has(dataKey)) {
+          continue;
+        }
+
+        try {
+          const response = await fetch(`http://localhost:${port}/api/receive`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ eventType, data, text, color, msg, message }),
+          });
+
+          if (response.ok) {
+            sentData.add(dataKey); // Agregar los datos al conjunto de datos enviados
+            const responseData = await response.json();
+            console.log(responseData);
+          } else {
+            console.error(`Server on port ${port} status: ${response.status}`);
+          }
+        } catch (error) {
+          console.error(`Error sending data to server on port ${port}:`, error);
+        }
+      }
+    }
+
+    // Reiniciar el conteo de intentos si se ha establecido la conexión
+    retryCount = 0;
+    lastRetryTimestamp = 0;
+
+  }
+
+  lastRetryTimestamp = currentTimestamp; // Registrar la marca de tiempo del último intento
+  retryCount = 0; // Reiniciar el conteo de intentos después de la pausa
+}
+
 window.onload = async function() {
     try {
         audio = document.getElementById("audio");

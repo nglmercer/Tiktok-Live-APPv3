@@ -71,8 +71,6 @@ async function onMessage(channel, tags, msg, self) {
     txtbox.appendChild(usernameElement);
     txtbox.appendChild(document.createTextNode(': '));
     txtbox.appendChild(messageElement);
-
-    console.log('valor:', txtbox.innerHTML);
     insertText(txtbox);
 
     //*
@@ -91,6 +89,27 @@ async function onMessage(channel, tags, msg, self) {
             });
         if (pronoun && FEM_PRONOUNS.some(g => g == pronoun)) voice = voiceSelect.value;
     }
+    let filterWordsInput = document.getElementById('filter-words').value;
+    // Buscar todas las secuencias de palabras entre barras (/)
+    let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
+    // Eliminar estas secuencias del texto de entrada
+    let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
+    // Dividir el texto restante por espacios y añadir las palabras al array
+    filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
+    let lowerCaseText = msg && msg.toLowerCase();
+    for (let word of filterWords) {
+        if (word && lowerCaseText.includes(word.toLowerCase())) {
+            return;
+        }
+    }
+    message = msg;
+    if (message === lastMessage) {
+        return;
+    }
+    if (msg.length <= 3) {
+        console.log('filtrado');
+        return;
+    }
     //*/
     if (lastUsername !== tags.username) {
         fetchAudio(`${tags.username} dice:  ${msg}`, voice);
@@ -98,6 +117,7 @@ async function onMessage(channel, tags, msg, self) {
     } else {
         fetchAudio(`  ${msg}`, voice);
     }
+    lastMessage = msg;
 }
 
 function insertText(txt) {

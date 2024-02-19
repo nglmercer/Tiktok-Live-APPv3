@@ -12,13 +12,20 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="connection.js"></script>
     <script src="app.js"></script>
-    <script src="index.js"></script>
     <script src="tmi.min.js"></script>
     <script src="TTSmain.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
     <style>
         /* Estilos para las pestañas */
+        
+        body {
+            height: 120vh;
+            width: 100%;
+            margin: 10;
+            padding: 10;
+        }
         
         .tab {
             font-size: 18px;
@@ -39,9 +46,7 @@
             color: rgb(204, 204, 204);
         }
         
-        .tab button:hover {
-            color: rgb(204, 204, 204);
-        }
+        .tab button:hover {}
         
         .tab button:after {
             content: "";
@@ -75,22 +80,29 @@
             /* Para permitir el desplazamiento vertical si el contenido es más grande que el contenedor */
         }
     </style>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
-
+<table class="splitstatetable">
+    <div id="stateText"></div>
+    <div id="roomStats"></div>
+</table>
 <body>
     <div class="tab">
         <button class="tablinks" onclick="openTab(event, 'Tab1')">chat</button>
         <button class="tablinks" onclick="openTab(event, 'Tab2')">config</button>
         <button class="tablinks" onclick="openTab(event, 'Tab3')">twitch</button>
         <button class="tablinks" onclick="openTab(event, 'Tab4')">Overlay</button>
+        <button onclick="mostrarOverlay()">Mostrar Overlay</button>
+        <button onclick="ocultarOverlay()">Ocultar Overlay</button>
+        <input type="text" placeholder="@tuusuario" id="uniqueIdInput" value="@melserngl">
+        <input type="button" id="connectButton" value="Conectar">
     </div>
     <audio id="audio" controls autoplay>
-        <source src="" type="audio/mpeg">
     </audio>
     <audio id="audio" autoplay></audio>
-    <audio id="soundPlayer" src="" type="audio/mp3"></audio>
-    <input id="skip-button" type="button" value="SKIP"></input>
+    <audio id="soundPlayer" type="audio/mp3"></audio>
+    <input id="skip-button" type="button" value="SKIP"> </button>
+    <div id="overlayEventContainer" style="width: 199vh; pointer-events: none; height: 98vh; position: absolute; background: transparent; display: block;"></div>
     <div id="durationDisplay"></div>
     <div class="toggleWrapper">
         <input type="checkbox" class="dn" id="dn">
@@ -109,6 +121,7 @@
         </label>
     </div>
     </div>
+
     <div>
         <label class="cyberpunk-checkbox-label">
             <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
@@ -116,14 +129,6 @@
         <!-- Contenido de las pestañas -->
         <div id="Tab1" class="tabcontent">
             <div class="inputFields">
-                <input type="text" placeholder="@tuusuario" id="uniqueIdInput" value="@melserngl">
-                <input type="button" id="connectButton" value="Conectar">
-
-                <table class="splitstatetable">
-                    <div id="stateText"></div>
-                    <div id="roomStats"></div>
-                </table>
-
                 <div class="splitchattable">
                     <div class="chatcontainer">
                         <h3 class="containerheader">Chats</h3>
@@ -157,6 +162,7 @@
                 });
             </script>
         </div>
+
         <div id="Tab2" class="tabcontent">
             <input type="file" id="importButton">
             <button onclick="importSettings()">ImportarCONFIG</button>
@@ -166,17 +172,48 @@
                 <input type="file" id="soundFiles" accept=".mp3,.wav,.ogg,.webm" multiple>
                 <button type="submit">Añadir sonido</button>
             </form>
-
+            <button id="connectButton">Conectar al Bot</button>
+            <p id="botStatusText"></p>
+          
+            <script>
+              function sendConnectRequest() {
+                fetch(`http://localhost:3000/api/connect`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ connect: true })
+                })
+                  .then(response => response.json())
+                  .then(data => {
+                    // Recibir el estado de conexión del bot
+                    const botStatus = data.botStatus;
+                    // Mostrar el estado de conexión en el elemento de texto
+                    document.getElementById('botStatusText').textContent = `Estado del Bot: ${botStatus}`;
+                    // Desactivar el botón si el estado del bot es true
+                    if (botStatus) {
+                      document.getElementById('connectButton').disabled = true;
+                    }
+                  })
+                  .catch(error => {
+                    console.error('Error:', error);
+                  });
+              }
+          
+              // Agregar un event listener al botón para llamar a la función sendConnectRequest()
+              document.getElementById('connectButton').addEventListener('click', sendConnectRequest);
+            </script>
             <div id="dropdownButton" onclick="toggleDropdownMenu()">
                 <div id="selectedSound">
                     Sonidos
                     <label class="container">
-                    <input checked="checked" id="sendsoundCheckbox" type="checkbox" checked>
+                    <input id="sendsoundCheckbox" type="checkbox">
                     <div class="checkmark"></div>
                 </label>
                 </div>
                 <ul id="soundList" style="display: block;"></ul>
-                <!-- Muestra la lista de sonidos por defecto -->
+                <!-- Muestra la lista de sonidos por defecto 
+                <input checked="checked" id="sendsoundCheckbox" type="checkbox" checked> -->
             </div>
             <div id="modal" style="display: none;">
                 <div id="modalContent">
@@ -273,8 +310,6 @@
     </div>
     <div id="Tab4" class="tabcontent">
         <div style="padding-top: 10px;">
-            <button onclick="mostrarOverlay()">Mostrar Overlay</button>
-            <button onclick="ocultarOverlay()">Ocultar Overlay</button>
             <a href="#" onclick="generateOverlay()">overlay</a>
             <input type="text" id="inputest"><button onclick="testOverlay()">testOverlay</button>
             <script>
@@ -289,9 +324,14 @@
                     }
                 }
             </script>
-            <div id="overlayEventContainer" style="width: 100%; height: 100vh; position: relative; display: flexbox; border: 1px solid rgb(0, 255, 42);"></div>
-
+            <div id="wordleContainer">
+                <div id="lettersContainer">
+                    <!-- Aquí se generarán las letras -->
+                </div>
+                <!-- Aquí se generarán las filas y celdas -->
+            </div>
         </div>
+
         <script>
             function openTab(evt, tabName) {
                 var i, tabcontent, tablinks;
@@ -332,6 +372,7 @@
                 });
             }
         </script>
+
 </body>
 
 </html>
