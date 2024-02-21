@@ -10,6 +10,7 @@
     <meta name="keywords" content="TikTok,Live,Livestream,Chat,Reader,Scraper,Tracker,tiktok.com,broadcast,api,library,node,node.js,javascript">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="connection.js"></script>
     <script src="app.js"></script>
     <script src="tmi.min.js"></script>
@@ -25,6 +26,7 @@
             width: 100%;
             margin: 10;
             padding: 10;
+            background: purple;
         }
         
         .tab {
@@ -94,7 +96,7 @@
         <button class="tablinks" onclick="openTab(event, 'Tab4')">Overlay</button>
         <button onclick="mostrarOverlay()">Mostrar Overlay</button>
         <button onclick="ocultarOverlay()">Ocultar Overlay</button>
-        <input type="text" placeholder="@tuusuario" id="uniqueIdInput" value="@melserngl">
+        <input type="text" placeholder="@tuusuario" id="uniqueIdInput" value="@melserng">
         <input type="button" id="connectButton" value="Conectar">
     </div>
     <audio id="audio" controls autoplay>
@@ -172,37 +174,232 @@
                 <input type="file" id="soundFiles" accept=".mp3,.wav,.ogg,.webm" multiple>
                 <button type="submit">Añadir sonido</button>
             </form>
-            <button id="connectButton">Conectar al Bot</button>
-            <p id="botStatusText"></p>
-          
-            <script>
-              function sendConnectRequest() {
-                fetch(`http://localhost:3000/api/connect`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ connect: true })
-                })
-                  .then(response => response.json())
-                  .then(data => {
-                    // Recibir el estado de conexión del bot
-                    const botStatus = data.botStatus;
-                    // Mostrar el estado de conexión en el elemento de texto
-                    document.getElementById('botStatusText').textContent = `Estado del Bot: ${botStatus}`;
-                    // Desactivar el botón si el estado del bot es true
-                    if (botStatus) {
-                      document.getElementById('connectButton').disabled = true;
+            <form id="createBotForm">
+                <label for="keyBOT">nombre del Bot:</label>
+                <input type="text" id="keyBOT" name="keyBOT" value="" required>
+                <br>
+                <label for="keySERVER">ip del Servidor:</label>
+                <input type="text" id="keySERVER" name="keySERVER" value="localhost" required>
+                <br>
+                <button type="submit">Crear Bot</button>
+                <button id="disconnectButton" disabled>Desconectar Bot</button>
+              </form>
+              
+              <script>
+                // Obtener el formulario y los inputs
+                const form = document.getElementById('createBotForm');
+                const keyBOTInput = document.getElementById('keyBOT');
+                const keySERVERInput = document.getElementById('keySERVER');
+              
+                // Cargar datos guardados del formulario si existen
+                if (localStorage.getItem('botFormData')) {
+                  const formData = JSON.parse(localStorage.getItem('botFormData'));
+                  keyBOTInput.value = formData.keyBOT;
+                  keySERVERInput.value = formData.keySERVER;
+                }
+              
+                // Escuchar el evento de envío del formulario
+                form.addEventListener('submit', function(event) {
+                  event.preventDefault(); // Evitar que se envíe el formulario
+                  
+                  // Obtener los valores de los inputs
+                  const keyBOT = keyBOTInput.value;
+                  const keySERVER = keySERVERInput.value;
+              
+                  // Guardar los datos en el localStorage
+                  const formData = {
+                    keyBOT: keyBOT,
+                    keySERVER: keySERVER
+                  };
+                  localStorage.setItem('botFormData', JSON.stringify(formData));
+              
+                });
+              </script>
+              <div id="resultMessage"></div>
+
+              <script>
+                let disconnectButtonPressCount = 0;
+                let disconnectButtonTimeout;
+                const disconnectButton = document.getElementById('disconnectButton');
+                document.getElementById('createBotForm').addEventListener('submit', function(event) {
+                  event.preventDefault();
+              
+                  const keyBOT = document.getElementById('keyBOT').value.trim();
+                  const keySERVER = document.getElementById('keySERVER').value.trim();
+                  const Initcommand = InitcommandInput.value.trim();
+                  const data = {
+                    eventType: 'createBot',
+                    data: {
+                      keyBot: keyBOT,
+                      keyServer: keySERVER,
+                      Initcommand: Initcommand
                     }
+                  };
+              
+                  fetch('http://localhost:3001/api/create', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                  })
+                  .then(response => response.json())
+                  .then(result => {
+                    console.log(result);
+                    document.getElementById('resultMessage').textContent = result.message;
+                    disconnectButton.disabled = false;
                   })
                   .catch(error => {
-                    console.error('Error:', error);
+                    console.error(error);
+                    alert('Ocurrió un error al crear el bot');
                   });
-              }
-          
-              // Agregar un event listener al botón para llamar a la función sendConnectRequest()
-              document.getElementById('connectButton').addEventListener('click', sendConnectRequest);
-            </script>
+                });
+
+                disconnectBot();
+                disconnectButton.addEventListener('click', function() {
+                  if (disconnectButtonPressCount === 0) {
+                    disconnectButtonPressCount++;
+                    clearTimeout(disconnectButtonTimeout);
+                    disconnectButtonTimeout = setTimeout(() => {
+                      disconnectBot();
+                      disconnectButtonPressCount = 0;
+                    }, 500);
+                  } else if (disconnectButtonPressCount === 1) {
+                    clearTimeout(disconnectButtonTimeout);
+                    reconnectBot();
+                    disconnectButtonPressCount = 0;
+                  }
+                });
+              
+                function disconnectBot() {
+                  fetch('http://localhost:3001/api/disconnect', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ eventType: 'disconnectBot' })
+                  })
+                  .then(response => response.json())
+                  .then(result => {
+                    console.log(result);
+                    document.getElementById('resultMessage').textContent = result.message;
+                    disconnectButton.disabled = true;
+                  })
+                  .catch(error => {
+                    console.error(error);
+                  });
+                }
+              
+                function reconnectBot() {
+                  fetch('http://localhost:3001/api/reconnect', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ eventType: 'reconnectBot' })
+                  })
+                  .then(response => response.json())
+                  .then(result => {
+                    console.log(result);
+                    document.getElementById('resultMessage').textContent = result.message;
+                    disconnectButton.disabled = false;
+                  })
+                  .catch(error => {
+                    console.error(error);
+                    alert('Ocurrió un error al reconectar el bot');
+                  });
+                }
+              </script>
+              <input type="text" id="playerNameInput" placeholder="minecraftPlayer" value="melser">
+              <button onclick="savePlayerName()">Guardar PLAYERNAME</button>
+              <input type="text" id="InitcommandInput" placeholder="login">
+              <button onclick="saveInitcommand()">Guardar comando inicial</button>
+              
+              <textarea type="text" id="commandListInput" rows="20" cols="180" placeholder="chat:
+    -
+likes:
+  default:
+    -
+gift:
+  default:
+    -
+    Rose:
+    -"></textarea>
+              <button onclick="saveCommandList()">Guardar COMANDOS para Minecraft interactivo</button>
+              <textarea type="text" id="keywordsInput" rows="20" cols="180" placeholder="keywordToGive:
+    escudo: minecraft:shield
+    cama: minecraft:red_bed
+keywordToMob:
+    enderman: minecraft:enderman
+    cerdo: minecraft:pig
+              "></textarea>
+              <button onclick="saveKeywords()">Guardar COMANDOS para el chat, mobs, items</button>
+              <script>
+                function saveInitcommand() {
+                  const InitcommandInput = document.getElementById('InitcommandInput');
+                  const Initcommand = InitcommandInput.value.trim();
+                
+                  // Guardar el comando inicial en el localStorage
+                  localStorage.setItem('Initcommand', Initcommand);
+                
+                  // Mostrar un mensaje de éxito
+                  alert('El comando inicial se ha guardado correctamente');
+                }
+                const InitcommandInput = document.getElementById('InitcommandInput');
+                const savedInitcommand = localStorage.getItem('Initcommand');
+              
+                if (savedInitcommand) {
+                  // Si hay un comando inicial guardado, asignarlo al campo InitcommandInput
+                  InitcommandInput.value = savedInitcommand;
+                }
+                function savePlayerName() {
+                    const playerNameInput = document.getElementById('playerNameInput');
+                    const playerName = playerNameInput.value.trim();
+                  
+                    // Validar que se haya ingresado un nombre de jugador válido
+                    if (playerName === '') {
+                      alert('Por favor, ingrese un nombre de jugador válido');
+                      return;
+                    }
+                  
+                    // Guardar el nombre del jugador en el localStorage
+                    localStorage.setItem('playerName', playerName);
+                  
+                    // Mostrar un mensaje de éxito
+                    alert('El nombre del jugador se ha guardado correctamente');
+                  }
+              </script> 
+              <script>
+                  let keywordsList = {};
+  
+                  
+                  // Asegúrate de que 'commandList' esté correctamente definido y asignado antes de usarlo.
+                // Obtener el contenido almacenado en el localStorage
+                const storedKeywords = localStorage.getItem('keywords');
+                const storedCommandList = localStorage.getItem('commandList');
+              
+                // Actualizar el contenido de los campos de texto si hay datos guardados
+                if (storedKeywords) {
+                  document.getElementById('keywordsInput').value = storedKeywords;
+                }
+              
+                if (storedCommandList) {
+                  document.getElementById('commandListInput').value = storedCommandList;
+                }
+              
+                function saveKeywords() {
+                  const keywordsInput = document.getElementById('keywordsInput').value;
+                  localStorage.setItem('keywords', keywordsInput);
+                  console.log('Datos de la lista de keywords guardados en el localStorage');
+                }
+              
+                function saveCommandList() {
+                  const commandListInput = document.getElementById('commandListInput').value;
+                  localStorage.setItem('commandList', commandListInput);
+                  console.log('Datos de la lista de comandos guardados en el localStorage');
+                }
+              </script>
+                    
             <div id="dropdownButton" onclick="toggleDropdownMenu()">
                 <div id="selectedSound">
                     Sonidos

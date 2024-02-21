@@ -17,7 +17,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
             document.body.className = 'theme-light-hover';
         }
     });
+    document.body.className = 'theme-dark';
+    window.settings.theme = 'dark'; // Guardar la configuración del tema
 
+    // Cambiar al tema claro después de 3 segundos
+    setTimeout(() => {
+      document.body.className = 'theme-dark';
+      window.settings.theme = 'dark'; // Actualizar la configuración del tema
+    }, 1500);
     document.body.addEventListener('mouseout', () => {
         // Cuando el cursor no está sobre el cuerpo del documento, hacerlo transparente
         if (document.body.className === 'theme-light-hover') {
@@ -178,7 +185,7 @@ function addChatItem(color, data, text, summarize) {
         "latemueh", "grih", "mhih", "ardhah", "vah", "llah", "driya", "temuh", "wi bom",
         "feh ih", "ih toh", "neh grih", "grih toh", "yosi tepar", "tola kah", "kah beza", "beza deum", "iasi temuh",
         "zojar jacha", "driya zojar", "lah driya", "+tur", "tu boca escuchaste", "ohn tu boca",
-        "harda", "", "", "", "", "", "", "", "", "", "", "",
+        "harda", "gemi2", "ghemi", "hemi2", "", "", "", "", "", "", "", "",
         "", "", "", "", "", "", "", "", "", "", "", "",
         "", "", "", "", "", "", "", "", "", "", "", "",
 
@@ -347,7 +354,7 @@ function testOverlay() {
 }
 let userStats = {};
 
-connection.on('like', (msg) => {
+connection.on('like', (msg, data) => {
     if (typeof msg.totalLikeCount === 'number') {
         likeCount = msg.totalLikeCount;
         updateRoomStats();
@@ -365,7 +372,7 @@ connection.on('like', (msg) => {
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
     while (sendDataCheckbox.checked && userStats[msg.uniqueId].likes >= userStats[msg.uniqueId].milestone && userStats[msg.uniqueId].milestone <= 300) {
         const milestoneLikes = `${userStats[msg.uniqueId].milestone}LIKES`;
-        sendToServer('likes', msg, milestoneLikes, "color", "msg", "message");
+        handleEvent('likes', data);
         console.log(milestoneLikes);
         obtenerYenviarCommandID({ eventType: 'likes', string: milestoneLikes });
 
@@ -615,7 +622,7 @@ connection.on('member', (msg) => {
         joinMsgDelay -= addDelay;
         addChatItem('#CDA434', msg, 'welcome', true);
         message = msg.uniqueId;
-        sendToServer('welcome', msg, message, null, msg);
+        handleEvent('welcome', msg, message, null, msg);
     }, joinMsgDelay);
 })
 let processedMessages = {};
@@ -657,7 +664,8 @@ connection.on('chat', (data) => {
     if (window.settings.showChats === "0") return;
 
     addChatItem('', data, message);
-    sendToServer('chat', data, message, null, msg);
+    sendToServer('chat', data);
+    handleEvent('chat', data);
 
     if (message === lastMessage) {
         return;
@@ -688,7 +696,8 @@ connection.on('gift', (data) => {
     obtenerYenviarCommandID({ eventType: 'gift', string: data.giftName });
     }
     addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
-    sendToServer('gift', data, null, null, data);
+    handleEvent('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
+    sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
     if (!isPendingStreak(data) && data.diamondCount > 0) {
         diamondsCount += (data.diamondCount * data.repeatCount);
 
@@ -714,6 +723,8 @@ connection.on('social', (data) => {
         if (sendDataCheckbox.checked) {
             if (!seguidores.has(data.nickname)) {
                 obtenerYenviarCommandID({ eventType: 'follow', string: `follow` });
+                handleEvent('follow', data);
+                sendToServer('follow', data);
                 console.log(`${data.nickname} es un gato mas`);
                 seguidores.add(data.nickname);
                 // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
@@ -725,6 +736,7 @@ connection.on('social', (data) => {
     } else if (data.displayType.includes('share')) {
         color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
         message = `${data.nickname} compartió el directo`;
+        handleEvent('share', data);
         if (sendDataCheckbox.checked) {
             obtenerYenviarCommandID({ eventType: 'share', string: `share` });
         }
@@ -736,6 +748,7 @@ connection.on('social', (data) => {
     addChatItem(color, data, message);
     sendToServer('social', data, null, color, message);
 });
+
 connection.on('streamEnd', () => {
 
     $('#stateText').text('Transmisión terminada.');
@@ -1643,81 +1656,170 @@ function importSettings() {
         document.getElementById('loadingIndicator').style.display = 'none';
     }
 }
-
 const sentData = new Set(); // Conjunto para almacenar los datos enviados
-
-async function sendToServer(eventType, data, text, color, msg, message) {
-  const ports = [3000, 3001];
-  let retryCount = 0;
-  let lastRetryTimestamp = 0;
-
-  // Función para verificar si el servidor está disponible
-  async function isServerAvailable(port) {
-    return new Promise((resolve) => {
-      setTimeout(async () => {
-          const response = await fetch(`http://localhost:${port}/api/health`);
-          if (response.ok) {
-            resolve(true);
-          } else {
-            resolve(false);
-          }
-      }, 5000); // Retraso de 5 segundos (ajusta el valor según tus necesidades)
-    });
-  }
-
-  // Verificar si ha pasado al menos un minuto desde el último intento
-  const currentTimestamp = Date.now();
-  if (currentTimestamp - lastRetryTimestamp >= 60000) {
-    retryCount = 0; // Reiniciar el conteo de intentos si ha pasado un minuto
-  }
-
-  // Hacer hasta 20 intentos en un minuto
-  while (retryCount < 2) {
-    let serverAvailable = false;
-
-    for (const port of ports) {
-      serverAvailable = await isServerAvailable(port);
-
-      if (serverAvailable) {
-        const dataKey = JSON.stringify({ eventType, data, text, color, msg, message });
-
-        // Verificar si los datos ya se enviaron previamente
-        if (sentData.has(dataKey)) {
-          continue;
-        }
-
-        try {
-          const response = await fetch(`http://localhost:${port}/api/receive`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ eventType, data, text, color, msg, message }),
-          });
-
-          if (response.ok) {
-            sentData.add(dataKey); // Agregar los datos al conjunto de datos enviados
-            const responseData = await response.json();
-            console.log(responseData);
-          } else {
-            console.error(`Server on port ${port} status: ${response.status}`);
-          }
-        } catch (error) {
-          console.error(`Error sending data to server on port ${port}:`, error);
-        }
-      }
+document.addEventListener('DOMContentLoaded', function() {
+    const playerName = localStorage.getItem('playerName');
+  
+    // Verificar si hay un nombre de jugador guardado
+    if (playerName) {
+      const playerNameInput = document.getElementById('playerNameInput');
+      playerNameInput.value = playerName;
     }
+});
+const keyplayerName = localStorage.getItem('playerName') || 'defaultPlayerName';
+let keywords = {}; // Inicializar como un objeto vacío en lugar de null
+let commandList = null;
+let lastCommand = null;
+const playerNames = [`${keyplayerName}`, `${keyplayerName}`];
+let currentPlayerIndex = 0;
+const keywordsInput = localStorage.getItem('keywords');
+const commandListInput = localStorage.getItem('commandList');
 
-    // Reiniciar el conteo de intentos si se ha establecido la conexión
-    retryCount = 0;
-    lastRetryTimestamp = 0;
-
-  }
-
-  lastRetryTimestamp = currentTimestamp; // Registrar la marca de tiempo del último intento
-  retryCount = 0; // Reiniciar el conteo de intentos después de la pausa
+if (keywordsInput) {
+  keywords = jsyaml.load(keywordsInput); // Asignar los datos cargados desde el localStorage a 'keywords'
+} else {
+  keywords = {}; // Asignar un objeto vacío si no hay datos en el localStorage
 }
 
+if (commandListInput) {
+  commandList = jsyaml.load(commandListInput);
+} else {
+  commandList = {};
+}
+function handleEvent(eventType, data, msg, likes) {
+  let playerName = null;
+  let eventCommands = [];
+
+  if (playerNames[currentPlayerIndex] === undefined || playerNames[currentPlayerIndex].length < 2) {
+    playerName = `${keyplayerName}`;
+  } else {
+    playerName = playerNames[currentPlayerIndex];
+  }
+
+  currentPlayerIndex++;
+  if (currentPlayerIndex >= playerNames.length) {
+    currentPlayerIndex = 0;
+  }
+
+  if (eventType === 'gift') {
+    let giftName = data.giftName.trim().toLowerCase();
+    let foundGift = Object.keys(commandList.gift).find(gift => gift.toLowerCase() === giftName);
+    if (foundGift) {
+      eventCommands = commandList.gift[foundGift];
+    } else {
+      eventCommands = commandList.gift['default'];
+    }
+  } else if (commandList[eventType]) {
+    if (typeof commandList[eventType] === 'object' && !Array.isArray(commandList[eventType])) {
+      if (data.likes && commandList[eventType][data.likes]) {
+        eventCommands = commandList[eventType][data.likes];
+      } else {
+        eventCommands = commandList[eventType]['default'];
+      }
+    } else {
+      eventCommands = commandList[eventType];
+    }
+  }
+
+  if (Array.isArray(eventCommands)) {
+    eventCommands.forEach(command => {
+      let replacedCommand = command
+        .replace('{uniqueId}', data.uniqueId || '')
+        .replace('{comment}', data.comment || '')
+        .replace('{milestoneLikes}', likes || '')
+        .replace('{likes}', likes || '')
+        .replace('{message}', data.comment || '')
+        .replace('{giftName}', data.giftName || '')
+        .replace('{repeatCount}', data.repeatCount || '')
+        .replace('{playername}', playerName || '');
+
+      if (eventType !== 'gift' && replacedCommand === lastCommand) {
+        return;
+      }
+
+      if (data.comment && keywords.keywordToGive[data.comment.toLowerCase()]) {
+        let itemKeyword = Object.keys(keywords.keywordToGive).find(keyword => data.comment.toLowerCase().includes(keyword.toLowerCase()));
+        if (itemKeyword) {
+          replacedCommand = `/execute at @a run give @a ${keywords.keywordToGive[itemKeyword]}`;
+          console.info(replacedCommand);
+        }
+      } else if (command.includes('item')) {}
+
+      if (data.comment && keywords.keywordToMob[data.comment.toLowerCase()]) {
+        let mobKeyword = Object.keys(keywords.keywordToMob).find(keyword => data.comment.toLowerCase().includes(keyword.toLowerCase()));
+        if (mobKeyword) {
+          replacedCommand = `/execute at ${playerName} run summon ${keywords.keywordToMob[mobKeyword]}`;
+          console.info(replacedCommand);
+        }
+      } else if (command.includes('mob')) {}
+
+      let repeatCount = data.repeatCount || 1;
+      for (let i = 0; i < repeatCount; i++) {
+          if (eventType === 'gift') {
+            setTimeout(() => {
+              console.log('comando1', replacedCommand);
+              sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
+            }, 100); // antes de enviar el comando
+          } else if (replacedCommand !== lastCommand) {
+            setTimeout(() => {
+              lastCommand = replacedCommand;
+              console.log('comando2', replacedCommand);
+              sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
+            }, 100); // antes de enviar el comando
+          }
+        }
+      
+    });
+  }
+}
+
+function sendReplacedCommand(replacedCommand) {
+    fetch('http://localhost:3001/api/receive', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ replacedCommand })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log(data); // Maneja la respuesta del servidor si es necesario
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+}
+
+async function sendToServer(eventType, data, text, color, msg, message) {
+  const port = 3000; // Puerto en el que se ejecutará el servidor
+
+  const dataKey = JSON.stringify({ eventType, data, text, color, msg, message });
+
+  // Verificar si los datos ya se enviaron previamente
+  if (sentData.has(dataKey)) {
+    return; // Salir de la función si los datos ya se enviaron
+  }
+
+  try {
+    const response = await fetch(`http://localhost:${port}/api/receive`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ eventType, data, text, color, msg, message }),
+    });
+
+    if (response.ok) {
+      sentData.add(dataKey); // Agregar los datos al conjunto de datos enviados
+      const responseData = await response.json();
+      console.log(responseData);
+    } else {
+      console.error(`Server on port ${port} status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error(`Error sending data to server on port ${port}:`, error);
+  }
+}
 window.onload = async function() {
     try {
         audio = document.getElementById("audio");

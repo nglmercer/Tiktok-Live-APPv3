@@ -10,11 +10,124 @@ app.on('ready', () => {
   const { Server } = require('socket.io');
   const { TikTokConnectionWrapper, getGlobalConnectionCount } = require('./connectionWrapper');
   const { clientBlocked } = require('./limiter');
-  const yaml = require('js-yaml');
   const cors = require('cors');
-  const fs = require('fs');
   const mineflayer = require('mineflayer');
-
+  
+  const app12 = express();
+  
+  // CONFIGURACION DE EJEMPLO
+  let keyBOT = null; // BOT MINECRAFT DAR OP
+  let keySERVER = null; // IP SERVER
+  //const keySERVERPORT = '25565'; // PUERTO SERVER
+  
+  let bot;
+  let botStatus = false;
+  let disconnect = false;
+  app12.use(cors());
+  app12.use(express.json());
+  
+  app12.post('/api/receive', (req, res) => {
+    const { replacedCommand } = req.body;
+    if (botStatus) {
+      bot.chat(replacedCommand);
+    }
+    console.log('comando minecraft', replacedCommand);
+  
+    return res.json({ message: 'Datos recibidos' });
+  });
+  
+  app12.post('/api/create', (req, res) => {
+    const { eventType, data } = req.body;
+  
+    if (eventType === 'createBot') {
+      const { keyBot, keyServer, Initcommand } = data;
+      if ((keyBot) && (keyServer)) {
+        if (!botStatus) {
+          createBot(keyBot, keyServer);
+          bot.once('login', () => {
+            res.json({ message: 'Bot creado correctamente' });
+            bot.chat(Initcommand);
+          });
+        } else {
+          res.json({ message: 'Bot ya está conectado', botStatus });
+        }
+      } else if(!disconnect) {
+        createBot(keyBot, keyServer);
+        bot.once('login', () => {
+          res.json({ message: 'Bot creado correctamente else if' });
+          bot.chat(Initcommand);
+        });
+      }
+    } else if (eventType === 'disconnectBot') {
+      disconnect = true;
+      disconnectBot();
+      res.json({ message: 'Bot desconectado correctamente' });
+    } else {
+      res.json({ message: 'Datos recibidos' });
+    }
+  });
+  function createBot(keyBot, keyServer) {
+    console.log("createBot now...");
+    if (!botStatus) {
+      bot = mineflayer.createBot({
+        host: keyServer,
+        username: keyBot,
+        //port: keySERVERPORT,
+      });
+  
+      bot.on('login', () => {
+        botStatus = true;
+        console.log('Bot is Online');
+        bot.chat('say Bot is Online');
+      });
+  
+      bot.on('error', (err) => {
+        console.log('Error:', err);
+      });
+  
+      bot.on('end', () => {
+        botStatus = false;
+        if (!disconnect) {
+          console.log('Connection ended, reconnecting in 3 seconds');
+          if (!botStatus) {
+            setTimeout(() => createBot(keyBot, keyServer), 3000);
+          }
+        }
+      });
+    } else {
+      console.log("No se creó el bot, estado:", botStatus);
+    }
+  }
+  app12.post('/api/disconnect', (req, res) => {
+    const { eventType } = req.body;
+    if (eventType === 'disconnectBot') {
+      disconnectBot();
+      disconnect = true;
+      res.json({ message: 'Bot desconectado correctamente' });
+    } else {
+      res.json({ message: 'Datos recibidos' });
+    }
+  });
+  app12.post('/api/reconnect', (req, res) => {
+    const { eventType } = req.body;
+    if (eventType === 'reconnectBot') {
+      reconnectBot();
+      res.json({ message: 'Bot reconectado correctamente' });
+    } else {
+      res.json({ message: 'Datos recibidos' });
+    }
+  });
+  function disconnectBot() {
+    if (botStatus) {
+      bot.quit();
+      botStatus = false;
+      console.log('Bot desconectado');
+    }
+  }
+  
+  // Inicia el servidor web
+  const webServerPort = 3001;
+  app12.listen(webServerPort, () => console.info(`Servidor web escuchando en el puerto ${webServerPort}`));
   let mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
@@ -25,7 +138,6 @@ app.on('ready', () => {
   });
 
   const app1 = express();
-  const app2 = express();
   const httpServer = createServer(app1);
   const io = new Server(httpServer, {
     cors: {
@@ -33,31 +145,6 @@ app.on('ready', () => {
     }
   });
 
-  let keywords = null;
-  let commandList = null;
-  if (fs.existsSync('keywords.yaml')) {
-    fs.readFile('keywords.yaml', 'utf8', (err, data) => {
-      if (err) throw err;
-      const keywords = yaml.load(data);
-      // Hacer algo con los datos cargados desde keywords.yaml
-    });
-  } else {
-    // El archivo keywords.yaml no existe
-    // Puedes tomar medidas alternativas o mostrar un mensaje de error
-    console.error('El archivo keywords.yaml no se encontró.');
-  }
-  
-  if (fs.existsSync('commandList.yaml')) {
-    fs.readFile('commandList.yaml', 'utf8', (err, data) => {
-      if (err) throw err;
-      const commandList = yaml.load(data);
-      // Hacer algo con los datos cargados desde commandList.yaml
-    });
-  } else {
-    // El archivo commandList.yaml no existe
-    // Puedes tomar medidas alternativas o mostrar un mensaje de error
-    console.error('El archivo commandList.yaml no se encontró.');
-  }
   const port = process.env.PORT || 8081;
 
   mainWindow.loadURL(`http://localhost:${port}`);
@@ -137,25 +224,6 @@ app.on('ready', () => {
           }
       });
   });
-  app2.use(cors());
-  app2.use(express.json());
-
-  app2.get('/api/health', (req, res) => {
-    res.json({ message: 'Servidor en funcionamiento' });
-  });
-  app2.post('/api/connect', (req, res) => {
-    const { connect } = req.body;
-    if (connect) {
-      // Lógica para conectar al bot y obtener su estado de conexión
-      // Aquí puedes llamar a la función createBot() o realizar las acciones necesarias para conectarte al bot
-      // Luego, establece el estado de conexión del bot (botStatus) en base a la conexión exitosa o fallida
-      
-      // Ejemplo de respuesta al cliente con el estado de conexión del bot
-      res.json({ botStatus: botStatus });
-    } else {
-      res.status(400).json({ message: 'Faltan datos en la solicitud' });
-    }
-  });
 
   // Emit global connection statistics
   setInterval(() => {
@@ -164,8 +232,6 @@ app.on('ready', () => {
 
   // Iniciar el servidor HTTP
   httpServer.listen(port);
-  const webServerPort = 3000;
-  app2.listen(webServerPort, () => console.info(`Servidor web escuchando en el puerto ${webServerPort}`));
   console.info(`Server running! Please visit http://localhost:${port}`);
 });
 
