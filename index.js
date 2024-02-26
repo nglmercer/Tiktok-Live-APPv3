@@ -41,39 +41,49 @@ app.on('ready', () => {
   
     if (eventType === 'createBot') {
       const { keyBot, keyServer, Initcommand } = data;
-      if ((keyBot) && (keyServer)) {
+      if (keyBot && keyServer) {
         if (!botStatus) {
-          createBot(keyBot, keyServer);
+          const serverParts = keyServer.split(':');
+          const serverAddress = serverParts[0];
+          const serverPort = serverParts[1] ? parseInt(serverParts[1]) : null;
+  
+          createBot(keyBot, serverAddress, serverPort);
           bot.once('login', () => {
-            res.json({ message: 'Bot creado correctamente' });
+            res.json({ message: 'Bot creado' });
             bot.chat(Initcommand);
           });
         } else {
           res.json({ message: 'Bot ya está conectado', botStatus });
         }
-      } else if(!disconnect) {
+      } else if (!disconnect) {
         createBot(keyBot, keyServer);
         bot.once('login', () => {
-          res.json({ message: 'Bot creado correctamente else if' });
+          res.json({ message: 'Bot creado sin puerto' });
           bot.chat(Initcommand);
         });
       }
     } else if (eventType === 'disconnectBot') {
       disconnect = true;
       disconnectBot();
-      res.json({ message: 'Bot desconectado correctamente' });
+      res.json({ message: 'Bot desconectado' });
     } else {
       res.json({ message: 'Datos recibidos' });
     }
   });
-  function createBot(keyBot, keyServer) {
+  
+  function createBot(keyBot, keyServer, keyServerPort) {
     console.log("createBot now...");
     if (!botStatus) {
-      bot = mineflayer.createBot({
+      const botOptions = {
         host: keyServer,
         username: keyBot,
-        //port: keySERVERPORT,
-      });
+      };
+  
+      if (keyServerPort) {
+        botOptions.port = keyServerPort;
+      }
+  
+      bot = mineflayer.createBot(botOptions);
   
       bot.on('login', () => {
         botStatus = true;
@@ -90,7 +100,7 @@ app.on('ready', () => {
         if (!disconnect) {
           console.log('Connection ended, reconnecting in 3 seconds');
           if (!botStatus) {
-            setTimeout(() => createBot(keyBot, keyServer), 3000);
+            setTimeout(() => createBot(keyBot, keyServer, keyServerPort), 3000);
           }
         }
       });
@@ -103,7 +113,7 @@ app.on('ready', () => {
     if (eventType === 'disconnectBot') {
       disconnectBot();
       disconnect = true;
-      res.json({ message: 'Bot desconectado correctamente' });
+      res.json({ message: 'Bot desconectado' });
     } else {
       res.json({ message: 'Datos recibidos' });
     }
@@ -112,7 +122,7 @@ app.on('ready', () => {
     const { eventType } = req.body;
     if (eventType === 'reconnectBot') {
       reconnectBot();
-      res.json({ message: 'Bot reconectado correctamente' });
+      res.json({ message: 'Bot reconectado' });
     } else {
       res.json({ message: 'Datos recibidos' });
     }

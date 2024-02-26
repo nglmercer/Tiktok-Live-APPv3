@@ -46,10 +46,17 @@ button {
     transition: background-color .3s ease-in-out;
 }
 textarea {
-    min-height: 35px;
+    float: inherit;
+    min-height: 200px;
+    max-height: 900px;
+    min-width: 900px;
+    max-width: 1500px;
     border: 1px solid #5e4dcd7d;
     border-radius: 6px 6px 6px 6px;
-    background-color: #5e4dcd9c;
+    background-color: #292b2bd1;
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: bolder;
+    font-size: 4em;
     cursor: auto;
     color: white;
     font-weight: bolder;
@@ -300,12 +307,11 @@ button:hover {
 
 body.theme-dark {
     background: #000000;
-    color: #ffc800;
+    color: #eceaea;
 }
 
 body.theme-light {
-    transition: background-color 4s ease;
-    background: transparent;
+    background: rgba(0, 0, 0, 0);
     color: rgb(2, 2, 2);
 }
 

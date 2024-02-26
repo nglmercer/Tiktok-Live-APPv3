@@ -21,10 +21,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     window.settings.theme = 'dark'; // Guardar la configuración del tema
 
     // Cambiar al tema claro después de 3 segundos
-    setTimeout(() => {
-      document.body.className = 'theme-dark';
-      window.settings.theme = 'dark'; // Actualizar la configuración del tema
-    }, 1500);
     document.body.addEventListener('mouseout', () => {
         // Cuando el cursor no está sobre el cuerpo del documento, hacerlo transparente
         if (document.body.className === 'theme-light-hover') {
@@ -121,8 +117,6 @@ function isPendingStreak(data) {
  */
 let lastMessage = "";
 let lastNickname = "";
-const ignoredUser = "buttowski";
-
 function addChatItem(color, data, text, summarize) {
     let container = location && location.href ? (location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer')) : $('.chatcontainer');
     if (container.find('div').length > 500) {
@@ -147,22 +141,44 @@ function addChatItem(color, data, text, summarize) {
         scrollTop: container[0].scrollHeight
     }, 400);
     addOverlayEvent(data, text, color, false);
-
+    let nameuser = data.uniqueId;
+    let userneim = data.nickname;
     let filterWordsInput = document.getElementById('filter-words').value;
+    let filterUsersInput = document.getElementById('filter-users').value;
     let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
+    let filterUsers = (filterUsersInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
     let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
+    let remainingUsers = filterUsersInput.replace(/\/(.*?)\//g, '');
     filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
+    filterUsers = filterUsers.concat(remainingUsers.split(/\s/).filter(Boolean));
     let lowerCaseText = text && text.toLowerCase() && text.replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
     let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
+    let lowerCaseUser = nameuser.toLowerCase() && userneim.toLowerCase();
+
     if (!userPoints[data.nickname]) {
         userPoints[data.nickname] = 20; // Asignar 10 puntos por defecto
         console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
     }
     if (sendsoundCheckbox.checked) {
-        playSoundByText(text);
+        if (userPoints[data.nickname] <= 0) {
+            console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+            return;
+        } 
+        if (userPoints[data.nickname] >= 1) {
+            userPoints[data.nickname]--;
+            playSoundByText(text);
+
+            console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+            return;
+        }
+        if (userPoints[data.nickname] >= 30) {
+            userPoints[data.nickname]--;
+            playSoundByText(text);
+            console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+        }
     }
-    
-    const customFilterWords = [
+
+    const customfilterWords = [
         "opahsaron", "tedesku", "unanimalh", "doketesam", "unmachetedesfigurolacara",
         "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh", "tihtuh", "demih", "petatemah",
         "tonash", "klezyanas", "onunasko", "melavosh", "tttthummamma", "vansokonun", "beshilketiensh",
@@ -191,16 +207,27 @@ function addChatItem(color, data, text, summarize) {
 
       ];
       
-    for (let word of customFilterWords) {
+    for (let word of customfilterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 0) {
                 console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
             if (userPoints[data.nickname] >= 1) {
-                userPoints[data.nickname] -= 1;
                 userPoints[data.nickname]--;
                 console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                return;
+            }
+            if (userPoints[data.nickname] >= 30) {
+                userPoints[data.nickname]--;
+                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+            }
+            if (filterUsers.length > 0) {
+                for (let word of filterUsers) {
+                  if (word && lowerCaseUser.includes(word.toLowerCase())) {
+                    console.log("Saltar filtro para usuario:", data.uniqueId);
+                  }
+                }
             }
         }
     }
@@ -212,7 +239,7 @@ function addChatItem(color, data, text, summarize) {
       console.log(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
       return;
     }
-        
+
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 2) {
@@ -220,6 +247,11 @@ function addChatItem(color, data, text, summarize) {
                 return;
             } 
             if (userPoints[data.nickname] >= 2) {
+                userPoints[data.nickname]--;
+                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                return;
+            }
+            if (userPoints[data.nickname] >= 30) {
                 userPoints[data.nickname]--;
                 console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
             }
@@ -354,35 +386,35 @@ function testOverlay() {
 }
 let userStats = {};
 
-connection.on('like', (msg, data) => {
-    if (typeof msg.totalLikeCount === 'number') {
-        likeCount = msg.totalLikeCount;
+connection.on('like', (data) => {
+    if (typeof data.totalLikeCount === 'number') {
+        likeCount = data.totalLikeCount;
         updateRoomStats();
     }
     // Initialize user's stats
-    if (!userStats[msg.uniqueId]) {
-        userStats[msg.uniqueId] = { likes: 0, totalLikes: 0, milestone: 50 };
+    if (!userStats[data.uniqueId]) {
+        userStats[data.uniqueId] = { likes: 0, totalLikes: 0, milestone: 50 };
     }
 
     // Increment user's like count and total like count
-    userStats[msg.uniqueId].likes += msg.likeCount;
-    userStats[msg.uniqueId].totalLikes += msg.likeCount;
+    userStats[data.uniqueId].likes += data.likeCount;
+    userStats[data.uniqueId].totalLikes += data.likeCount;
 
     // Check if user's like count has reached the milestone
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
-    while (sendDataCheckbox.checked && userStats[msg.uniqueId].likes >= userStats[msg.uniqueId].milestone && userStats[msg.uniqueId].milestone <= 300) {
-        const milestoneLikes = `${userStats[msg.uniqueId].milestone}LIKES`;
-        handleEvent('likes', data);
-        console.log(milestoneLikes);
+    while (sendDataCheckbox.checked && userStats[data.uniqueId].likes >= userStats[data.uniqueId].milestone && userStats[data.uniqueId].milestone <= 300) {
+        const milestoneLikes = `${userStats[data.uniqueId].milestone}LIKES`;
+
+        console.log('Milestone Likes:', milestoneLikes);
         obtenerYenviarCommandID({ eventType: 'likes', string: milestoneLikes });
 
-        // Send data or msg.uniqueId and $ likes
-        addOverlayEvent(msg, `${userStats[msg.uniqueId].milestone} likes`, 'blue', false, 1);
-
-        userStats[msg.uniqueId].likes -= userStats[msg.uniqueId].milestone; // Deduct milestone likes from user's like count
-        userStats[msg.uniqueId].milestone += 50; // Increase the milestone
-        if (userStats[msg.uniqueId].milestone > 300) {
-            userStats[msg.uniqueId].milestone = 50; // Reset the milestone
+        // Send data or data.uniqueId and $ likes
+        addOverlayEvent(data, `${userStats[data.uniqueId].milestone} likes`, 'blue', false, 1);
+        handleEvent('likes', data);
+        userStats[data.uniqueId].likes -= userStats[data.uniqueId].milestone; // Deduct milestone likes from user's like count
+        userStats[data.uniqueId].milestone += 50; // Increase the milestone
+        if (userStats[data.uniqueId].milestone > 300) {
+            userStats[data.uniqueId].milestone = 50; // Reset the milestone
         }
     }
 });
@@ -468,7 +500,7 @@ function addOverlayEvent(data, text, color, isGift, repeatCount) {
     }, totalTime);
 }
 let grid = [];
-const gridSize = 100; // Tamaño de la celda de la cuadrícula en píxeles
+const gridSize = 150; // Tamaño de la celda de la cuadrícula en píxeles
 let precalculatedPositions = [];
 
 function initializeGrid(container) {
@@ -477,8 +509,8 @@ function initializeGrid(container) {
     const gridColumns = Math.floor(containerRect.width / gridSize);
     grid = new Array(gridRows).fill(0).map(() => new Array(gridColumns).fill(false));
 
-    // Precalculate 50 random positions
-    for (let i = 0; i < 30; i++) {
+    // Precalculate 15 random positions
+    for (let i = 0; i < 15; i++) {
         let row, column;
         do {
             row = Math.floor(Math.random() * gridRows);
@@ -505,9 +537,9 @@ function isNearCorner(row, column, gridRows, gridColumns) {
 let existingPositions = [];
 
 function getRandomPosition() {
-    const elementSize = 50; // Define el tamaño del elemento que estás generando
-    const spacing = 50; // Define el espaciado entre elementos
-    const maxAttempts = 50; // Define el número máximo de intentos para encontrar una nueva posición
+    const elementSize = 80; // Define el tamaño del elemento que estás generando
+    const spacing = 80; // Define el espaciado entre elementos
+    const maxAttempts = 20; // Define el número máximo de intentos para encontrar una nueva posición
 
     const container = document.getElementById('overlayEventContainer');
     const containerRect = container.getBoundingClientRect();
@@ -599,16 +631,17 @@ function addGiftItem(data) {
 }
 
 // viewer stats
-connection.on('roomUser', (msg) => {
-    if (typeof msg.viewerCount === 'number') {
-        viewerCount = msg.viewerCount;
+connection.on('roomUser', (data) => {
+    if (typeof data.viewerCount === 'number') {
+        viewerCount = data.viewerCount;
         updateRoomStats();
     }
 })
 
 // Member join
 let joinMsgDelay = 0;
-connection.on('member', (msg) => {
+// Member join
+connection.on('member', (data) => {
 
     if (window.settings.showJoins === "0") return;
 
@@ -620,9 +653,9 @@ connection.on('member', (msg) => {
 
     setTimeout(() => {
         joinMsgDelay -= addDelay;
-        addChatItem('#CDA434', msg, 'welcome', true);
-        message = msg.uniqueId;
-        handleEvent('welcome', msg, message, null, msg);
+        addChatItem('#CDA434', data, 'welcome', true);
+        message = data.uniqueId;
+        handleEvent('welcome', data, message, null, data);
     }, joinMsgDelay);
 })
 let processedMessages = {};
@@ -632,16 +665,30 @@ let userPoints = {};
 
 connection.on('chat', (data) => {
     let message = data.comment;
-    
+    let nameuser = data.uniqueId; 
     let filterWordsInput = document.getElementById('filter-words').value;
+    let filterUsersInput = document.getElementById('filter-users').value;
     let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
+    let filterUsers = (filterUsersInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
+    
     // Eliminar estas secuencias del texto de entrada
     let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
+    let remainingUsers = filterUsersInput.replace(/\/(.*?)\//g, '');
     // Dividir el texto restante por espacios y añadir las palabras al array
     filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
+    filterUsers = filterUsers.concat(remainingUsers.split(/\s/).filter(Boolean));
     let lowerCaseText = message.toLowerCase();
+    let lowerCaseUser = nameuser.toLowerCase();
+    
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
+            if (filterUsers.length > 0) {
+                for (let word of filterUsers) {
+                  if (word && lowerCaseUser.includes(word.toLowerCase())) {
+                    console.log("Saltar filtro para usuario:", data.uniqueId);
+                  }
+                }
+            }
             return;
         }
     }
@@ -1686,6 +1733,64 @@ if (commandListInput) {
 } else {
   commandList = {};
 }
+function testHandleEvent() {
+    var eventType = document.getElementById('eventType').value;
+    var data = document.getElementById('data').value;
+    let playerName = null;
+    let eventCommands = [];
+  
+    if (playerNames[currentPlayerIndex] === undefined || playerNames[currentPlayerIndex].length < 2) {
+      playerName = `${keyplayerName}`;
+    } else {
+      playerName = playerNames[currentPlayerIndex];
+    }
+  
+    currentPlayerIndex++;
+    if (currentPlayerIndex >= playerNames.length) {
+      currentPlayerIndex = 0;
+    }
+    if (eventType === 'gift') {
+        let dataname = data.trim().toLowerCase();
+        let foundGift = Object.keys(commandList.gift).find(gift => gift.toLowerCase() === dataname);
+        if (foundGift) {
+          eventCommands = commandList.gift[foundGift];
+        } else {
+          eventCommands = commandList.gift['default'];
+        }
+      } else if (commandList[eventType]) {
+        if (typeof commandList[eventType] === 'object' && !Array.isArray(commandList[eventType])) {
+          if (data.likes && commandList[eventType][data.likes]) {
+            eventCommands = commandList[eventType][data.likes];
+          } else {
+            eventCommands = commandList[eventType]['default'];
+          }
+        } else {
+          eventCommands = commandList[eventType];
+        }
+      }
+      if (Array.isArray(eventCommands)) {
+        eventCommands.forEach(command => {
+          let replacedCommand = command
+            .replace('{playername}', playerName || '');
+            if (eventType === 'gift') {
+                setTimeout(() => {
+                  console.log('comando1', replacedCommand);
+                  sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
+                }, 100); // antes de enviar el comando
+              } else if (replacedCommand !== lastCommand) {
+                setTimeout(() => {
+                  lastCommand = replacedCommand;
+                  console.log('comando2', replacedCommand);
+                  sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
+                }, 100); // antes de enviar el comando
+              }
+        });
+        
+    }    
+}
+let commandCounter = 0; // Variable de control de contador
+const maxRepeatCount = 50; // Valor máximo para repeatCount
+
 function handleEvent(eventType, data, msg, likes) {
   let playerName = null;
   let eventCommands = [];
@@ -1724,19 +1829,25 @@ function handleEvent(eventType, data, msg, likes) {
   if (Array.isArray(eventCommands)) {
     eventCommands.forEach(command => {
       let replacedCommand = command
-        .replace('{uniqueId}', data.uniqueId || '')
-        .replace('{comment}', data.comment || '')
+        .replace('uniqueId', data.uniqueId || '')
+        .replace('comment', data.comment || '')
         .replace('{milestoneLikes}', likes || '')
         .replace('{likes}', likes || '')
-        .replace('{message}', data.comment || '')
-        .replace('{giftName}', data.giftName || '')
-        .replace('{repeatCount}', data.repeatCount || '')
-        .replace('{playername}', playerName || '');
+        .replace('message', data.comment || '')
+        .replace('giftName', data.giftName || '')
+        .replace('repeatCount', data.repeatCount || '')
+        .replace('playername', playerName || '');
 
       if (eventType !== 'gift' && replacedCommand === lastCommand) {
         return;
       }
-
+      if (data.repeatCount > maxRepeatCount) {
+        // Verificar si el comando contiene "tellraw" o "title" y si el contador no es múltiplo de 10
+        if ((command.includes("tellraw") || command.includes("title")) && commandCounter % 10 !== 0) {
+          return; // No se ejecuta el comando
+        }
+      }
+      commandCounter++;
       if (data.comment && keywords.keywordToGive[data.comment.toLowerCase()]) {
         let itemKeyword = Object.keys(keywords.keywordToGive).find(keyword => data.comment.toLowerCase().includes(keyword.toLowerCase()));
         if (itemKeyword) {
@@ -1752,7 +1863,7 @@ function handleEvent(eventType, data, msg, likes) {
           console.info(replacedCommand);
         }
       } else if (command.includes('mob')) {}
-
+      
       let repeatCount = data.repeatCount || 1;
       for (let i = 0; i < repeatCount; i++) {
           if (eventType === 'gift') {

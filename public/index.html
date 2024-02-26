@@ -7,7 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TikTok LIVE</title>
     <meta name="description" content="A chat reader for TikTok LIVE utilizing TikTok-Live-Connector and Socket.IO to forward the data to the client. This demo project uses the unofficial TikTok API to retrieve chat comments, gifts and other events from TikTok LIVE.">
-    <meta name="keywords" content="TikTok,Live,Livestream,Chat,Reader,Scraper,Tracker,tiktok.com,broadcast,api,library,node,node.js,javascript">
+    <!-- Content-Security
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://tiktok-chat-reader.zerody.one/ https://tiktok-chat-reader.zerody.one/ wss://irc-ws.chat.twitch.tv http://localhost:3001 http://localhost:3000 https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p77-sign-va.tiktokcdn.com/ https://p19-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-useast2a.tiktokcdn.com/ http://localhost:8081 https://api.streamelements.com https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-va.tiktokcdn.com/ http://localhost:8911; img-src 'self' https://p16-sign-va.tiktokcdn.com/ https://p16-pu-sign-useast8.tiktokcdn-us.com/; media-src 'self' blob:;"> 
+meta --> 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -107,7 +109,7 @@
     <div id="overlayEventContainer" style="width: 199vh; pointer-events: none; height: 98vh; position: absolute; background: transparent; display: block;"></div>
     <div id="durationDisplay"></div>
     <div class="toggleWrapper">
-        <input type="checkbox" class="dn" id="dn">
+        <input type="checkbox" class="dn" id="dn" checked>
         <label for="dn" class="toggle">
             <span class="toggle__handler">
                 <span class="crater crater--1"></span>
@@ -146,6 +148,8 @@
                 <label for="filter-words">filtrar (palabras separadas):</label>
                 <input type="text" id="filter-words">
             </div>
+            <label for="filter-users">WitheList:</label>
+            <input type="text" id="filter-users">
             <script>
                 const filterWordsInput = document.getElementById('filter-words');
 
@@ -162,6 +166,22 @@
                         localStorage.setItem('lastFilterWords', currentFilterWords);
                     }
                 });
+                
+                const filterUsersInput = document.getElementById('filter-users');
+
+                // Load the last entered value from localStorage
+                const lastfilterUsers = localStorage.getItem('lastfilterUsers');
+                if (lastfilterUsers) {
+                  filterUsersInput.value = lastfilterUsers;
+                }
+                
+                filterUsersInput.addEventListener('change', () => {
+                    const currentfilterUsers = filterUsersInput.value;
+                    if (currentfilterUsers) {
+                        // Store the current value in localStorage
+                        localStorage.setItem('lastfilterUsers', currentfilterUsers);
+                    }
+                });
             </script>
         </div>
 
@@ -175,46 +195,54 @@
                 <button type="submit">Añadir sonido</button>
             </form>
             <form id="createBotForm">
-                <label for="keyBOT">nombre del Bot:</label>
-                <input type="text" id="keyBOT" name="keyBOT" value="" required>
-                <br>
-                <label for="keySERVER">ip del Servidor:</label>
-                <input type="text" id="keySERVER" name="keySERVER" value="localhost" required>
-                <br>
-                <button type="submit">Crear Bot</button>
-                <button id="disconnectButton" disabled>Desconectar Bot</button>
-              </form>
+              <label for="keyBOT">MinecraftBOT:</label>
+              <input type="text" id="keyBOT" name="keyBOT" value="" required>
+              <br>
+              <label for="keySERVER">IP del Server:</label>
+              <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
+              <br>
+              <button type="submit">Conectar Bot</button>
+              <button id="disconnectButton" disabled>Desconectar Bot</button>
+            </form>
+            
+            <script>
+            // Obtener el formulario y los inputs
+            const form = document.getElementById('createBotForm');
+            const keyBOTInput = document.getElementById('keyBOT');
+            const keySERVERInput = document.getElementById('keySERVER');
+
+            // Cargar datos guardados del formulario si existen
+            if (localStorage.getItem('botFormData')) {
+              const formData = JSON.parse(localStorage.getItem('botFormData'));
+              keyBOTInput.value = formData.keyBOT;
+              keySERVERInput.value = formData.keySERVER;
+            }
+
+            // Escuchar el evento de envío del formulario
+            form.addEventListener('submit', function(event) {
+              event.preventDefault(); // Evitar que se envíe el formulario
               
-              <script>
-                // Obtener el formulario y los inputs
-                const form = document.getElementById('createBotForm');
-                const keyBOTInput = document.getElementById('keyBOT');
-                const keySERVERInput = document.getElementById('keySERVER');
+              // Obtener el valor del campo "keySERVER"
+              const keySERVER = keySERVERInput.value;
               
-                // Cargar datos guardados del formulario si existen
-                if (localStorage.getItem('botFormData')) {
-                  const formData = JSON.parse(localStorage.getItem('botFormData'));
-                  keyBOTInput.value = formData.keyBOT;
-                  keySERVERInput.value = formData.keySERVER;
-                }
+              // Extraer el número de puerto utilizando split(':')
+              const serverParts = keySERVER.split(':');
+              const serverAddress = serverParts[0];
+              const serverPort = serverParts[1] || ''; // Si no hay puerto, asignar una cadena vacía
               
-                // Escuchar el evento de envío del formulario
-                form.addEventListener('submit', function(event) {
-                  event.preventDefault(); // Evitar que se envíe el formulario
-                  
-                  // Obtener los valores de los inputs
-                  const keyBOT = keyBOTInput.value;
-                  const keySERVER = keySERVERInput.value;
-              
-                  // Guardar los datos en el localStorage
-                  const formData = {
-                    keyBOT: keyBOT,
-                    keySERVER: keySERVER
-                  };
-                  localStorage.setItem('botFormData', JSON.stringify(formData));
-              
-                });
-              </script>
+              // Guardar los datos en el localStorage
+              const formData = {
+                keyBOT: keyBOTInput.value,
+                keySERVER: keySERVER,
+                serverPort: serverPort
+              };
+              localStorage.setItem('botFormData', JSON.stringify(formData));
+
+              // Enviar el número de puerto como parámetro adicional
+              console.log('Dirección del servidor:', serverAddress);
+              console.log('Puerto del servidor:', serverPort);
+            });
+            </script>
               <div id="resultMessage"></div>
 
               <script>
@@ -246,7 +274,16 @@
                   .then(response => response.json())
                   .then(result => {
                     console.log(result);
-                    document.getElementById('resultMessage').textContent = result.message;
+                    const resultMessage = document.getElementById('resultMessage');
+                    resultMessage.textContent = result.message;
+                
+                    // Cambiar el color del resultado según el estado
+                    if (result.success) {
+                      resultMessage.style.color = 'green'; // Cambiar a color verde si es exitoso
+                    } else {
+                      resultMessage.style.color = 'red'; // Cambiar a color rojo si hay un error
+                    }
+                
                     disconnectButton.disabled = false;
                   })
                   .catch(error => {
@@ -283,6 +320,7 @@
                   .then(result => {
                     console.log(result);
                     document.getElementById('resultMessage').textContent = result.message;
+                    resultMessage.style.color = 'red';
                     disconnectButton.disabled = true;
                   })
                   .catch(error => {
@@ -311,29 +349,41 @@
                 }
               </script>
               <input type="text" id="playerNameInput" placeholder="minecraftPlayer" value="melser">
-              <button onclick="savePlayerName()">Guardar PLAYERNAME</button>
+              <button onclick="savePlayerName()">Minecraft playerName</button>
               <input type="text" id="InitcommandInput" placeholder="login">
-              <button onclick="saveInitcommand()">Guardar comando inicial</button>
-              
-              <textarea type="text" id="commandListInput" rows="20" cols="180" placeholder="chat:
-    -
+              <button onclick="saveInitcommand()">Comando en login</button>
+
+              <div> <label for="eventType"> test Event Type:</label>
+                <input type="text" id="eventType" placeholder="Event Type" value="gift">
+                <label for="data"> test Data :</label>
+                <input type="text" id="data" placeholder="Data Default">
+                <button onclick="testHandleEvent()">Test Handle Event</button> </div>
+
+                <div style="position: relative;">
+                  <textarea type="text" id="commandListInput" rows="15" cols="100" placeholder="chat:
+                    -
 likes:
-  default:
-    -
+                  default:
+                    -
 gift:
-  default:
-    -
-    Rose:
-    -"></textarea>
-              <button onclick="saveCommandList()">Guardar COMANDOS para Minecraft interactivo</button>
-              <textarea type="text" id="keywordsInput" rows="20" cols="180" placeholder="keywordToGive:
-    escudo: minecraft:shield
-    cama: minecraft:red_bed
+                  default:
+                    -
+                    Rose:
+                    -"></textarea>
+                  <button style="position: relative;" onclick="saveCommandList()">Guardar COMANDOS para Minecraft interactivo</button>
+                </div>
+                
+                <div style="position: relative;">
+                  <textarea type="text" id="keywordsInput" rows="15" cols="100" placeholder="keywordToGive:
+                    escudo: minecraft:shield
+                    cama: minecraft:red_bed
 keywordToMob:
-    enderman: minecraft:enderman
-    cerdo: minecraft:pig
-              "></textarea>
-              <button onclick="saveKeywords()">Guardar COMANDOS para el chat, mobs, items</button>
+                    enderman: minecraft:enderman
+                    cerdo: minecraft:pig
+                  "></textarea>
+                  <button style="position: relative;" onclick="saveKeywords()">Guardar COMANDOS para el chat, mobs, items FREE</button>
+                </div>
+
               <script>
                 function saveInitcommand() {
                   const InitcommandInput = document.getElementById('InitcommandInput');
@@ -352,6 +402,13 @@ keywordToMob:
                   // Si hay un comando inicial guardado, asignarlo al campo InitcommandInput
                   InitcommandInput.value = savedInitcommand;
                 }
+                playerNameInput.addEventListener('change', () => {
+                  const playerName = playerNameInput.value;
+                  if (playerName) {
+                      // Store the current value in localStorage
+                      localStorage.setItem('playerName', playerName);
+                  }
+              });
                 function savePlayerName() {
                     const playerNameInput = document.getElementById('playerNameInput');
                     const playerName = playerNameInput.value.trim();
@@ -370,10 +427,8 @@ keywordToMob:
                   }
               </script> 
               <script>
-                  let keywordsList = {};
-  
-                  
-                  // Asegúrate de que 'commandList' esté correctamente definido y asignado antes de usarlo.
+                // Asegúrate de que 'commandList' esté correctamente definido y asignado antes de usarlo.
+              
                 // Obtener el contenido almacenado en el localStorage
                 const storedKeywords = localStorage.getItem('keywords');
                 const storedCommandList = localStorage.getItem('commandList');
@@ -388,23 +443,23 @@ keywordToMob:
                 }
               
                 function saveKeywords() {
-                  const keywordsInput = document.getElementById('keywordsInput').value;
-                  localStorage.setItem('keywords', keywordsInput);
+                  const keywordsInputValue = document.getElementById('keywordsInput').value;
+                  localStorage.setItem('keywords', keywordsInputValue);
                   console.log('Datos de la lista de keywords guardados en el localStorage');
                 }
               
                 function saveCommandList() {
-                  const commandListInput = document.getElementById('commandListInput').value;
-                  localStorage.setItem('commandList', commandListInput);
+                  const commandListInputValue = document.getElementById('commandListInput').value;
+                  localStorage.setItem('commandList', commandListInputValue);
                   console.log('Datos de la lista de comandos guardados en el localStorage');
                 }
               </script>
-                    
+
             <div id="dropdownButton" onclick="toggleDropdownMenu()">
                 <div id="selectedSound">
                     Sonidos
                     <label class="container">
-                    <input id="sendsoundCheckbox" type="checkbox">
+                    <input id="sendsoundCheckbox" type="checkbox" checked>
                     <div class="checkmark"></div>
                 </label>
                 </div>
@@ -500,7 +555,7 @@ keywordToMob:
     <div id="Tab3" class="tabcontent">
 
         <div class="inputFields">
-            <input id="channel" type="text" placeholder="Twitch channel"></input> <input id="channel-button" value="GO" type="button"></input>
+            <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GO" type="button"></button>
         </div>
         <div id="chatbox"></div>
 

@@ -1,8 +1,9 @@
 {
-  "name": "my-app",
-  "productName": "my-app",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "author": "melsern",
+  "name": "tikWeb1",
+  "productName": "tikWeb1",
+  "version": "1.0.1",
+  "description": "tiktok mineflayer web apis speech and more",
   "main": "index.js",
   "scripts": {
     "start": "electron-forge start",
