@@ -43,7 +43,7 @@ async function fetchAudio(txt, customVoice) {
     audioqueue.enqueue(blob);
     if (!isPlaying) kickstartPlayer();
 }
-async function onMessage(channel, tags, msg, self) {
+async function onMessage(channel, userstate, tags, msg, self) {
     if (self || tags.username == newChannel) return; // nunca es verdadero, pero mejor prevenir que curar
 
     let voice;
@@ -88,6 +88,11 @@ async function onMessage(channel, tags, msg, self) {
                 }
             });
         if (pronoun && FEM_PRONOUNS.some(g => g == pronoun)) voice = voiceSelect.value;
+    }
+    bits = userstate.bits
+    if (bits) {
+        fetchAudio(`${tags.username} envio: ${bits} ${msg}`, voice);
+        return;
     }
     let filterWordsInput = document.getElementById('filter-words').value;
     // Buscar todas las secuencias de palabras entre barras (/)
@@ -153,4 +158,8 @@ window.onload = async function() {
             }
         }).catch(e => console.error('no se pudo conectar a twitch:', e))
     client.on('chat', onMessage);
+    client.on('cheer', onMessage);
+    client.on("disconnected", (reason) => {
+        console.log("disconnected");
+    });
 }

@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     document.body.addEventListener('mouseover', () => {
         // Cuando el cursor está sobre el cuerpo del documento, aplicar el tema oscuro
         if (document.body.className !== 'theme-dark') {
-            document.body.className = 'theme-light-hover';
         }
     });
     document.body.className = 'theme-dark';
@@ -142,41 +141,64 @@ function addChatItem(color, data, text, summarize) {
     }, 400);
     addOverlayEvent(data, text, color, false);
     let nameuser = data.uniqueId;
-    let userneim = data.nickname;
     let filterWordsInput = document.getElementById('filter-words').value;
-    let filterUsersInput = document.getElementById('filter-users').value;
     let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
-    let filterUsers = (filterUsersInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
     let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
-    let remainingUsers = filterUsersInput.replace(/\/(.*?)\//g, '');
     filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
-    filterUsers = filterUsers.concat(remainingUsers.split(/\s/).filter(Boolean));
     let lowerCaseText = text && text.toLowerCase() && text.replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
     let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
-    let lowerCaseUser = nameuser.toLowerCase() && userneim.toLowerCase();
+    let filterUsersInput = document.getElementById('filter-users').value;
+    let lowerCaseUser = nameuser.toLowerCase();
+    let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
+    
+    const specialChars = /[#$%^&*()/,.?":{}|<>]/;
+    const startsWithSpecialChar = specialChars.test(text.charAt(0));
+    const messagePrefix = startsWithSpecialChar ? "!" : "";
+    const messageSuffix = summarize ? "" : ` ${text}`;
+    let cleanedText = text;
+    if (startsWithSpecialChar) {
+        cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
+    }
+    cleanedText = text.replace(/[#$%^&*/,.":{}|<>]/, "");
+    let emojiRegex = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/ug;
+    let emojis = text && text.match(emojiRegex);
+    if (emojis) {
+        let emojiCounts = {};
+        for (let emoji of emojis) {
+            if (emoji in emojiCounts) {
+                emojiCounts[emoji]++;
+            } else {
+                emojiCounts[emoji] = 1;
+            }
 
+            if (emojiCounts[emoji] >= 2) {
+                return;
+            }
+        }
+    }
+    const message = messagePrefix + (cleanedText.length > 60 ? `${data.nickname} dice ${messageSuffix}` : cleanedText);
+    let nickname = data.nickname
+    
+    if (message === lastMessage) {
+        return;
+    }
+    // Filtrar mensajes de usuarios con pocos puntos
+
+    lastMessage = message;
+    if (filterUsers.includes(lowerCaseUser)) {
+        console.log("usuario de WhiteList", lowerCaseUser);
+        obtenerYenviarCommandID({ eventType: 'chat', string: message });
+        playSoundByText(message);
+        leerMensajes(message);
+        enviarMensaje(message);
+        return;
+    }
+    
     if (!userPoints[data.nickname]) {
         userPoints[data.nickname] = 20; // Asignar 10 puntos por defecto
         console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
     }
-    if (sendsoundCheckbox.checked) {
-        if (userPoints[data.nickname] <= 0) {
-            console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
-            return;
-        } 
-        if (userPoints[data.nickname] >= 1) {
-            userPoints[data.nickname]--;
-            playSoundByText(text);
 
-            console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-            return;
-        }
-        if (userPoints[data.nickname] >= 30) {
-            userPoints[data.nickname]--;
-            playSoundByText(text);
-            console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-        }
-    }
 
     const customfilterWords = [
         "opahsaron", "tedesku", "unanimalh", "doketesam", "unmachetedesfigurolacara",
@@ -222,13 +244,6 @@ function addChatItem(color, data, text, summarize) {
                 userPoints[data.nickname]--;
                 console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
             }
-            if (filterUsers.length > 0) {
-                for (let word of filterUsers) {
-                  if (word && lowerCaseUser.includes(word.toLowerCase())) {
-                    console.log("Saltar filtro para usuario:", data.uniqueId);
-                  }
-                }
-            }
         }
     }
 
@@ -258,44 +273,6 @@ function addChatItem(color, data, text, summarize) {
         }
     }
 
-    const specialChars = /[#$%^&*()/,.?":{}|<>]/;
-    const startsWithSpecialChar = specialChars.test(text.charAt(0));
-    const messagePrefix = startsWithSpecialChar ? "!" : "";
-    const messageSuffix = summarize ? "" : ` ${text}`;
-    let cleanedText = text;
-    if (startsWithSpecialChar) {
-        cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
-    }
-    cleanedText = text.replace(/[#$%^&*/,.":{}|<>]/, "");
-    let emojiRegex = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/ug;
-    let emojis = text && text.match(emojiRegex);
-    if (emojis) {
-        let emojiCounts = {};
-        for (let emoji of emojis) {
-            if (emoji in emojiCounts) {
-                emojiCounts[emoji]++;
-            } else {
-                emojiCounts[emoji] = 1;
-            }
-
-            if (emojiCounts[emoji] >= 2) {
-                return;
-            }
-        }
-    }
-    const message = messagePrefix + (cleanedText.length > 60 ? `${data.nickname} dice ${messageSuffix}` : cleanedText);
-    let nickname = data.nickname
-    
-    if (text.length <= 3) {
-        console.log('filtrado');
-        return;
-    }
-    if (message === lastMessage) {
-        return;
-    }
-    // Filtrar mensajes de usuarios con pocos puntos
-
-    lastMessage = message;
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
 
     if (sendDataCheckbox.checked) {
@@ -314,7 +291,16 @@ function addChatItem(color, data, text, summarize) {
         return;
     }
     leerMensajes(message);
-
+    if (sendsoundCheckbox.checked) {
+        if (nickname === lastNickname) {
+            console.log('anti spam commandos');
+            return;
+        }
+        userPoints[data.nickname]--;
+        playSoundByText(message);
+        console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+        lastNickname = nickname
+    }
     if (sendDataCheckbox.checked) {
         if (userPoints[data.nickname] <= 3) {
             console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
@@ -483,6 +469,18 @@ function addOverlayEvent(data, text, color, isGift, repeatCount) {
         }
         // Add the div to the container
         eventContainer.appendChild(eventDiv);
+        fetch('http://localhost:3001/evento', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ eventDiv })
+          })
+          .then(response => {
+        })
+          .catch(error => {
+            // Manejar errores en la solicitud si es necesario
+          });    
         comboCounters[text].div = eventDiv;
     }
 
@@ -667,46 +665,41 @@ connection.on('chat', (data) => {
     let message = data.comment;
     let nameuser = data.uniqueId; 
     let filterWordsInput = document.getElementById('filter-words').value;
-    let filterUsersInput = document.getElementById('filter-users').value;
     let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
-    let filterUsers = (filterUsersInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
-    
-    // Eliminar estas secuencias del texto de entrada
     let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
-    let remainingUsers = filterUsersInput.replace(/\/(.*?)\//g, '');
-    // Dividir el texto restante por espacios y añadir las palabras al array
     filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
-    filterUsers = filterUsers.concat(remainingUsers.split(/\s/).filter(Boolean));
     let lowerCaseText = message.toLowerCase();
+    let filterUsersInput = document.getElementById('filter-users').value;
     let lowerCaseUser = nameuser.toLowerCase();
-    
+    let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
+    if (filterUsers.includes(lowerCaseUser)) {
+        console.log("WhiteList", lowerCaseUser);
+        addChatItem('', data, message);
+        sendToServer('chat', data);
+        handleEvent('chat', data);
+        return;
+      }
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            if (filterUsers.length > 0) {
-                for (let word of filterUsers) {
-                  if (word && lowerCaseUser.includes(word.toLowerCase())) {
-                    console.log("Saltar filtro para usuario:", data.uniqueId);
-                  }
-                }
-            }
-            return;
+            userPoints[data.nickname] -= 25;
+
         }
+        if (userPoints[data.nickname] <= -500) {
+            userPoints[data.nickname] += 300;
+            console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+            return;
+        } 
+        if (userPoints[data.nickname] >= 1) {
+            userPoints[data.nickname] -= 1;
+            userPoints[data.nickname]--;
+            console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+        } 
     }
     if (!userPoints[data.nickname]) {
         userPoints[data.nickname] = 20; // Asignar 10 puntos por defecto
         console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
     }
-    if (userPoints[data.nickname] <= -500) {
-        console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
-        userPoints[data.nickname] += 200;
-        userPoints[data.nickname] + 200;    
-        return;
-    } 
-    if (userPoints[data.nickname] >= 1) {
-        userPoints[data.nickname] -= 1;
-        userPoints[data.nickname]--;
-        console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-    } 
+
 
     if (window.settings.showChats === "0") return;
 
@@ -1902,34 +1895,20 @@ function sendReplacedCommand(replacedCommand) {
 }
 
 async function sendToServer(eventType, data, text, color, msg, message) {
-  const port = 3000; // Puerto en el que se ejecutará el servidor
-
-  const dataKey = JSON.stringify({ eventType, data, text, color, msg, message });
-
-  // Verificar si los datos ya se enviaron previamente
-  if (sentData.has(dataKey)) {
-    return; // Salir de la función si los datos ya se enviaron
-  }
-
-  try {
-    const response = await fetch(`http://localhost:${port}/api/receive`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ eventType, data, text, color, msg, message }),
-    });
-
-    if (response.ok) {
-      sentData.add(dataKey); // Agregar los datos al conjunto de datos enviados
-      const responseData = await response.json();
-      console.log(responseData);
-    } else {
-      console.error(`Server on port ${port} status: ${response.status}`);
-    }
-  } catch (error) {
-    console.error(`Error sending data to server on port ${port}:`, error);
-  }
+    fetch('http://localhost:3001/api/receive1', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ eventType, data, text, color, msg, message }),
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data); // Maneja la respuesta del servidor si es necesario
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
 }
 window.onload = async function() {
     try {
