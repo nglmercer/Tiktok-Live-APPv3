@@ -3,13 +3,21 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TikTok LIVE</title>
     <meta name="description" content="A chat reader for TikTok LIVE utilizing TikTok-Live-Connector and Socket.IO to forward the data to the client. This demo project uses the unofficial TikTok API to retrieve chat comments, gifts and other events from TikTok LIVE.">
     <!-- Content-Security
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://tiktok-chat-reader.zerody.one/ https://tiktok-chat-reader.zerody.one/ wss://irc-ws.chat.twitch.tv http://localhost:3001 http://localhost:3000 https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p77-sign-va.tiktokcdn.com/ https://p19-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-useast2a.tiktokcdn.com/ http://localhost:8081 https://api.streamelements.com https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-va.tiktokcdn.com/ http://localhost:8911; img-src 'self' https://p16-sign-va.tiktokcdn.com/ https://p16-pu-sign-useast8.tiktokcdn-us.com/; media-src 'self' blob:;"> 
-meta --> 
+meta
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com;
+  connect-src 'self' https://localhost https://unpkg.com https://tiktok-chat-reader.zerody.one wss://irc-ws.chat.twitch.tv wss://tiktok-chat-reader.zerody.one http://localhost:3001 https://api.streamelements.com;
+  style-src 'self' 'unsafe-inline';
+">
+ --> 
+
+</head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -17,38 +25,61 @@ meta -->
     <script src="app.js"></script>
     <script src="tmi.min.js"></script>
     <script src="TTSmain.js"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 
     <link rel="stylesheet" href="styles.css">
 </head>
-
+<div class="title-bar">
+  <button class="button close" onclick="closeWindow()">x</button>
+  <script>
+    // Funciones para cerrar, minimizar y maximizar la ventana
+    function closeWindow() {
+      window.close();
+    }
+  </script>
+</div>
 <table class="splitstatetable">
     <div id="stateText"></div>
     <div id="roomStats"></div>
 </table>
 <body>
+  
   <div class="tab">
         <button class="tablinks" onclick="openTab(event, 'Tab1')">chat</button>
         <button class="tablinks" onclick="openTab(event, 'Tab2')">Minecraft</button>
         <button class="tablinks" onclick="openTab(event, 'Tab3')">Sonidos</button>
-        <button class="tablinks" onclick="openTab(event, 'Tab4')">Config y otros...</button>
+        <button class="tablinks" onclick="openTab(event, 'Tab4')">Config y otros</button>
+        <button class="tablinks" onclick="openTab(event, 'Tab5')">prox...</button>
+        <div class="toggleWrapper">
+          <input type="checkbox" class="dn" id="dn" checked>
+          <label for="dn" class="toggle">
+              <span class="toggle__handler">
+              </span>
+          </label>
+      </div>
     </div>
-    <input type="text" placeholder="@tuusuario" id="uniqueIdInput" value="@melserng">
+    
+    <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 100%; position: absolute; background: transparent;"></div>
+    <button id="openOverlayButton" onclick="openOverlayWindow()">Abrir en nueva ventana</button>
+    
+    <script>
+      function openOverlayWindow() {
+        const content = document.getElementById('overlayEventContainer').outerHTML;
+        const win = window.open('overlay.html', '_blank', 'width=400,height=300');
+        win.onload = function() {
+          win.postMessage(content, '*');
+        };
+      }
+    </script>
+  
+    <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
     <input type="button" id="connectButton" value="Conectar">
     <audio id="audio" controls autoplay>
     </audio>
     <audio id="audio" autoplay></audio>
     <audio id="soundPlayer" type="audio/mp3"></audio>
     <input id="skip-button" type="button" value="SKIP"> </button>
-    <div id="overlayEventContainer" style="width: 199vh; pointer-events: none; height: 98vh; position: absolute; background: transparent; display: block;"></div>
     <div id="durationDisplay"></div>
-    <div class="toggleWrapper">
-        <input type="checkbox" class="dn" id="dn" checked>
-        <label for="dn" class="toggle">
-            <span class="toggle__handler">
-            </span>
-        </label>
-    </div>
+
     </div>
 
     <div>
@@ -76,37 +107,33 @@ meta -->
             <label for="filter-users">WitheList:</label>
             <input type="text" id="filter-users">
             <script>
-                const filterWordsInput = document.getElementById('filter-words');
-
-                // Load the last entered value from localStorage
-                const lastFilterWords = localStorage.getItem('lastFilterWords');
-                if (lastFilterWords) {
-                    filterWordsInput.value = lastFilterWords;
+              function setupLocalStorage(inputElement, storageKey, callback) {
+                const storedValue = localStorage.getItem(storageKey);
+                if (storedValue) {
+                  inputElement.value = storedValue;
                 }
-
-                filterWordsInput.addEventListener('change', () => {
-                    const currentFilterWords = filterWordsInput.value;
-                    if (currentFilterWords) {
-                        // Store the current value in localStorage
-                        localStorage.setItem('lastFilterWords', currentFilterWords);
+              
+                inputElement.addEventListener('change', () => {
+                  const currentValue = inputElement.value;
+                  if (currentValue) {
+                    localStorage.setItem(storageKey, currentValue);
+                    if (typeof callback === 'function') {
+                      callback(currentValue);
                     }
-                });
-                
-                const filterUsersInput = document.getElementById('filter-users');
+                  }
+                  console.log('Valor actualizado:', currentValue);
 
-                // Load the last entered value from localStorage
-                const lastfilterUsers = localStorage.getItem('lastfilterUsers');
-                if (lastfilterUsers) {
-                  filterUsersInput.value = lastfilterUsers;
-                }
-                
-                filterUsersInput.addEventListener('change', () => {
-                    const currentfilterUsers = filterUsersInput.value;
-                    if (currentfilterUsers) {
-                        // Store the current value in localStorage
-                        localStorage.setItem('lastfilterUsers', currentfilterUsers);
-                    }
                 });
+              }
+              
+              // Ejemplo de uso
+              const filterWordsInput = document.getElementById('filter-words');
+              setupLocalStorage(filterWordsInput, 'lastFilterWords');
+              
+              const filterUsersInput = document.getElementById('filter-users');
+              setupLocalStorage(filterUsersInput, 'lastfilterUsers');
+              
+
             </script>
         </div>
 
@@ -216,7 +243,6 @@ meta -->
                   });
                 });
 
-                disconnectBot();
                 disconnectButton.addEventListener('click', function() {
                   if (disconnectButtonPressCount === 0) {
                     disconnectButtonPressCount++;
@@ -310,52 +336,15 @@ keywordToMob:
                   <button style="position: relative;" onclick="saveKeywords()">Guardar COMANDOS para el chat, mobs, items FREE</button>
                 </div>
 
+
               <script>
-                function saveInitcommand() {
-                  const InitcommandInput = document.getElementById('InitcommandInput');
-                  const Initcommand = InitcommandInput.value.trim();
-                
-                  // Guardar el comando inicial en el localStorage
-                  localStorage.setItem('Initcommand', Initcommand);
-                
-                  // Mostrar un mensaje de éxito
-                  alert('El comando inicial se ha guardado correctamente');
-                }
-                const InitcommandInput = document.getElementById('InitcommandInput');
-                const savedInitcommand = localStorage.getItem('Initcommand');
-              
-                if (savedInitcommand) {
-                  // Si hay un comando inicial guardado, asignarlo al campo InitcommandInput
-                  InitcommandInput.value = savedInitcommand;
-                }
-                playerNameInput.addEventListener('change', () => {
-                  const playerName = playerNameInput.value;
-                  if (playerName) {
-                      // Store the current value in localStorage
-                      localStorage.setItem('playerName', playerName);
-                  }
-              });
-                function savePlayerName() {
-                    const playerNameInput = document.getElementById('playerNameInput');
-                    const playerName = playerNameInput.value.trim();
-                  
-                    // Validar que se haya ingresado un nombre de jugador válido
-                    if (playerName === '') {
-                      alert('Por favor, ingrese un nombre de jugador válido');
-                      return;
-                    }
-                  
-                    // Guardar el nombre del jugador en el localStorage
-                    localStorage.setItem('playerName', playerName);
-                  
-                    // Mostrar un mensaje de éxito
-                    alert('El nombre del jugador se ha guardado correctamente');
-                  }
-              </script> 
-              <script>
-                // Asegúrate de que 'commandList' esté correctamente definido y asignado antes de usarlo.
-              
-                // Obtener el contenido almacenado en el localStorage
+                // Cargar el comando inicial guardado
+                const initCommandInput = document.getElementById('InitcommandInput');
+                setupLocalStorage(initCommandInput, 'Initcommand');
+
+                // Cargar el nombre del jugador guardado
+                const playerNameInput = document.getElementById('playerNameInput');
+                setupLocalStorage(playerNameInput, 'playerName');
                 const storedKeywords = localStorage.getItem('keywords');
                 const storedCommandList = localStorage.getItem('commandList');
               
@@ -490,8 +479,44 @@ keywordToMob:
       <button id="exportButton" onclick="exportSettings()">ExportarCONFIG</button>
       <span id="loadingIndicator" style="display: none;">Loading...</span>
       <div>
-      <button onclick="mostrarOverlay()">Mostrar Overlay</button>
-      <button onclick="ocultarOverlay()">Ocultar Overlay</button>
+        <form id="overlayForm">
+          <label for="urlInput">URL:</label><br>
+          <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required><br><br>
+          <label for="widthInput">Ancho:</label><br>
+          <input type="number" id="widthInput" value="800" name="width" required><br><br>
+          <label for="heightInput">Alto:</label><br>
+          <input type="number" id="heightInput" value="800" name="height" required><br><br>
+          <button type="submit">Crear Overlay</button>
+        </form>
+      
+        <script>
+          document.getElementById('overlayForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+      
+            const url = document.getElementById('urlInput').value;
+            const width = document.getElementById('widthInput').value;
+            const height = document.getElementById('heightInput').value;
+      
+            try {
+              const response = await fetch('http://localhost:3001/crear-overlay', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url, width, height })
+              });
+      
+              if (response.ok) {
+                alert('Overlay creado correctamente');
+              } else {
+                throw new Error('Error al crear el overlay');
+              }
+            } catch (error) {
+              console.error(error);
+              alert('Ocurrió un error al crear el overlay');
+            }
+          });
+        </script>
     </div>
     
         <div style="padding-top: 10px;">
@@ -538,11 +563,11 @@ keywordToMob:
         <script>
             const uniqueIdInput = document.getElementById('uniqueIdInput');
             const connectButton = document.getElementById('connectButton');
-
+          
             // Load the last entered value from localStorage
-            const lastValue = localStorage.getItem('lastValue');
-            if (lastValue) {
-                uniqueIdInput.value = lastValue;
+            const uniqueId = localStorage.getItem('uniqueId');
+            if (uniqueId) {
+                uniqueIdInput.value = uniqueId;
             }
 
             if (connectButton) {
@@ -550,7 +575,7 @@ keywordToMob:
                     const currentValue = uniqueIdInput.value;
                     if (currentValue) {
                         // Store the current value in localStorage
-                        localStorage.setItem('lastValue', currentValue);
+                        localStorage.setItem('uniqueId', currentValue);
                     }
                 });
             }

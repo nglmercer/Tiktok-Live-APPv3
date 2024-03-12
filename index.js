@@ -1,9 +1,35 @@
-const { app, BrowserWindow, globalShortcut  } = require('electron');
+const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
+const url = require('url');
 
-require('electron-reload')(__dirname, {
+
+/*require('electron-reload')(__dirname, {
   electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
 });//*/
+function createMainWindow() {
+  const mainWindow = new BrowserWindow({
+    width: 1000,
+    height: 800,
+    frame: false,
+    autoHideMenuBar: false,
+    transparent: true,
+    alwaysOnTop: false,
+    webPreferences: {
+      nodeIntegration: true,
+      preload: path.join(__dirname, 'preload.js')
+    }
+  });
+  const port = process.env.PORT || 8081;
+  mainWindow.loadURL(`http://localhost:${port}`);
+
+  ipcMain.on('request-node-data', (event, arg) => {
+    // Aquí puedes realizar alguna operación en Node.js y enviar los resultados de vuelta a la página web
+    const responseData = 'Estos son datos desde Node.js';
+    mainWindow.webContents.send('node-data-response', responseData);
+  });
+
+  return mainWindow;
+}
 // Evento emitido cuando Electron ha terminado de inicializarse
 app.on('ready', () => {
   const express = require('express');
@@ -14,6 +40,7 @@ app.on('ready', () => {
   const cors = require('cors');
   const mineflayer = require('mineflayer');
   const { Client, Server: ServerOsc } = require('node-osc');
+  const mainWindow = createMainWindow();
 
   const client = new Client('127.0.0.1', 9000);
   const server2 = new ServerOsc(9001, '127.0.0.1');
@@ -31,6 +58,40 @@ app.on('ready', () => {
   let disconnect = false;
   app12.use(cors());
   app12.use(express.json());
+
+  const overlayWindows = [];
+
+  app12.post('/crear-overlay', (req, res) => {
+    const { url, width, height } = req.body;
+  
+    // Configuración de la ventana de overlay con el tamaño especificado
+    const overlayWindow = new BrowserWindow({
+      width: parseInt(width),
+      height: parseInt(height),
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      webPreferences: {
+        nodeIntegration: true
+      }
+    });
+    
+    overlayWindows.push(overlayWindow);
+
+    // Cargar la URL recibida en la ventana de overlay
+    overlayWindow.loadURL(url);
+      //
+
+    overlayWindow.on('blur', () => {
+      overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+    });
+    //*///
+    globalShortcut.register('F11', () => {
+      overlayWindows.forEach(window => window.close());
+    });
+  
+    res.status(200).json({ message: 'Overlay creado correctamente' });
+  });
   app12.post('/api/receive', (req, res) => {
     const { replacedCommand } = req.body;
     if (botStatus) {
@@ -189,46 +250,31 @@ app.on('ready', () => {
   const webServerPort = 3001;
   app12.listen(webServerPort, () => console.info(`Servidor web escuchando en el puerto ${webServerPort}`));
 
-  let mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 800,
-    frame: false,
-    autoHideMenuBar: false,
-    transparent: true,
-    alwaysOnTop: true,
-    webPreferences: {
-      nodeIntegration: true,
-      preload: path.join(__dirname, 'public')
-    }
-  });
-  setTimeout(() => {
-      mainWindow.webContents.openDevTools();
-    
-  }, 3000);
-  mainWindow.setIgnoreMouseEvents(false);
+
+  
   let devTool = true;
   // Función para activar o desactivar el frame de la ventana principal
-
   globalShortcut.register('F1', ToolDev);
   globalShortcut.register('F2', cdevTool);
   function ToolDev() {
     devTool = true;
-    mainWindow.setIgnoreMouseEvents(false);
     mainWindow.webContents.openDevTools();
   }
   function cdevTool() {
     devTool = false;
     mainWindow.webContents.closeDevTools();
   }
-  mainWindow.on('focus', () => {
-      mainWindow.setIgnoreMouseEvents(false);
-  });
+  mainWindow.loadFile(path.join(__dirname, 'public', 'index.html'));
 
-  mainWindow.on('blur', () => {
-    if (devTool){
-      return;
-    }
-    mainWindow.setIgnoreMouseEvents(true, { forward: true });
+  ipcMain.on('cloneContent', (event, content) => {
+    const overlayWindow = new BrowserWindow({
+      width: 400,
+      height: 300,
+      frame: true,
+      parent: mainWindow
+    });
+
+    overlayWindow.loadURL(`data:text/html,${encodeURIComponent(content)}`);
   });
 
   const app1 = express();
@@ -245,28 +291,12 @@ app.on('ready', () => {
 
   // Abre las herramientas de desarrollo de Electron (opcional)
   app1.use(express.static(path.join(__dirname, 'public')));
-  app12.post('/evento', (req, res) => {
-    const eventDiv = req.body.eventDiv;
-      
-    // Envía una respuesta al cliente
-    res.status(200).json({ message: 'Evento recibido correctamente' });
-  });
-  app1.get('/overlay', (req, res) => {
-    // Listener para escuchar los mensajes enviados desde el servidor backend
-    // Código para renderizar la página del overlay en blanco
-    res.send(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Overlay</title>
-        </head>
-        <body>
-          <div id="overlayEventContainer"></div>
-          <script src="app.js"></script>
-        </body>
-      </html>
-    `);
-  });
+
+  mainWindow.loadURL(url.format({
+    pathname: path.join(__dirname, '/public/index.html'),
+    protocol: 'file:',
+    slashes: true
+  }));
   // Evento emitido cuando la ventana se cierra
   mainWindow.on('closed', function () {
     mainWindow = null;
@@ -375,6 +405,6 @@ app.on('activate', function () {
   // En macOS, es común volver a crear una ventana en la aplicación cuando
   // el icono del muelle se hace clic y no hay otras ventanas abiertas.
   if (mainWindow === null) {
-    createWindow();
+    createMainWindow();
   }
 });

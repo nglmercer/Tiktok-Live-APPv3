@@ -1,8 +1,8 @@
 {
   "author": "melser",
-  "name": "tiktokWap",
-  "productName": "tiktokWap1.8",
-  "version": "1.0.8",
+  "name": "TikLiveApp",
+  "productName": "TikLiveApp",
+  "version": "2.0.1",
   "description": "tiktok mineflayer web apis speech and more",
   "main": "index.js",
   "scripts": {

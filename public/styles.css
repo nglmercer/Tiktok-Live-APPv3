@@ -9,11 +9,32 @@ body {
     scrollbar-width: auto;
     scrollbar-color: rgba(80, 80, 80, 0.2) rgba(80, 80, 80, 0.2);
     background: none;
-    height: 120vh;
     width: 100%;
 }
+.title-bar {
+    -webkit-app-region: drag; /* Hace que la barra de título sea arrastrable */
+    background-color: #a5a5a598;
+    height: 32px;
+    position: relative;
+    border: 10%;
+  }
 
+  .title-bar .button {
+    position: absolute;
+  }
 
+  .title-bar .button.close {
+    right: 5%;
+  }
+.button.close {
+    position: absolute;
+    height: 20px;
+    background-color: red;
+    right: 15%;
+}
+.button.close:hover {
+    background-color: rgb(193, 48, 48);
+}
 .tab {
     font-size: 18px;
     font-family: inherit;
@@ -466,11 +487,11 @@ audio::-webkit-media-controls-panel {
 }
 
 #overlay-container {
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 140%;
     background-color: rgba(0, 0, 0, 0);
     z-index: 1000;
     pointer-events: none;
@@ -479,9 +500,7 @@ audio::-webkit-media-controls-panel {
 }
 
 .toggleWrapper {
-    position: absolute;
-    left: 90%;
-    top: calc(1%);
+    position: relative;
     font-size: 17px;
     display: inline-block;
     width: 3.5em;
@@ -830,7 +849,6 @@ input:checked+.toggle .toggle__handler .crater {
     top: 0.43em;
     width: 0.25em;
     height: 0.5em;
-    border: solid rgb(255, 255, 255);
     border-width: 0 0.15em 0.15em 0;
     transform: rotate(45deg);
 }

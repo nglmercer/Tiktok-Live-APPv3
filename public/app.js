@@ -1,5 +1,5 @@
 // This will use the demo backend if you open index.html locally via file://, otherwise your server will be used
-let backendUrl = location.protocol === 'file:' ? "https://tiktok-chat-reader.zerody.one/" : undefined;
+let backendUrl = location.protocol === 'file:' ? "http://localhost:8081" : undefined;
 
 let connection = new TikTokIOConnection(backendUrl);
 
