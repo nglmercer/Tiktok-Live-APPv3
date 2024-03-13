@@ -1,4 +1,14 @@
-# tiktokMIXPLUGIN
+##TiktokLiveApp
+¡WebApp TiktokLIVE! herramienta para tiktok live interactivo
+#Instalacion
+Para instalar la version estable, deber ir ir descargar el archivo.zip o el ejecutable
+![image](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/e9a72c41-75f9-4c3e-b859-0be289159720)
+LEER O REVISAR DOCUMENTACION.
+nglmercer.github.io/TikLiveApp
+
+
+
+# tiktokMIXPLUGIN GITHUB 
 
 **SOUND ALERT and command-action TikTok plugin for MixItUpApp** // Sonidos de alerta, comandos y acciones de TikTok conectados a MixItUpApp
 
