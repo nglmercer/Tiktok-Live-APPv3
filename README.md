@@ -1,11 +1,16 @@
 ## TiktokLiveApp
 ¡WebApp TiktokLIVE! herramienta para tiktok live interactivo
 # Instalacion
-Para instalar la version estable, deber ir ir descargar el archivo.zip o el ejecutable
+Para instalar la version estable, deber ir a descargar el archivo.zip o el ejecutable EN RELEASES
 ![image](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/e9a72c41-75f9-4c3e-b859-0be289159720)
 LEER O REVISAR DOCUMENTACION.
-nglmercer.github.io/TikLiveApp
-
+[nglmercer.github.io/TikLiveApp](https://nglmercer.github.io/TikLiveApp/)
+1. Speechchat voice chat(el bot lee tus mensajes)
+2. SoundAlerts (tiene soporte de alertas de audios y videos)
+3. twitch Crossover (puedes conectar tus comandos y el chat de twitch)
+4. MixitupApp API support (conecta mixitupApp para usar todas las herramientas)
+5. Minecraft interactive Bot (crea un bot para que envie los comandos que configures )
+6. VRChat chatbox support (envia los mensajes al chatbox para leerlo o mostrarlo en el juego)
 
 
 # tiktokMIXPLUGIN GITHUB 
