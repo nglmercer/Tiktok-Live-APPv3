@@ -11,6 +11,7 @@ LEER O REVISAR DOCUMENTACION.
 4. MixitupApp API support (conecta mixitupApp para usar todas las herramientas)
 5. Minecraft interactive Bot (crea un bot para que envie los comandos que configures )
 6. VRChat chatbox support (envia los mensajes al chatbox para leerlo o mostrarlo en el juego)
+![image](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/135e09ff-5177-4087-a8c9-3f630a2a098e)
 
 
 # tiktokMIXPLUGIN GITHUB 
@@ -71,8 +72,7 @@ antiguo
 ![TikTok LIVE Chat Reader (Demo)](https://user-images.githubusercontent.com/59258980/153956504-c585b14b-a50e-43f0-a994-64adcaface2e.png)
 [![English](https://img.shields.io/badge/English--blue.svg)](READMEEN.md) [![Español](https://img.shields.io/badge/Español--red.svg)](README.md)
 nuevo 
-![Screenshot](TIKTOKWEBMINIATURA.jpg)
-![vista actualmente](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/5aaef27a-9d90-418c-90d4-36dad13a5959)
+![image](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/135e09ff-5177-4087-a8c9-3f630a2a098e)
 
 ![activarDEVELOPERAPI](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/e94c8465-1433-4fc4-8245-52cb9a7fa66a)
 
