@@ -2,12 +2,33 @@ const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
 const path = require('path');
 const url = require('url');
 
-
-/*require('electron-reload')(__dirname, {
+/*
+require('electron-reload')(__dirname, {
   electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
 });//*/
-function createMainWindow() {
-  const mainWindow = new BrowserWindow({
+
+// Evento emitido cuando Electron ha terminado de inicializarse
+app.on('ready', () => {
+  const express = require('express');
+  const { createServer } = require('http');
+  const { Server } = require('socket.io');
+  const { TikTokConnectionWrapper, getGlobalConnectionCount } = require('./connectionWrapper');
+  const { clientBlocked } = require('./limiter');
+  const cors = require('cors');
+  const mineflayer = require('mineflayer');
+  const { Client, Server: ServerOsc } = require('node-osc');
+
+  const client = new Client('127.0.0.1', 9000);
+  const server2 = new ServerOsc(9001, '127.0.0.1');
+  server2.on('listening', () => {
+    console.log('OSC Server is listening.');
+  });
+  const app1 = express();
+  // CONFIGURACION DE EJEMPLO
+  //let keyBOT = null; // BOT MINECRAFT DAR OP
+  //let keySERVER = null; // IP SERVER
+  //const keySERVERPORT = '25565'; // PUERTO SERVER
+  let mainWindow = new BrowserWindow({
     width: 1000,
     height: 800,
     frame: false,
@@ -20,48 +41,21 @@ function createMainWindow() {
     }
   });
   const port = process.env.PORT || 8081;
+
   mainWindow.loadURL(`http://localhost:${port}`);
-
-  ipcMain.on('request-node-data', (event, arg) => {
-    // Aquí puedes realizar alguna operación en Node.js y enviar los resultados de vuelta a la página web
-    const responseData = 'Estos son datos desde Node.js';
-    mainWindow.webContents.send('node-data-response', responseData);
+  // Evento emitido cuando la ventana se cierra
+  mainWindow.on('closed', function () {
+    mainWindow = null;
   });
-
-  return mainWindow;
-}
-// Evento emitido cuando Electron ha terminado de inicializarse
-app.on('ready', () => {
-  const express = require('express');
-  const { createServer } = require('http');
-  const { Server } = require('socket.io');
-  const { TikTokConnectionWrapper, getGlobalConnectionCount } = require('./connectionWrapper');
-  const { clientBlocked } = require('./limiter');
-  const cors = require('cors');
-  const mineflayer = require('mineflayer');
-  const { Client, Server: ServerOsc } = require('node-osc');
-  const mainWindow = createMainWindow();
-
-  const client = new Client('127.0.0.1', 9000);
-  const server2 = new ServerOsc(9001, '127.0.0.1');
-  server2.on('listening', () => {
-    console.log('OSC Server is listening.');
-  });
-  const app12 = express();
-  // CONFIGURACION DE EJEMPLO
-  //let keyBOT = null; // BOT MINECRAFT DAR OP
-  //let keySERVER = null; // IP SERVER
-  //const keySERVERPORT = '25565'; // PUERTO SERVER
-  
   let bot;
   let botStatus = false;
   let disconnect = false;
-  app12.use(cors());
-  app12.use(express.json());
+  app1.use(cors());
+  app1.use(express.json());
 
   const overlayWindows = [];
 
-  app12.post('/crear-overlay', (req, res) => {
+  app1.post('/crear-overlay', (req, res) => {
     const { url, width, height } = req.body;
   
     // Configuración de la ventana de overlay con el tamaño especificado
@@ -85,14 +79,24 @@ app.on('ready', () => {
     overlayWindow.on('blur', () => {
       overlayWindow.setIgnoreMouseEvents(true, { forward: true });
     });
+    overlayWindow.on('closed', () => {
+      const index = overlayWindows.indexOf(overlayWindow);
+      if (index !== -1) {
+        overlayWindows.splice(index, 1);
+      }
+    });
     //*///
     globalShortcut.register('F11', () => {
-      overlayWindows.forEach(window => window.close());
+      overlayWindows.forEach(window => {
+        if (!window.isDestroyed()) { // Check if window is still open
+          window.close();
+        }
+      });
     });
   
     res.status(200).json({ message: 'Overlay creado correctamente' });
   });
-  app12.post('/api/receive', (req, res) => {
+  app1.post('/api/receive', (req, res) => {
     const { replacedCommand } = req.body;
     if (botStatus) {
       bot.chat(replacedCommand);
@@ -101,7 +105,7 @@ app.on('ready', () => {
   
     return res.json({ message: 'Datos recibidos' });
   });
-  app12.post('/api/receive1', (req, res) => {
+  app1.post('/api/receive1', (req, res) => {
     const { eventType, data } = req.body;
   
     switch (eventType) {
@@ -142,7 +146,7 @@ app.on('ready', () => {
   
     res.json({ message: 'Datos recibidos receive1' });
   });
-  app12.post('/api/create', (req, res) => {
+  app1.post('/api/create', (req, res) => {
     const { eventType, data } = req.body;
   
     if (eventType === 'createBot') {
@@ -182,8 +186,11 @@ app.on('ready', () => {
     client.send('/chatbox/input', text, true);
   }
   
-  function createBot(keyBot, keyServer, keyServerPort) {
+  function createBot(keyBot, keyServer, keyServerPort, maxAttempts = 5) {
     console.log("createBot now...");
+  
+    let attemptCount = 1; // Track the number of connection attempts
+  
     if (!botStatus) {
       const botOptions = {
         host: keyServer,
@@ -194,32 +201,62 @@ app.on('ready', () => {
         botOptions.port = keyServerPort;
       }
   
-      bot = mineflayer.createBot(botOptions);
+      const createBotInternal = () => { // Function for recursive creation
+        bot = mineflayer.createBot(botOptions);
   
-      bot.on('login', () => {
-        botStatus = true;
-        console.log('Bot is Online');
-        bot.chat('say Bot is Online');
-      });
+        bot.on('login', () => {
+          botStatus = true;
+          console.log('Bot is Online');
+          bot.chat('say Bot is Online');
+        });
   
-      bot.on('error', (err) => {
-        console.log('Error:', err);
-      });
-  
-      bot.on('end', () => {
-        botStatus = false;
-        if (!disconnect) {
-          console.log('Connection ended, reconnecting in 3 seconds');
-          if (!botStatus) {
-            setTimeout(() => createBot(keyBot, keyServer, keyServerPort), 3000);
+        bot.on('error', (err) => {
+          console.error('Error:', err);
+          botStatus = false;
+          if (!disconnect) {
+            if (attemptCount < maxAttempts) { // Check if attempts are exceeded
+              console.log(`Connection ended, reconnecting in 3 seconds (attempt ${attemptCount}/${maxAttempts})`);
+              attemptCount++;
+              setTimeout(() => createBotInternal(), 3000); // Recursive call
+            } else {
+              console.error('Error: Maximum connection attempts reached.');
+              // Handle error (return error and botStatus here)
+              return { error: 'Connection failed after maximum attempts', botStatus: false };
+            }
           }
-        }
-      });
+        });
+        bot.on('kicked', (reason) => {
+          console.log(`Bot expulsado del servidor: ${reason}`);
+        
+          // Implementar lógica de reintento
+          setTimeout(() => {
+            bot.quit(); // Desconectarse del servidor actual
+            createBot(keyBot, keyServer, keyServerPort); // Intentar conectarse de nuevo
+          }, 5000); // Esperar 5 segundos antes de intentar reconectarse
+        
+        });
+        bot.on('end', () => {
+          botStatus = false;
+          if (!disconnect) {
+            if (attemptCount < maxAttempts) { // Check if attempts are exceeded
+              console.log(`Connection ended, reconnecting in 3 seconds (attempt ${attemptCount}/${maxAttempts})`);
+              attemptCount++;
+              setTimeout(() => createBotInternal(), 3000); // Recursive call
+            } else {
+              console.error('Error: Maximum connection attempts reached.');
+              // Handle error (return error and botStatus here)
+              return { error: 'Connection failed after maximum attempts', botStatus: false };
+            }
+          }
+        });
+      };
+  
+      createBotInternal(); // Initial creation attempt
     } else {
       console.log("No se creó el bot, estado:", botStatus);
     }
   }
-  app12.post('/api/disconnect', (req, res) => {
+  app1.post('/api/disconnect', (req, res) => {
     const { eventType } = req.body;
     if (eventType === 'disconnectBot') {
       disconnectBot();
@@ -229,7 +266,7 @@ app.on('ready', () => {
       res.json({ message: 'Datos recibidos' });
     }
   });
-  app12.post('/api/reconnect', (req, res) => {
+  app1.post('/api/reconnect', (req, res) => {
     const { eventType } = req.body;
     if (eventType === 'reconnectBot') {
       reconnectBot();
@@ -247,13 +284,9 @@ app.on('ready', () => {
   }
 
   // Inicia el servidor web
-  const webServerPort = 3001;
-  app12.listen(webServerPort, () => console.info(`Servidor web escuchando en el puerto ${webServerPort}`));
-
-
   
-  let devTool = true;
-  // Función para activar o desactivar el frame de la ventana principal
+  //let devTool = true;
+  /* Función para activar o desactivar el frame de la ventana principal
   globalShortcut.register('F1', ToolDev);
   globalShortcut.register('F2', cdevTool);
   function ToolDev() {
@@ -263,21 +296,8 @@ app.on('ready', () => {
   function cdevTool() {
     devTool = false;
     mainWindow.webContents.closeDevTools();
-  }
-  mainWindow.loadFile(path.join(__dirname, 'public', 'index.html'));
+  }//*/
 
-  ipcMain.on('cloneContent', (event, content) => {
-    const overlayWindow = new BrowserWindow({
-      width: 400,
-      height: 300,
-      frame: true,
-      parent: mainWindow
-    });
-
-    overlayWindow.loadURL(`data:text/html,${encodeURIComponent(content)}`);
-  });
-
-  const app1 = express();
   const httpServer = createServer(app1);
   const io = new Server(httpServer, {
     cors: {
@@ -285,22 +305,11 @@ app.on('ready', () => {
     }
   });
 
-  const port = process.env.PORT || 8081;
-
-  mainWindow.loadURL(`http://localhost:${port}`);
 
   // Abre las herramientas de desarrollo de Electron (opcional)
   app1.use(express.static(path.join(__dirname, 'public')));
 
-  mainWindow.loadURL(url.format({
-    pathname: path.join(__dirname, '/public/index.html'),
-    protocol: 'file:',
-    slashes: true
-  }));
-  // Evento emitido cuando la ventana se cierra
-  mainWindow.on('closed', function () {
-    mainWindow = null;
-  });
+
   
   io.on('connection', (socket) => {
       let tiktokConnectionWrapper;

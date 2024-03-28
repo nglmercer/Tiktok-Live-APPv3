@@ -1,6 +1,18 @@
 // This will use the demo backend if you open index.html locally via file://, otherwise your server will be used
-let backendUrl = location.protocol === 'file:' ? "http://localhost:8081" : undefined;
+// Verifica si la aplicación se está ejecutando localmente o en un servidor remoto
+let backendUrl;
+if (location.protocol === 'file:') {
+    // Si se ejecuta localmente, usa la URL local para el servidor Socket.IO
+    backendUrl = "https://tiktok-chat-reader.zerody.one/";
+} else {
+    // Si se ejecuta en un servidor remoto, utiliza la URL del servidor remoto
+    backendUrl = "http://localhost:8081"; // Reemplaza 'example.com' con la URL real de tu servidor
+}
 
+// Asegúrate de que la URL tenga la ruta para Socket.IO
+backendUrl += "";
+
+// Crea la conexión al servidor Socket.IO con la URL obtenida
 let connection = new TikTokIOConnection(backendUrl);
 
 let viewerCount = 0;
@@ -469,18 +481,6 @@ function addOverlayEvent(data, text, color, isGift, repeatCount) {
         }
         // Add the div to the container
         eventContainer.appendChild(eventDiv);
-        fetch('http://localhost:3001/evento', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ eventDiv })
-          })
-          .then(response => {
-        })
-          .catch(error => {
-            // Manejar errores en la solicitud si es necesario
-          });    
         comboCounters[text].div = eventDiv;
     }
 
@@ -1878,7 +1878,7 @@ function handleEvent(eventType, data, msg, likes) {
 }
 
 function sendReplacedCommand(replacedCommand) {
-    fetch('http://localhost:3001/api/receive', {
+    fetch('/api/receive', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -1895,7 +1895,7 @@ function sendReplacedCommand(replacedCommand) {
 }
 
 async function sendToServer(eventType, data, text, color, msg, message) {
-    fetch('http://localhost:3001/api/receive1', {
+    fetch('/api/receive1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

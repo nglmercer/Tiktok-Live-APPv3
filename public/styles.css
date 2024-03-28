@@ -12,9 +12,11 @@ body {
     width: 100%;
 }
 .title-bar {
-    -webkit-app-region: drag; /* Hace que la barra de título sea arrastrable */
     background-color: #a5a5a598;
-    height: 32px;
+    top: -7px;
+    right: 6%;
+    -webkit-app-region: drag;
+    height: 15px;
     position: relative;
     border: 10%;
   }
@@ -24,13 +26,12 @@ body {
   }
 
   .title-bar .button.close {
-    right: 5%;
   }
 .button.close {
-    position: absolute;
+    z-index: 999;
     height: 20px;
     background-color: red;
-    right: 15%;
+    right: -4%;
 }
 .button.close:hover {
     background-color: rgb(193, 48, 48);
