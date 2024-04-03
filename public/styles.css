@@ -1,83 +1,86 @@
 body {
     font-family: Arial, Helvetica, sans-serif;
     font-weight: bold;
-    font-size: 2em;
+    font-size: 1.7em;
     transition: background-color 2s ease;
     cursor: auto;
     overflow-x: hidden;
     overflow-y: auto;
-    scrollbar-width: auto;
     scrollbar-color: rgba(80, 80, 80, 0.2) rgba(80, 80, 80, 0.2);
     background: none;
-    width: 100%;
 }
+#createBotForm {
+    color: rgb(89, 0, 255); rgb(0, 191, 255)
+  }
+
 .title-bar {
-    -webkit-app-region: drag; /* Hace que la barra de título sea arrastrable */
-    background-color: #a5a5a598;
-    height: 32px;
-    position: relative;
-    border: 10%;
-  }
-
-  .title-bar .button {
-    position: absolute;
-  }
-
-  .title-bar .button.close {
-    right: 5%;
-  }
-.button.close {
-    position: absolute;
+    background: #a5a5a598;
+    position: fixed;
+    -webkit-app-region: drag;
     height: 20px;
+    top: -5px;
+    right: 40px;
+    left: -5px;
+}
+
+
+.title-bar .button {
+}
+
+.title-bar .button.close {
+}
+.button.close {
+    position: fixed;
+    top: -1px;
+    right: 0px;
+    z-index: 999;
+    height: 20px;
+    width: 40px;
     background-color: red;
-    right: 15%;
 }
 .button.close:hover {
     background-color: rgb(193, 48, 48);
 }
-.tab {
-    font-size: 18px;
-    font-family: inherit;
-    cursor: pointer;
-    position: relative;
-    border: none;
-    background: none;
-    text-transform: uppercase;
+
+  
+.tab-content {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    display: flex;
+    flex-direction: column;
 }
 
-.tab button {
+  
+  /* Otros estilos para botones, etc. */
+  
+
+.tab-content button {
     background-color: inherit;
+    max-width: calc(170px + 1%);
     border: none;
     outline: none;
     padding: 14px 16px;
-    font-size: 17px;
+    font-size: 18px;
     color: rgb(204, 204, 204);
 }
 
-.tab button:hover {}
-
-.tab button:after {
+.tab-content button:after {
     content: "";
     pointer-events: none;
-    position: absolute;
     width: 0%;
     height: 2px;
 }
 
-.tab button.active {
+.tab-content button.active {
     background-color: rgb(139, 139, 139);
     color: rgb(154, 0, 108)
 }
 
 .tabcontent {
-    display: flex;
-    flex-direction: column;
-    max-height: 100vw;
-    max-width: 100vw;
-    padding-top: 1%;
-    overflow: auto;
-    overflow-x: hidden;
+    margin-left: calc(160px + 1%);
 }
+
 ::-webkit-scrollbar {
     width: auto;
 }
@@ -87,16 +90,7 @@ body {
     border-radius: 10px; /* Optional: Add rounded corners to the handle */
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #ae00ffae; /* Set a different color when the handle is hovered */
-}
-input[type="text"] {
-    color: #f84cfe;
-    min-height: 35px;
-    font-size: 15px;
-    font-weight: bolder;
-    border: 1px solid #5e4dcd;
-    border-radius: 6px 6px 6px 6px;
-    background-color: #5e4dcd00;
+    background: #ae00ff00; /* Set a different color when the handle is hovered */
 }
 
 
@@ -114,10 +108,11 @@ button {
 }
 textarea {
     float: inherit;
+    field-sizing: content;
     min-height: 200px;
-    max-height: 900px;
-    min-width: 900px;
-    max-width: 1500px;
+    max-height: 800px;
+    min-width: 800px;
+    max-width: 1600px;
     border: 1px solid #5e4dcd7d;
     border-radius: 6px 6px 6px 6px;
     background-color: #292b2bd1;
@@ -136,7 +131,8 @@ button:hover {
 }
 
 input[type="button"] {
-    min-height: 35px;
+    max-width: calc(170px + 1%);
+    height: 30px;
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
     background-color: #5e4dcd;
@@ -146,8 +142,18 @@ input[type="button"] {
     font-size: 15px;
     transition: background-color .3s ease-in-out;
 }
-
-
+input[type="text"] {
+    color: #f84cfe;
+    font-size: 15px;
+    font-weight: bolder;
+    border: 1px solid #5e4dcd;
+    border-radius: 6px 6px 6px 6px;
+    background-color: #5e4dcd00;
+}
+#uniqueIdInput{
+    height: 30px;
+    width: calc(160px + 1%);
+}
 /* Estilo para los botones cuando se pasa el cursor por encima */
 
 input[type="button"]:hover {
@@ -164,12 +170,10 @@ input[type="button"]:active {
     /* cambiar el color de fondo */
     box-shadow: 0 5px #66666600;
     /* añadir una sombra */
-    transform: scale(0.99);
-    /* mover el botón ligeramente hacia abajo */
 }
 
 h1 {
-    font-size: 2.5em;
+    font-size: 2em;
     margin-top: 0;
     margin-bottom: 0;
 }
@@ -190,22 +194,65 @@ a {
 
 #roomUserText,
 #roomStats {
-    width: 100%;
-    text-align: right;
+    font-size: 24px;
+    word-wrap: break-word;
 }
 
 #roomStats b {
-    margin-right: 20px;
+    font-size: 24px;
+    word-wrap: break-word;
 }
 
 .splitchattable,
 .splitstatetable {
     display: flex;
-    gap: 1;
 }
 
-.splitstatetable td {
-    width: 90%;
+
+/* Estilos para el contenedor principal */
+.user-profile-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra los elementos horizontalmente */
+}
+
+/* Estilos para la imagen de perfil */
+.user-profile-image img {
+    width: 120px; /* Ancho deseado de la imagen */
+    height: 120px; /* Altura deseada de la imagen */
+}
+
+/* Estilos para el enlace de perfil */
+.user-profile-link {
+    /* Agrega estilos según sea necesario */
+}
+#stateText {
+    font-size: 24px; /* Tamaño de fuente deseado */
+    /* Puedes agregar más estilos según sea necesario */
+}
+
+
+
+/* Estilos para el contenedor principal */
+.user-profile-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra los elementos horizontalmente */
+}
+
+/* Estilos para la imagen de perfil */
+.user-profile-image img {
+    width: 100px; /* Ancho deseado de la imagen */
+    height: 100px; /* Altura deseada de la imagen */
+}
+
+/* Estilos para el enlace de perfil */
+.user-profile-link {
+    /* Agrega estilos según sea necesario */
+}
+#stateText {
+    font-size: 24px; /* Tamaño de fuente deseado */
+    /* Puedes agregar más estilos según sea necesario */
 }
 
 .containerheader {
@@ -216,66 +263,83 @@ a {
 
     /* Añadido */
 }
+/* Estilos CSS para la modal */
+.modal {
+    display: none; /* Por defecto, la modal no se muestra */
+    position: fixed; /* Posición fija para que se sobreponga al contenido */
+    z-index: 9999; /* Capa superior para que esté sobre todos los demás elementos */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; /* Añadir desplazamiento si la modal es demasiado grande */
+    background-color: rgba(0,0,0,0.4); /* Fondo oscuro semitransparente */
+}
 
+/* Contenido de la modal */
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; /* Centrar vertical y horizontalmente */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px; /* Ancho máximo de la modal */
+    border-radius: 10px;
+}
+
+/* Estilos para el botón de cerrar */
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.progress-bar {
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    width: 400px; /* Ancho de la barra de progreso */
+  }
+  
+  .progress-bar-inner {
+    height: 100%;
+    position: absolute;
+    top: 0;
+  }
+  
+  .red {
+    background-color: #ff0000; /* Color rojo para el usuario 1 */
+  }
+  
+  .blue {
+    background-color: #0000ff; /* Color azul para el usuario 2 */
+  }
 .chatcontainer {
-    min-width: 300px;
-    gap: 1;
-    padding-right: 60px;
+    margin: 10px 0; /* Add some spacing between gift items */
+    padding: 10px; 
+    min-width: 400px;
     max-height: 600px;
-    max-width: 900px;
+    max-width: 1000px;
     overflow: auto;
-    /* Añadido */
 }
 
 .giftcontainer {
-    border-radius: 10px; /* Add rounded corners to the container */
-    margin: 10px 0; /* Add some spacing between gift items */
-    padding: 10px; 
-    min-width: 300px;
-    gap: 1;
+    min-width: 400px;
     max-height: 600px;
-    max-width: 900px;
+    max-width: 1000px;
     overflow: auto;
 }
 
-.eventcontainer {
-    min-width: 300px;
-    max-height: 600px;
-    gap: 1;
-    max-width: 600px;
-    overflow: auto;
-    /* Añadido */
-}
 
-@media (max-aspect-ratio: 1/1) {
-    body {
-        background-color: black;
-        overflow-x: hidden;
-    }
-    .splitchattable {
-        flex-direction: column;
-    }
-    .chatcontainer {
-        padding-right: 60px;
-        min-width: 300px;
-        max-height: 600px;
-        max-width: 600px;
-        overflow: hidden;
-    }
-    /* Añadido */
-    .giftcontainer {
-        min-width: 300px;
-        max-height: 600px;
-        max-width: 600px;
-        overflow: hidden;
-    }
-    #roomStats {
-        text-align: left;
-    }
-    .giftcontainer {
-        padding-left: 20;
-    }
-}
+
 
 @media (orientation: portrait) {
     body {
@@ -287,13 +351,6 @@ a {
         gap: 1;
         max-height: 800px;
         max-width: 800px
-    }
-    audio {
-        width: 250px;
-        height: 65px;
-        outline: none;
-        vertical-align: middle;
-        /* Alineación vertical en el centro */
     }
     .chatcontainer {
         min-width: 400px;
@@ -464,12 +521,12 @@ audio .mask-custom {
 }
 
 audio {
+    position: absolute;
+    bottom: 1%;
     height: 43px;
     vertical-align: middle;
-    /* Alineación vertical en el centro */
     text-align: right;
-}
-
+  }
 audio::-webkit-media-controls-play-button {}
 
 audio::-webkit-media-controls-panel {
@@ -491,7 +548,7 @@ audio::-webkit-media-controls-panel {
     top: 0;
     left: 0;
     width: 100%;
-    height: 140%;
+    height: 100%;
     background-color: rgba(0, 0, 0, 0);
     z-index: 1000;
     pointer-events: none;
@@ -500,9 +557,10 @@ audio::-webkit-media-controls-panel {
 }
 
 .toggleWrapper {
-    position: relative;
+    top: 8%;
+    right: 2%;
+    position: absolute;
     font-size: 17px;
-    display: inline-block;
     width: 3.5em;
     height: 2em;
 }
@@ -574,7 +632,6 @@ input:checked+.toggle .toggle__handler .crater {
     padding: 10px;
     border-radius: 5px;
     max-width: 100%;
-    max-height: 100%; 
     overflow: auto; 
 }
 
@@ -794,13 +851,6 @@ input:checked+.toggle .toggle__handler .crater {
     outline: none;
 }
 
-.container input {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    height: 0;
-    width: 0;
-}
 
 .container {
     display: block;

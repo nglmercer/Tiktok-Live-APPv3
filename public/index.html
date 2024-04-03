@@ -15,77 +15,60 @@ meta
   connect-src 'self' https://localhost https://unpkg.com https://tiktok-chat-reader.zerody.one wss://irc-ws.chat.twitch.tv wss://tiktok-chat-reader.zerody.one http://localhost:3001 https://api.streamelements.com;
   style-src 'self' 'unsafe-inline';
 ">
- --> 
-
+ -->
+ <div class="title-bar">
+</div>  
 </head>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="connection.js"></script>
-    <script src="app.js"></script>
-    <script src="tmi.min.js"></script>
-    <script src="TTSmain.js"></script>
-
-    <link rel="stylesheet" href="styles.css">
-</head>
-<div class="title-bar">
-  <button class="button close" onclick="closeWindow()">x</button>
-  <script>
-    // Funciones para cerrar, minimizar y maximizar la ventana
-    function closeWindow() {
-      window.close();
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="connection.js"></script>
+<script src="app.js"></script>
+<script src="tmi.min.js"></script>
+<script src="TTSmain.js"></script>
+<style>
+    .error {
+        color: red;
+        font-weight: bold;
     }
-  </script>
-</div>
-<table class="splitstatetable">
-    <div id="stateText"></div>
-    <div id="roomStats"></div>
-</table>
+</style>
+<link rel="stylesheet" href="styles.css">
+
+</head>
 <body>
-  
-  <div class="tab">
+    <div class="tab-content">
+        <div id="stateText"></div>
+        <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
+        <input type="button" id="connectButton" value="Conectar">
         <button class="tablinks" onclick="openTab(event, 'Tab1')">chat</button>
         <button class="tablinks" onclick="openTab(event, 'Tab2')">Minecraft</button>
         <button class="tablinks" onclick="openTab(event, 'Tab3')">Sonidos</button>
         <button class="tablinks" onclick="openTab(event, 'Tab4')">Config y otros</button>
         <button class="tablinks" onclick="openTab(event, 'Tab5')">prox...</button>
-        <div class="toggleWrapper">
-          <input type="checkbox" class="dn" id="dn" checked>
-          <label for="dn" class="toggle">
-              <span class="toggle__handler">
-              </span>
-          </label>
-      </div>
+        <label class="cyberpunk-checkbox-label">
+            <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
+            mixitupAlerts</label>
+        <input id="skip-button" type="button" value="SKIP"> </button>
+        <div id="roomStats"></div>
+        </div>
+        <audio id="audio" controls autoplay>
+        </audio>
+        <audio id="audio" autoplay></audio>
+        <audio id="soundPlayer" type="audio/mp3"></audio>
     </div>
+    <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 90%; position: absolute; background: transparent;"></div>
+    <div class="toggleWrapper">
+        <input type="checkbox" class="dn" id="dn" checked>
+        <label for="dn" class="toggle">
+          <span class="toggle__handler">
+          </span>
+      </label>
     
-    <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 100%; position: absolute; background: transparent;"></div>
-    <button id="openOverlayButton" onclick="openOverlayWindow()">Abrir en nueva ventana</button>
-    
-    <script>
-      function openOverlayWindow() {
-        const content = document.getElementById('overlayEventContainer').outerHTML;
-        const win = window.open('overlay.html', '_blank', 'width=400,height=300');
-        win.onload = function() {
-          win.postMessage(content, '*');
-        };
-      }
-    </script>
-  
-    <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
-    <input type="button" id="connectButton" value="Conectar">
-    <audio id="audio" controls autoplay>
-    </audio>
-    <audio id="audio" autoplay></audio>
-    <audio id="soundPlayer" type="audio/mp3"></audio>
-    <input id="skip-button" type="button" value="SKIP"> </button>
     <div id="durationDisplay"></div>
 
     </div>
 
     <div>
-        <label class="cyberpunk-checkbox-label">
-            <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
-            mixitupAlerts</label>
         <!-- Contenido de las pestañas -->
         <div id="Tab1" class="tabcontent">
             <div class="inputFields">
@@ -107,437 +90,452 @@ meta
             <label for="filter-users">WitheList:</label>
             <input type="text" id="filter-users">
             <script>
-              function setupLocalStorage(inputElement, storageKey, callback) {
-                const storedValue = localStorage.getItem(storageKey);
-                if (storedValue) {
-                  inputElement.value = storedValue;
-                }
-              
-                inputElement.addEventListener('change', () => {
-                  const currentValue = inputElement.value;
-                  if (currentValue) {
-                    localStorage.setItem(storageKey, currentValue);
-                    if (typeof callback === 'function') {
-                      callback(currentValue);
+                function setupLocalStorage(inputElement, storageKey, callback) {
+                    const storedValue = localStorage.getItem(storageKey);
+                    if (storedValue) {
+                        inputElement.value = storedValue;
                     }
-                  }
-                  console.log('Valor actualizado:', currentValue);
 
-                });
-              }
-              
-              // Ejemplo de uso
-              const filterWordsInput = document.getElementById('filter-words');
-              setupLocalStorage(filterWordsInput, 'lastFilterWords');
-              
-              const filterUsersInput = document.getElementById('filter-users');
-              setupLocalStorage(filterUsersInput, 'lastfilterUsers');
-              
+                    inputElement.addEventListener('change', () => {
+                        const currentValue = inputElement.value;
+                        if (currentValue) {
+                            localStorage.setItem(storageKey, currentValue);
+                            if (typeof callback === 'function') {
+                                callback(currentValue);
+                            }
+                        }
+                        console.log('Valor actualizado:', currentValue);
 
+                    });
+                }
+
+                // Ejemplo de uso
+                const filterWordsInput = document.getElementById('filter-words');
+                setupLocalStorage(filterWordsInput, 'lastFilterWords');
+
+                const filterUsersInput = document.getElementById('filter-users');
+                setupLocalStorage(filterUsersInput, 'lastfilterUsers');
             </script>
         </div>
-
+        <div id="battle-progress-bar" class="progress-bar">
+            <div class="progress-bar-inner red" style="width: 50%;"></div>
+            <div class="progress-bar-inner blue" style="width: 50%;"></div>
+          </div>
+        
         <div id="Tab2" class="tabcontent">
 
             <form id="createBotForm">
-              <label for="keyBOT">-MinecraftBOT:</label>
-              <input type="text" id="keyBOT" name="keyBOT" value="" required>
-              <br>
-              <label for="keySERVER">--IP del Server:</label>
-              <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
-              <br>
-              <button type="submit">--Conectar Bot</button>
-              <button id="disconnectButton" disabled>-Desconectar Bot</button>
+                <label for="keyBOT">Nombre del Bot:</label>
+                <input type="text" id="keyBOT" name="keyBOT" value="" required>
+                <br>
+                <label for="keySERVER">IP del Server:</label>
+                <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
+                <br>
+                <button type="submit">Conectar Bot</button>
+                <button id="disconnectButton">Desconectar Bot</button>
             </form>
-            
+
             <script>
-            // Obtener el formulario y los inputs
-            const form = document.getElementById('createBotForm');
-            const keyBOTInput = document.getElementById('keyBOT');
-            const keySERVERInput = document.getElementById('keySERVER');
+                // Obtener el formulario y los inputs
+                const form = document.getElementById('createBotForm');
+                const keyBOTInput = document.getElementById('keyBOT');
+                const keySERVERInput = document.getElementById('keySERVER');
 
-            // Cargar datos guardados del formulario si existen
-            if (localStorage.getItem('botFormData')) {
-              const formData = JSON.parse(localStorage.getItem('botFormData'));
-              keyBOTInput.value = formData.keyBOT;
-              keySERVERInput.value = formData.keySERVER;
-            }
+                // Cargar datos guardados del formulario si existen
+                if (localStorage.getItem('botFormData')) {
+                    const formData = JSON.parse(localStorage.getItem('botFormData'));
+                    keyBOTInput.value = formData.keyBOT;
+                    keySERVERInput.value = formData.keySERVER;
+                }
 
-            // Escuchar el evento de envío del formulario
-            form.addEventListener('submit', function(event) {
-              event.preventDefault(); // Evitar que se envíe el formulario
-              
-              // Obtener el valor del campo "keySERVER"
-              const keySERVER = keySERVERInput.value;
-              
-              // Extraer el número de puerto utilizando split(':')
-              const serverParts = keySERVER.split(':');
-              const serverAddress = serverParts[0];
-              const serverPort = serverParts[1] || ''; // Si no hay puerto, asignar una cadena vacía
-              
-              // Guardar los datos en el localStorage
-              const formData = {
-                keyBOT: keyBOTInput.value,
-                keySERVER: keySERVER,
-                serverPort: serverPort
-              };
-              localStorage.setItem('botFormData', JSON.stringify(formData));
+                // Escuchar el evento de envío del formulario
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault(); // Evitar que se envíe el formulario
 
-              // Enviar el número de puerto como parámetro adicional
-              console.log('Dirección del servidor:', serverAddress);
-              console.log('Puerto del servidor:', serverPort);
-            });
+                    // Obtener el valor del campo "keySERVER"
+                    const keySERVER = keySERVERInput.value;
+
+                    // Extraer el número de puerto utilizando split(':')
+                    const serverParts = keySERVER.split(':');
+                    const serverAddress = serverParts[0];
+                    const serverPort = serverParts[1] || ''; // Si no hay puerto, asignar una cadena vacía
+
+                    // Guardar los datos en el localStorage
+                    const formData = {
+                        keyBOT: keyBOTInput.value,
+                        keySERVER: keySERVER,
+                        serverPort: serverPort
+                    };
+                    localStorage.setItem('botFormData', JSON.stringify(formData));
+
+                    // Enviar el número de puerto como parámetro adicional
+                    console.log('Dirección del servidor:', serverAddress);
+                    console.log('Puerto del servidor:', serverPort);
+                });
             </script>
-              <div id="resultMessage"></div>
+            <div id="resultMessage"></div>
 
-              <script>
+            <script>
                 let disconnectButtonPressCount = 0;
                 let disconnectButtonTimeout;
                 const disconnectButton = document.getElementById('disconnectButton');
                 document.getElementById('createBotForm').addEventListener('submit', function(event) {
-                  event.preventDefault();
-              
-                  const keyBOT = document.getElementById('keyBOT').value.trim();
-                  const keySERVER = document.getElementById('keySERVER').value.trim();
-                  const Initcommand = InitcommandInput.value.trim();
-                  const data = {
-                    eventType: 'createBot',
-                    data: {
-                      keyBot: keyBOT,
-                      keyServer: keySERVER,
-                      Initcommand: Initcommand
-                    }
-                  };
-              
-                  fetch('http://localhost:3001/api/create', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                  })
-                  .then(response => response.json())
-                  .then(result => {
-                    console.log(result);
-                    const resultMessage = document.getElementById('resultMessage');
-                    resultMessage.textContent = result.message;
-                
-                    // Cambiar el color del resultado según el estado
-                    if (result.success.contains('conectado ')) {
-                      console.log('%cEl bot está conectado', 'color: green');
-                      resultMessage.style.color = 'green'; // Cambiar a color verde si es exitoso
-                    } else {
-                      console.log('%cEl bot está desconectado', 'color: red'); // Cambiar a color rojo si hay un error
-                    }
-                    if (result.botStatus) {
-                      console.log('%cEl bot está conectado', 'color: green');
-                      resultMessage.style.color = 'green'; 
-                    } else {
-                      console.log('%cEl bot está desconectado', 'color: red');
-                    }
-                    disconnectButton.disabled = false;
-                  })
-                  .catch(error => {
-                    console.error(error);
-                    alert('Ocurrió un error al crear el bot');
-                  });
+                    event.preventDefault();
+
+                    const keyBOT = document.getElementById('keyBOT').value.trim();
+                    const keySERVER = document.getElementById('keySERVER').value.trim();
+                    const Initcommand = InitcommandInput.value.trim();
+                    const data = {
+                        eventType: 'createBot',
+                        data: {
+                            keyBot: keyBOT,
+                            keyServer: keySERVER,
+                            Initcommand: Initcommand
+                        }
+                    };
+
+                    fetch('/api/create', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                          console.log(result);
+                          const resultMessage = document.getElementById('resultMessage');
+                          resultMessage.textContent = result.message;
+                      
+                          if (result.message) {
+                            console.log('%cEl bot está conectado', 'color: green');
+                            resultMessage.style.color = 'green';
+                          } else {
+                            console.log('%cEl bot está desconectado', 'color: red');
+                            resultMessage.style.color = 'red';
+                          }
+                          disconnectButton.disabled = false;
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            alert('Ocurrió un error al crear el bot');
+                        });
                 });
 
                 disconnectButton.addEventListener('click', function() {
-                  if (disconnectButtonPressCount === 0) {
-                    disconnectButtonPressCount++;
-                    clearTimeout(disconnectButtonTimeout);
-                    disconnectButtonTimeout = setTimeout(() => {
-                      disconnectBot();
-                      disconnectButtonPressCount = 0;
-                    }, 500);
-                  } else if (disconnectButtonPressCount === 1) {
-                    clearTimeout(disconnectButtonTimeout);
-                    reconnectBot();
-                    disconnectButtonPressCount = 0;
-                  }
+                    if (disconnectButtonPressCount === 0) {
+                        disconnectButtonPressCount++;
+                        clearTimeout(disconnectButtonTimeout);
+                        disconnectButtonTimeout = setTimeout(() => {
+                            disconnectBot();
+                            disconnectButtonPressCount = 0;
+                        }, 500);
+                    } else if (disconnectButtonPressCount === 1) {
+                        clearTimeout(disconnectButtonTimeout);
+                        reconnectBot();
+                        disconnectButtonPressCount = 0;
+                    }
                 });
-              
+
                 function disconnectBot() {
-                  fetch('http://localhost:3001/api/disconnect', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ eventType: 'disconnectBot' })
-                  })
-                  .then(response => response.json())
-                  .then(result => {
-                    console.log(result);
-                    document.getElementById('resultMessage').textContent = result.message;
-                    resultMessage.style.color = 'red';
-                    disconnectButton.disabled = true;
-                  })
-                  .catch(error => {
-                    console.error(error);
-                  });
+                    fetch('/api/disconnect', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                eventType: 'disconnectBot'
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            console.log(result);
+                            document.getElementById('resultMessage').textContent = result.message;
+                            resultMessage.style.color = 'red';
+                            disconnectButton.disabled = true;
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
                 }
-              
+
                 function reconnectBot() {
-                  fetch('http://localhost:3001/api/reconnect', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ eventType: 'reconnectBot' })
-                  })
-                  .then(response => response.json())
-                  .then(result => {
-                    console.log(result);
-                    document.getElementById('resultMessage').textContent = result.message;
-                    disconnectButton.disabled = false;
-                  })
-                  .catch(error => {
-                    console.error(error);
-                    alert('Ocurrió un error al reconectar el bot');
-                  });
+                    fetch('/api/reconnect', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                eventType: 'reconnectBot'
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            console.log(result);
+                            document.getElementById('resultMessage').textContent = result.message;
+                            disconnectButton.disabled = false;
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            alert('Ocurrió un error al reconectar el bot');
+                        });
                 }
-              </script>
-              <label onclick="savePlayerName()" >-Tu Minecraft playerName:</label>
-              <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
-              <br>
-              <label onclick="saveInitcommand()">--BOT Comando en login:</label>
-              <input type="text" id="InitcommandInput" placeholder="login">
-              <br>
+            </script>
+            <div class="leer-tutorial">
+                <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
+                  <span>Leer Tutorial Minecraft</span>
+                </a>
+              </div>
+            <label onclick="savePlayerName()">Tu nombre de Minecraft:</label>
+            <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
+            <br>
+            <label onclick="saveInitcommand()">Comando Inicial de BOT:</label>
+            <input type="text" id="InitcommandInput" placeholder="login">
+            <br>
 
-              <div> <label for="eventType"> test Event Type:</label>
-                <input type="text" id="eventType" placeholder="Event Type" value="gift">
-                <label for="data"> test Data :</label>
-                <input type="text" id="data" placeholder="Data Default">
-                <button onclick="testHandleEvent()">Test Handle Event</button> </div>
+            <div> <label for="eventType"> Test comando:</label>
+                <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
+                <label for="data"> -</label>
+                <input type="text" id="data" placeholder="Default">
+                <button onclick="testHandleEvent()">Test comando</button> </div>
+                <button style="position: relative;" onclick="saveCommandList()">Guardar COMANDOS</button>
 
-                <div style="position: relative;">
-                  <textarea type="text" id="commandListInput" rows="15" cols="100" placeholder="chat:
-                    -
-likes:
-                  default:
-                    -
-gift:
-                  default:
-                    -
-                    Rose:
-                    -"></textarea>
-                  <button style="position: relative;" onclick="saveCommandList()">Guardar COMANDOS para Minecraft interactivo</button>
-                </div>
+            <div style="position: relative;">
                 
-                <div style="position: relative;">
-                  <textarea type="text" id="keywordsInput" rows="15" cols="100" placeholder="keywordToGive:
+                <textarea type="text" id="commandListInput">
+chat:
+    - "/say comment"
+likes:
+    default:
+        - "/say likes"
+gift:
+    default:
+        - "/say GiftName"
+    Rose:
+        - "/say Giftname"</textarea>
+            </div>
+
+            <div style="position: relative;">
+                <textarea type="text" id="keywordsInput" placeholder="keywordToGive:
                     escudo: minecraft:shield
                     cama: minecraft:red_bed
 keywordToMob:
                     enderman: minecraft:enderman
                     cerdo: minecraft:pig
                   "></textarea>
-                  <button style="position: relative;" onclick="saveKeywords()">Guardar COMANDOS para el chat, mobs, items FREE</button>
-                </div>
+            </div>
+            <div style="position: relative;" id="errorOutput"></div>
+            <script>
+                try {
+                    // Tu código para analizar el YAML aquí
+                  } catch (error) {
+                    // Muestra el error completo en la consola del HTML
+                    console.error(error);
+                  
+                    // Muestra una alerta con un mensaje genérico
+                    alert('Se ha producido un error. Consulta la consola para obtener más detalles.');
+                  }
+                
+                </script>
+                <button style="position: relative;" onclick="saveKeywords()">Guardar COMANDOS del chat, FREE</button>
 
-
-              <script>
+            <script>
                 // Cargar el comando inicial guardado
                 const initCommandInput = document.getElementById('InitcommandInput');
-                setupLocalStorage(initCommandInput, 'Initcommand');
+                setupLocalStorage(document.getElementById('InitcommandInput'), 'Initcommand');
+                setupLocalStorage(document.getElementById('playerNameInput'), 'playerName');
+                setupLocalStorage(document.getElementById('keywordsInput'), 'keywords');
+                setupLocalStorage(document.getElementById('commandListInput'), 'commandList');
 
                 // Cargar el nombre del jugador guardado
                 const playerNameInput = document.getElementById('playerNameInput');
-                setupLocalStorage(playerNameInput, 'playerName');
                 const storedKeywords = localStorage.getItem('keywords');
                 const storedCommandList = localStorage.getItem('commandList');
-              
                 // Actualizar el contenido de los campos de texto si hay datos guardados
                 if (storedKeywords) {
-                  document.getElementById('keywordsInput').value = storedKeywords;
+                    document.getElementById('keywordsInput').value = storedKeywords;
                 }
-              
+
                 if (storedCommandList) {
-                  document.getElementById('commandListInput').value = storedCommandList;
+                    document.getElementById('commandListInput').value = storedCommandList;
                 }
-              
+
                 function saveKeywords() {
-                  const keywordsInputValue = document.getElementById('keywordsInput').value;
-                  localStorage.setItem('keywords', keywordsInputValue);
-                  console.log('Datos de la lista de keywords guardados en el localStorage');
+                    const keywordsInputValue = document.getElementById('keywordsInput').value;
+                    localStorage.setItem('keywords', keywordsInputValue);
+                    console.log('Datos de la lista de keywords guardados en el localStorage');
                 }
-              
+
                 function saveCommandList() {
-                  const commandListInputValue = document.getElementById('commandListInput').value;
-                  localStorage.setItem('commandList', commandListInputValue);
-                  console.log('Datos de la lista de comandos guardados en el localStorage');
+                    const commandListInput = document.getElementById('commandListInput').value;
+                    localStorage.setItem('commandList', commandListInput);
+                    console.log('Datos de la lista de comandos guardados en el localStorage');
                 }
-              </script>
+            </script>
         </div>
 
     </div>
     <div id="Tab3" class="tabcontent">
-      <form id="soundForm">
-          <input type="file" id="soundFiles" accept=".mp3,.wav,.ogg,.webm" multiple>
-          <button type="submit">Añadir sonido</button>
-      </form>
-      <div id="dropdownButton" onclick="toggleDropdownMenu()">
-        <div id="selectedSound">
-            Sonidos
-            <label class="container">
+
+        <form id="soundForm">
+            <input type="file" id="soundFiles" accept=".mp3,.wav,.ogg,.webm" multiple>
+            <button type="submit">Añadir sonido</button>
+        </form>
+
+        <div id="dropdownButton" onclick="toggleDropdownMenu()">
+            <div id="selectedSound">
+                Sonidos
+                <label class="container">
             <input id="sendsoundCheckbox" type="checkbox" checked>
             <div class="checkmark"></div>
         </label>
-        </div>
-        <ul id="soundList" style="display: block;"></ul>
-        <!-- Muestra la lista de sonidos por defecto 
+            </div>
+            <ul id="soundList" style="display: block;"></ul>
+            <!-- Muestra la lista de sonidos por defecto 
         <input checked="checked" id="sendsoundCheckbox" type="checkbox" checked> -->
-    </div>
-    <div id="modal" style="display: none;">
-        <div id="modalContent">
-            <h2>Reproductor de Audio</h2>
-            <audio id="audioPlayer" controls></audio>
-            <input type="text" id="soundNameInput" placeholder="Nombre del sonido">
-            <button id="playButton">Reproducir</button>
         </div>
-    </div>
+        <div id="modal" style="display: none;">
+            <div id="modalContent">
+                <h2>Reproductor de Audio</h2>
+                <audio id="audioPlayer" controls></audio>
+                <input type="text" id="soundNameInput" placeholder="Nombre del sonido">
+                <button id="playButton">Reproducir</button>
+            </div>
+        </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            let dropdownButton = document.getElementById('dropdownButton');
-            let dropdownMenu = document.createElement('div');
-            dropdownMenu.id = 'dropdownMenu';
-            dropdownMenu.style.display = 'block';
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                let dropdownButton = document.getElementById('dropdownButton');
+                let dropdownMenu = document.createElement('div');
+                dropdownMenu.id = 'dropdownMenu';
+                dropdownMenu.style.display = 'block';
 
 
-            let soundList = document.getElementById('soundList');
-            for (let i = 0; i < soundList.children.length; i++) {
-                let listItem = soundList.children[i];
+                let soundList = document.getElementById('soundList');
+                for (let i = 0; i < soundList.children.length; i++) {
+                    let listItem = soundList.children[i];
 
-                let optionDiv = document.createElement('div');
-                optionDiv.dataset.giftName = listItem.textContent.replace('X', '').replace('Renombrar', '').trim(); // Almacenar el nombre del sonido en un atributo de datos
+                    let optionDiv = document.createElement('div');
+                    optionDiv.dataset.giftName = listItem.textContent.replace('X', '').replace('Renombrar', '').trim(); // Almacenar el nombre del sonido en un atributo de datos
 
-                let soundName = document.createElement('span');
-                soundName.textContent = optionDiv.dataset.giftName;
+                    let soundName = document.createElement('span');
+                    soundName.textContent = optionDiv.dataset.giftName;
 
-                let deleteButton = listItem.querySelector('.deleteButton').cloneNode(true);
-                deleteButton.addEventListener('click', handleDelete);
+                    let deleteButton = listItem.querySelector('.deleteButton').cloneNode(true);
+                    deleteButton.addEventListener('click', handleDelete);
 
-                let renameButton = listItem.querySelector('.renameButton').cloneNode(true);
-                renameButton.addEventListener('click', handleRename);
+                    let renameButton = listItem.querySelector('.renameButton').cloneNode(true);
+                    renameButton.addEventListener('click', handleRename);
 
-                let playButton = listItem.querySelector('.playButton').cloneNode(true); // Crear el botón de reproducción
-                playButton.addEventListener('click', function() { // Agregar un controlador de eventos al botón
-                    playSound(optionDiv.dataset.giftName);
+                    let playButton = listItem.querySelector('.playButton').cloneNode(true); // Crear el botón de reproducción
+                    playButton.addEventListener('click', function() { // Agregar un controlador de eventos al botón
+                        playSound(optionDiv.dataset.giftName);
+                    });
+
+                    optionDiv.appendChild(soundName);
+                    optionDiv.appendChild(deleteButton);
+                    optionDiv.appendChild(renameButton);
+                    optionDiv.appendChild(playButton); // Agregar el botón de reproducción al div de opción
+
+                    dropdownMenu.appendChild(optionDiv);
+                }
+
+                dropdownButton.appendChild(dropdownMenu);
+                dropdownButton.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    dropdownMenu.style.display = 'block';
                 });
 
-                optionDiv.appendChild(soundName);
-                optionDiv.appendChild(deleteButton);
-                optionDiv.appendChild(renameButton);
-                optionDiv.appendChild(playButton); // Agregar el botón de reproducción al div de opción
+                let isMenuVisible = true;
 
-                dropdownMenu.appendChild(optionDiv);
-            }
+                dropdownButton.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    dropdownMenu.style.display = 'block';
+                    isMenuVisible = true;
+                });
 
-            dropdownButton.appendChild(dropdownMenu);
-            dropdownButton.addEventListener('click', function(event) {
-                event.stopPropagation();
-                dropdownMenu.style.display = 'block';
+                dropdownButton.addEventListener('dblclick', function(event) {
+                    event.stopPropagation();
+                    dropdownMenu.style.display = 'none';
+                    isMenuVisible = false;
+                });
+
+                document.addEventListener('click', function() {
+                    if (!isMenuVisible) {
+                        dropdownMenu.style.display = 'none';
+                    }
+                });
             });
 
-            let isMenuVisible = true;
-
-            dropdownButton.addEventListener('click', function(event) {
-                event.stopPropagation();
-                dropdownMenu.style.display = 'block';
-                isMenuVisible = true;
-            });
-
-            dropdownButton.addEventListener('dblclick', function(event) {
-                event.stopPropagation();
-                dropdownMenu.style.display = 'none';
-                isMenuVisible = false;
-            });
-
-            document.addEventListener('click', function() {
-                if (!isMenuVisible) {
+            function toggleDropdownMenu() {
+                var dropdownMenu = document.getElementById('dropdownMenu');
+                if (dropdownMenu.style.display === 'none') {
+                    dropdownMenu.style.display = 'block';
+                } else {
                     dropdownMenu.style.display = 'none';
                 }
-            });
-        });
-
-        function toggleDropdownMenu() {
-            var dropdownMenu = document.getElementById('dropdownMenu');
-            if (dropdownMenu.style.display === 'none') {
-                dropdownMenu.style.display = 'block';
-            } else {
-                dropdownMenu.style.display = 'none';
             }
-        }
-    </script>
+        </script>
 
     </div>
     <div id="Tab4" class="tabcontent">
-      <input type="file" id="importButton">
-      <button onclick="importSettings()">ImportarCONFIG</button>
-      <button id="exportButton" onclick="exportSettings()">ExportarCONFIG</button>
-      <span id="loadingIndicator" style="display: none;">Loading...</span>
-      <div>
-        <form id="overlayForm">
-          <label for="urlInput">URL:</label><br>
-          <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required><br><br>
-          <label for="widthInput">Ancho:</label><br>
-          <input type="number" id="widthInput" value="800" name="width" required><br><br>
-          <label for="heightInput">Alto:</label><br>
-          <input type="number" id="heightInput" value="800" name="height" required><br><br>
-          <button type="submit">Crear Overlay</button>
-        </form>
-      
-        <script>
-          document.getElementById('overlayForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-      
-            const url = document.getElementById('urlInput').value;
-            const width = document.getElementById('widthInput').value;
-            const height = document.getElementById('heightInput').value;
-      
-            try {
-              const response = await fetch('http://localhost:3001/crear-overlay', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url, width, height })
-              });
-      
-              if (response.ok) {
-                alert('Overlay creado correctamente');
-              } else {
-                throw new Error('Error al crear el overlay');
-              }
-            } catch (error) {
-              console.error(error);
-              alert('Ocurrió un error al crear el overlay');
-            }
-          });
-        </script>
-    </div>
-    
-        <div style="padding-top: 10px;">
-            <a href="#" onclick="generateOverlay()">overlay</a>
-            <input type="text" id="inputest"><button onclick="testOverlay()">testOverlay</button>
-            <script>
-                function generateOverlay() {
-                    let username = $('#uniqueIdInput').val();
-                    let url = `obs.html?username=${username}&showLikes=1&showChats=1&showGifts=1&showFollows=1&showJoins=1&bgColor=rgb(24,23,28)&fontColor=rgb(227,229,235)&fontSize=1.3em`;
 
-                    if (username) {
-                        window.open(url, '_blank');
-                    } else {
-                        alert("Enter username");
+        Importa Exporte Settings.Json, actualize la pagina al cargar
+        <div>
+        <input type="file" id="importButton">
+        <button onclick="importSettings()">ImportarCONFIG</button>
+        <button id="exportButton" onclick="exportSettings()">ExportarCONFIG</button>
+        <span id="loadingIndicator" style="display: none;">Loading...</span>
+        </div>
+        <div>
+            Crea un overlay, F11 para cerrar
+            <form id="overlayForm">OverlayLink:
+                <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required>ancho:
+                <input type="number" id="widthInput" value="400" name="width" required>alto:
+                <input type="number" id="heightInput" value="400" name="height" required>
+                <button type="submit">Crear Overlay</button>
+            </form>
+
+            <script>
+                document.getElementById('overlayForm').addEventListener('submit', async function(event) {
+                    event.preventDefault();
+
+                    const url = document.getElementById('urlInput').value;
+                    const width = document.getElementById('widthInput').value;
+                    const height = document.getElementById('heightInput').value;
+
+                    try {
+                        const response = await fetch('/crear-overlay', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                url,
+                                width,
+                                height
+                            })
+                        });
+
+                        if (response.ok) {
+                            alert('Overlay creado correctamente');
+                        } else {
+                            throw new Error('Error al crear el overlay');
+                        }
+                    } catch (error) {
+                        console.error(error);
+                        alert('Ocurrió un error al crear el overlay');
                     }
-                }
+                });
             </script>
+        </div>
+
+        <div style="padding-top: 10px;">
+            <input type="text" id="inputest"><button onclick="testOverlay()">testOverlay</button>
             <div class="inputFields">
-              <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GO" type="button"></button>
-          </div>
-          <div id="chatbox"></div>
+                <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GOOO" type="button"></button>
+            </div>
+            <div id="chatbox"></div>
         </div>
 
         <script>
@@ -563,7 +561,7 @@ keywordToMob:
         <script>
             const uniqueIdInput = document.getElementById('uniqueIdInput');
             const connectButton = document.getElementById('connectButton');
-          
+
             // Load the last entered value from localStorage
             const uniqueId = localStorage.getItem('uniqueId');
             if (uniqueId) {

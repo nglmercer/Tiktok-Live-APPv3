@@ -1,35 +1,14 @@
-const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, globalShortcut, localStorage } = require('electron');
 const path = require('path');
 const url = require('url');
+const Store = require('electron-store');
 
-
-/*require('electron-reload')(__dirname, {
+const store = new Store(); 
+/*
+require('electron-reload')(__dirname, {
   electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
 });//*/
-function createMainWindow() {
-  const mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 800,
-    frame: false,
-    autoHideMenuBar: false,
-    transparent: true,
-    alwaysOnTop: false,
-    webPreferences: {
-      nodeIntegration: true,
-      preload: path.join(__dirname, 'preload.js')
-    }
-  });
-  const port = process.env.PORT || 8081;
-  mainWindow.loadURL(`http://localhost:${port}`);
 
-  ipcMain.on('request-node-data', (event, arg) => {
-    // Aquí puedes realizar alguna operación en Node.js y enviar los resultados de vuelta a la página web
-    const responseData = 'Estos son datos desde Node.js';
-    mainWindow.webContents.send('node-data-response', responseData);
-  });
-
-  return mainWindow;
-}
 // Evento emitido cuando Electron ha terminado de inicializarse
 app.on('ready', () => {
   const express = require('express');
@@ -40,32 +19,71 @@ app.on('ready', () => {
   const cors = require('cors');
   const mineflayer = require('mineflayer');
   const { Client, Server: ServerOsc } = require('node-osc');
-  const mainWindow = createMainWindow();
 
   const client = new Client('127.0.0.1', 9000);
   const server2 = new ServerOsc(9001, '127.0.0.1');
   server2.on('listening', () => {
     console.log('OSC Server is listening.');
   });
-  const app12 = express();
+  let port = process.env.PORT || 8081;
+
+  const app1 = express();
   // CONFIGURACION DE EJEMPLO
   //let keyBOT = null; // BOT MINECRAFT DAR OP
   //let keySERVER = null; // IP SERVER
   //const keySERVERPORT = '25565'; // PUERTO SERVER
-  
+  let mainWindow = new BrowserWindow({
+    width: store.get('windowWidth', 1000), // Obtener el ancho de la ventana desde Electron Store, si no está definido, usar 1200
+    height: store.get('windowHeight', 800), // Obtener la altura de la ventana desde Electron Store, si no está definida, usar 1000
+    frame: false,
+    autoHideMenuBar: true,
+    transparent: true,
+    alwaysOnTop: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: 'red',
+      symbolColor: '#74b1be',
+      height: 20
+    },
+    webPreferences: {
+      nodeIntegration: true,
+    }
+  });
+
+  mainWindow.loadURL(`http://localhost:${port}`);
+  // Evento emitido cuando la ventana se cierra
+  mainWindow.on('closed', function () {
+    mainWindow = null;
+    app.quit();
+  });
   let bot;
   let botStatus = false;
   let disconnect = false;
-  app12.use(cors());
-  app12.use(express.json());
+  app1.use(cors());
+  app1.use(express.json());
+  const ventanaAbierta = store.get('ventanaAbierta');
 
-  const overlayWindows = [];
+  let overlayWindow;
+  const url = store.get('url');
+  if (ventanaAbierta) {
+      createOverlay(url);
+  } else {
+    // Mantener la ventana cerrada si estaba cerrada en la sesión anterior
+  }
 
-  app12.post('/crear-overlay', (req, res) => {
+
+  app1.post('/crear-overlay', (req, res) => {
+    store.set('ventanaAbierta', true);
+
     const { url, width, height } = req.body;
-  
-    // Configuración de la ventana de overlay con el tamaño especificado
-    const overlayWindow = new BrowserWindow({
+    createOverlay(url, width, height);
+    res.status(200).json({ message: 'Overlay creado correctamente' });
+  });
+
+  function createOverlay(url, width , height ) {
+    store.set('ventanaAbierta', true);
+
+    overlayWindow = new BrowserWindow({
       width: parseInt(width),
       height: parseInt(height),
       frame: false,
@@ -76,32 +94,86 @@ app.on('ready', () => {
       }
     });
     
-    overlayWindows.push(overlayWindow);
-
-    // Cargar la URL recibida en la ventana de overlay
     overlayWindow.loadURL(url);
-      //
+    overlayWindow.webContents.on('did-finish-load', () => {
+      overlayWindow.webContents.insertCSS(`
+        #draggable-bar {
+          -webkit-app-region: drag;
+          width: 100%;
+          height: 20px;
+          background-color: rgba(0, 0, 0, 0.3);
+          position: fixed;
+          top: 0;
+          left: 0;
+          z-index: 9999;
+        }
+      `);
+  
+      overlayWindow.webContents.executeJavaScript(`
+        const draggableBar = document.createElement('div');
+        draggableBar.id = 'draggable-bar';
+        document.body.appendChild(draggableBar);
+      `);
+    });
+    overlayWindow.on('closed', () => {
+      if (mainWindow) {
+      store.set('ventanaAbierta', false);
+      }
+      overlayWindow = null;
+    });
 
-    overlayWindow.on('blur', () => {
-      overlayWindow.setIgnoreMouseEvents(true, { forward: true });
-    });
-    //*///
     globalShortcut.register('F11', () => {
-      overlayWindows.forEach(window => window.close());
+      if (overlayWindow && !overlayWindow.isDestroyed()) {
+        store.set('ventanaAbierta', false);
+        overlayWindow.close();
+      }
     });
+
+    // Guardar la URL en localStorage
+      store.set('url', url);
+  }
+  let commandCount = 0;
+  let lastMinuteTimestamp = Date.now();
   
-    res.status(200).json({ message: 'Overlay creado correctamente' });
-  });
-  app12.post('/api/receive', (req, res) => {
+  const COMMAND_LIMIT = 1; // Límite de comandos por minuto
+  const DELAY_PER_COMMAND = 10; // Retraso en milisegundos por cada comando adicional
+  
+  app1.post('/api/receive', (req, res) => {
     const { replacedCommand } = req.body;
-    if (botStatus) {
-      bot.chat(replacedCommand);
-    }
-    //console.log('comando minecraft', replacedCommand);
+    const currentTimestamp = Date.now();
   
-    return res.json({ message: 'Datos recibidos' });
-  });
-  app12.post('/api/receive1', (req, res) => {
+    // Calcular el retraso base en base al número de comandos
+    const additionalDelay = Math.floor(commandCount / COMMAND_LIMIT) * DELAY_PER_COMMAND;
+
+    // Inicializar el retraso
+    let delay = 0;
+
+    // Verificar si replacedCommand es un número
+    if (!isNaN(replacedCommand)) {
+        delay = parseInt(replacedCommand) + 100;
+    } else {
+        delay = additionalDelay;
+    }
+  
+    // Aplicar el retraso
+    setTimeout(() => {
+      if (botStatus) {
+        bot.chat(replacedCommand);
+      }
+      //console.log('comando minecraft', replacedCommand);
+      res.json({ message: 'Datos recibidos' });
+    }, delay);
+
+    // Incrementar el contador de comandos después de haber asignado el retraso
+    commandCount++;
+  
+    //console.log(`Comando recibido. Retraso adicional: ${additionalDelay}ms`);
+});
+
+
+
+
+  app1.post('/api/receive1', (req, res) => {
     const { eventType, data } = req.body;
   
     switch (eventType) {
@@ -142,7 +214,7 @@ app.on('ready', () => {
   
     res.json({ message: 'Datos recibidos receive1' });
   });
-  app12.post('/api/create', (req, res) => {
+  app1.post('/api/create', (req, res) => {
     const { eventType, data } = req.body;
   
     if (eventType === 'createBot') {
@@ -182,8 +254,11 @@ app.on('ready', () => {
     client.send('/chatbox/input', text, true);
   }
   
-  function createBot(keyBot, keyServer, keyServerPort) {
+  function createBot(keyBot, keyServer, keyServerPort, maxAttempts = 5) {
     console.log("createBot now...");
+  
+    let attemptCount = 1; // Track the number of connection attempts
+  
     if (!botStatus) {
       const botOptions = {
         host: keyServer,
@@ -194,32 +269,62 @@ app.on('ready', () => {
         botOptions.port = keyServerPort;
       }
   
-      bot = mineflayer.createBot(botOptions);
+      const createBotInternal = () => { // Function for recursive creation
+        bot = mineflayer.createBot(botOptions);
   
-      bot.on('login', () => {
-        botStatus = true;
-        console.log('Bot is Online');
-        bot.chat('say Bot is Online');
-      });
+        bot.on('login', () => {
+          botStatus = true;
+          console.log('Bot is Online');
+          bot.chat('say Bot is Online');
+        });
   
-      bot.on('error', (err) => {
-        console.log('Error:', err);
-      });
-  
-      bot.on('end', () => {
-        botStatus = false;
-        if (!disconnect) {
-          console.log('Connection ended, reconnecting in 3 seconds');
-          if (!botStatus) {
-            setTimeout(() => createBot(keyBot, keyServer, keyServerPort), 3000);
+        bot.on('error', (err) => {
+          console.error('Error:', err);
+          botStatus = false;
+          if (!disconnect) {
+            if (attemptCount < maxAttempts) { // Check if attempts are exceeded
+              console.log(`Connection ended, reconnecting in 3 seconds (attempt ${attemptCount}/${maxAttempts})`);
+              attemptCount++;
+              setTimeout(() => createBotInternal(), 3000); // Recursive call
+            } else {
+              console.error('Error: Maximum connection attempts reached.');
+              // Handle error (return error and botStatus here)
+              return { error: 'Connection failed after maximum attempts', botStatus: false };
+            }
           }
-        }
-      });
+        });
+        bot.on('kicked', (reason) => {
+          console.log(`Bot expulsado del servidor: ${reason}`);
+        
+          // Implementar lógica de reintento
+          setTimeout(() => {
+            bot.quit(); // Desconectarse del servidor actual
+            createBot(keyBot, keyServer, keyServerPort); // Intentar conectarse de nuevo
+          }, 5000); // Esperar 5 segundos antes de intentar reconectarse
+        
+        });
+        bot.on('end', () => {
+          botStatus = false;
+          if (!disconnect) {
+            if (attemptCount < maxAttempts) { // Check if attempts are exceeded
+              console.log(`Connection ended, reconnecting in 3 seconds (attempt ${attemptCount}/${maxAttempts})`);
+              attemptCount++;
+              setTimeout(() => createBotInternal(), 3000); // Recursive call
+            } else {
+              console.error('Error: Maximum connection attempts reached.');
+              // Handle error (return error and botStatus here)
+              return { error: 'Connection failed after maximum attempts', botStatus: false };
+            }
+          }
+        });
+      };
+  
+      createBotInternal(); // Initial creation attempt
     } else {
       console.log("No se creó el bot, estado:", botStatus);
     }
   }
-  app12.post('/api/disconnect', (req, res) => {
+  app1.post('/api/disconnect', (req, res) => {
     const { eventType } = req.body;
     if (eventType === 'disconnectBot') {
       disconnectBot();
@@ -229,7 +334,7 @@ app.on('ready', () => {
       res.json({ message: 'Datos recibidos' });
     }
   });
-  app12.post('/api/reconnect', (req, res) => {
+  app1.post('/api/reconnect', (req, res) => {
     const { eventType } = req.body;
     if (eventType === 'reconnectBot') {
       reconnectBot();
@@ -247,37 +352,32 @@ app.on('ready', () => {
   }
 
   // Inicia el servidor web
-  const webServerPort = 3001;
-  app12.listen(webServerPort, () => console.info(`Servidor web escuchando en el puerto ${webServerPort}`));
 
-
+  //let devTool = true;
+  //* Función para activar o desactivar el frame de la ventana principal
+  mainWindow.on('focus', () => {
+    globalShortcut.register('Alt+F1', ToolDev);
+    globalShortcut.register('Alt+F2', cdevTool);
+    globalShortcut.register('Alt+F5', refreshPage);
   
-  let devTool = true;
-  // Función para activar o desactivar el frame de la ventana principal
-  globalShortcut.register('F1', ToolDev);
-  globalShortcut.register('F2', cdevTool);
-  function ToolDev() {
-    devTool = true;
-    mainWindow.webContents.openDevTools();
-  }
-  function cdevTool() {
-    devTool = false;
-    mainWindow.webContents.closeDevTools();
-  }
-  mainWindow.loadFile(path.join(__dirname, 'public', 'index.html'));
-
-  ipcMain.on('cloneContent', (event, content) => {
-    const overlayWindow = new BrowserWindow({
-      width: 400,
-      height: 300,
-      frame: true,
-      parent: mainWindow
-    });
-
-    overlayWindow.loadURL(`data:text/html,${encodeURIComponent(content)}`);
+    function ToolDev() {
+      mainWindow.webContents.openDevTools();
+    }
+  
+    function cdevTool() {
+      mainWindow.webContents.closeDevTools();
+    }
+  
+    function refreshPage() {
+      mainWindow.webContents.reload(); // Reload the page on F5
+    }
+  });
+  mainWindow.on('resize', () => {
+    const { width, height } = mainWindow.getBounds();
+    store.set('windowWidth', width);
+    store.set('windowHeight', height);
   });
 
-  const app1 = express();
   const httpServer = createServer(app1);
   const io = new Server(httpServer, {
     cors: {
@@ -285,22 +385,11 @@ app.on('ready', () => {
     }
   });
 
-  const port = process.env.PORT || 8081;
-
-  mainWindow.loadURL(`http://localhost:${port}`);
 
   // Abre las herramientas de desarrollo de Electron (opcional)
   app1.use(express.static(path.join(__dirname, 'public')));
 
-  mainWindow.loadURL(url.format({
-    pathname: path.join(__dirname, '/public/index.html'),
-    protocol: 'file:',
-    slashes: true
-  }));
-  // Evento emitido cuando la ventana se cierra
-  mainWindow.on('closed', function () {
-    mainWindow = null;
-  });
+
   
   io.on('connection', (socket) => {
       let tiktokConnectionWrapper;
@@ -381,7 +470,16 @@ app.on('ready', () => {
           }
       });
   });
-
+  httpServer.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is already in use`);
+      port++;
+      httpServer.listen(port);
+      console.log(` trying the next one. ${port}`);
+    } else {
+      console.error('Server error:', error);
+    }
+  });
   // Emit global connection statistics
   setInterval(() => {
       io.emit('statistic', { globalConnectionCount: getGlobalConnectionCount() });
@@ -391,6 +489,7 @@ app.on('ready', () => {
   httpServer.listen(port);
   console.info(`Server running! Please visit http://localhost:${port}`);
 });
+app.disableHardwareAcceleration()
 
 // Salir cuando todas las ventanas estén cerradas
 app.on('window-all-closed', function () {

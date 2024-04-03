@@ -14,6 +14,7 @@ class TikTokIOConnection {
 
             // Reconnect to streamer if uniqueId already set
             if (this.uniqueId) {
+                
                 this.setUniqueId();
             }
         })
