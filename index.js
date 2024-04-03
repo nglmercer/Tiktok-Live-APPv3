@@ -1,7 +1,9 @@
-const { app, BrowserWindow, globalShortcut, ipcMain } = require('electron');
+const { app, BrowserWindow, globalShortcut, localStorage } = require('electron');
 const path = require('path');
 const url = require('url');
+const Store = require('electron-store');
 
+const store = new Store(); 
 /*
 require('electron-reload')(__dirname, {
   electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
@@ -23,43 +25,65 @@ app.on('ready', () => {
   server2.on('listening', () => {
     console.log('OSC Server is listening.');
   });
+  let port = process.env.PORT || 8081;
+
   const app1 = express();
   // CONFIGURACION DE EJEMPLO
   //let keyBOT = null; // BOT MINECRAFT DAR OP
   //let keySERVER = null; // IP SERVER
   //const keySERVERPORT = '25565'; // PUERTO SERVER
   let mainWindow = new BrowserWindow({
-    width: 1000,
-    height: 800,
+    width: store.get('windowWidth', 1000), // Obtener el ancho de la ventana desde Electron Store, si no está definido, usar 1200
+    height: store.get('windowHeight', 800), // Obtener la altura de la ventana desde Electron Store, si no está definida, usar 1000
     frame: false,
-    autoHideMenuBar: false,
+    autoHideMenuBar: true,
     transparent: true,
     alwaysOnTop: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: 'red',
+      symbolColor: '#74b1be',
+      height: 20
+    },
     webPreferences: {
       nodeIntegration: true,
-      preload: path.join(__dirname, 'preload.js')
     }
   });
-  const port = process.env.PORT || 8081;
 
   mainWindow.loadURL(`http://localhost:${port}`);
   // Evento emitido cuando la ventana se cierra
   mainWindow.on('closed', function () {
     mainWindow = null;
+    app.quit();
   });
   let bot;
   let botStatus = false;
   let disconnect = false;
   app1.use(cors());
   app1.use(express.json());
+  const ventanaAbierta = store.get('ventanaAbierta');
 
-  const overlayWindows = [];
+  let overlayWindow;
+  const url = store.get('url');
+  if (ventanaAbierta) {
+      createOverlay(url);
+  } else {
+    // Mantener la ventana cerrada si estaba cerrada en la sesión anterior
+  }
+
 
   app1.post('/crear-overlay', (req, res) => {
+    store.set('ventanaAbierta', true);
+
     const { url, width, height } = req.body;
-  
-    // Configuración de la ventana de overlay con el tamaño especificado
-    const overlayWindow = new BrowserWindow({
+    createOverlay(url, width, height);
+    res.status(200).json({ message: 'Overlay creado correctamente' });
+  });
+
+  function createOverlay(url, width , height ) {
+    store.set('ventanaAbierta', true);
+
+    overlayWindow = new BrowserWindow({
       width: parseInt(width),
       height: parseInt(height),
       frame: false,
@@ -70,41 +94,85 @@ app.on('ready', () => {
       }
     });
     
-    overlayWindows.push(overlayWindow);
-
-    // Cargar la URL recibida en la ventana de overlay
     overlayWindow.loadURL(url);
-      //
-
-    overlayWindow.on('blur', () => {
-      overlayWindow.setIgnoreMouseEvents(true, { forward: true });
+    overlayWindow.webContents.on('did-finish-load', () => {
+      overlayWindow.webContents.insertCSS(`
+        #draggable-bar {
+          -webkit-app-region: drag;
+          width: 100%;
+          height: 20px;
+          background-color: rgba(0, 0, 0, 0.3);
+          position: fixed;
+          top: 0;
+          left: 0;
+          z-index: 9999;
+        }
+      `);
+  
+      overlayWindow.webContents.executeJavaScript(`
+        const draggableBar = document.createElement('div');
+        draggableBar.id = 'draggable-bar';
+        document.body.appendChild(draggableBar);
+      `);
     });
     overlayWindow.on('closed', () => {
-      const index = overlayWindows.indexOf(overlayWindow);
-      if (index !== -1) {
-        overlayWindows.splice(index, 1);
+      if (mainWindow) {
+      store.set('ventanaAbierta', false);
+      }
+      overlayWindow = null;
+    });
+
+    globalShortcut.register('F11', () => {
+      if (overlayWindow && !overlayWindow.isDestroyed()) {
+        store.set('ventanaAbierta', false);
+        overlayWindow.close();
       }
     });
-    //*///
-    globalShortcut.register('F11', () => {
-      overlayWindows.forEach(window => {
-        if (!window.isDestroyed()) { // Check if window is still open
-          window.close();
-        }
-      });
-    });
+
+    // Guardar la URL en localStorage
+      store.set('url', url);
+  }
+  let commandCount = 0;
+  let lastMinuteTimestamp = Date.now();
   
-    res.status(200).json({ message: 'Overlay creado correctamente' });
-  });
+  const COMMAND_LIMIT = 1; // Límite de comandos por minuto
+  const DELAY_PER_COMMAND = 10; // Retraso en milisegundos por cada comando adicional
+  
   app1.post('/api/receive', (req, res) => {
     const { replacedCommand } = req.body;
-    if (botStatus) {
-      bot.chat(replacedCommand);
-    }
-    //console.log('comando minecraft', replacedCommand);
+    const currentTimestamp = Date.now();
   
-    return res.json({ message: 'Datos recibidos' });
-  });
+    // Calcular el retraso base en base al número de comandos
+    const additionalDelay = Math.floor(commandCount / COMMAND_LIMIT) * DELAY_PER_COMMAND;
+
+    // Inicializar el retraso
+    let delay = 0;
+
+    // Verificar si replacedCommand es un número
+    if (!isNaN(replacedCommand)) {
+        delay = parseInt(replacedCommand) + 100;
+    } else {
+        delay = additionalDelay;
+    }
+  
+    // Aplicar el retraso
+    setTimeout(() => {
+      if (botStatus) {
+        bot.chat(replacedCommand);
+      }
+      //console.log('comando minecraft', replacedCommand);
+      res.json({ message: 'Datos recibidos' });
+    }, delay);
+
+    // Incrementar el contador de comandos después de haber asignado el retraso
+    commandCount++;
+  
+    //console.log(`Comando recibido. Retraso adicional: ${additionalDelay}ms`);
+});
+
+
+
+
   app1.post('/api/receive1', (req, res) => {
     const { eventType, data } = req.body;
   
@@ -284,19 +352,31 @@ app.on('ready', () => {
   }
 
   // Inicia el servidor web
-  
+
   //let devTool = true;
-  /* Función para activar o desactivar el frame de la ventana principal
-  globalShortcut.register('F1', ToolDev);
-  globalShortcut.register('F2', cdevTool);
-  function ToolDev() {
-    devTool = true;
-    mainWindow.webContents.openDevTools();
-  }
-  function cdevTool() {
-    devTool = false;
-    mainWindow.webContents.closeDevTools();
-  }//*/
+  //* Función para activar o desactivar el frame de la ventana principal
+  mainWindow.on('focus', () => {
+    globalShortcut.register('Alt+F1', ToolDev);
+    globalShortcut.register('Alt+F2', cdevTool);
+    globalShortcut.register('Alt+F5', refreshPage);
+  
+    function ToolDev() {
+      mainWindow.webContents.openDevTools();
+    }
+  
+    function cdevTool() {
+      mainWindow.webContents.closeDevTools();
+    }
+  
+    function refreshPage() {
+      mainWindow.webContents.reload(); // Reload the page on F5
+    }
+  });
+  mainWindow.on('resize', () => {
+    const { width, height } = mainWindow.getBounds();
+    store.set('windowWidth', width);
+    store.set('windowHeight', height);
+  });
 
   const httpServer = createServer(app1);
   const io = new Server(httpServer, {
@@ -390,7 +470,16 @@ app.on('ready', () => {
           }
       });
   });
-
+  httpServer.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is already in use`);
+      port++;
+      httpServer.listen(port);
+      console.log(` trying the next one. ${port}`);
+    } else {
+      console.error('Server error:', error);
+    }
+  });
   // Emit global connection statistics
   setInterval(() => {
       io.emit('statistic', { globalConnectionCount: getGlobalConnectionCount() });
@@ -400,6 +489,7 @@ app.on('ready', () => {
   httpServer.listen(port);
   console.info(`Server running! Please visit http://localhost:${port}`);
 });
+app.disableHardwareAcceleration()
 
 // Salir cuando todas las ventanas estén cerradas
 app.on('window-all-closed', function () {

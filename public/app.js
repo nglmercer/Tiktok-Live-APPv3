@@ -79,7 +79,23 @@ function connect() {
         connection.connect(uniqueId, {
             enableExtendedGiftInfo: true
         }).then(state => {
-            $('#stateText').text(`Connected to roomId ${state.roomId}`);
+            // Obtener información del usuario
+            const userProfileLink = generateUsernameLink({ uniqueId });
+            // Accede al segundo elemento (posición 1) de la lista url_list y utiliza su valor
+            const userProfileImage = `<img src="${state.roomInfo.cover.url_list[1]}" alt="${uniqueId}" width="50" height="50">`;
+            
+            // Crear un contenedor div para la imagen y el enlace
+            const userProfileContainer = `
+                <div class="user-profile-container">
+                    <div class="user-profile-image">${userProfileImage}</div>
+                    <div class="user-profile-link">${userProfileLink}</div>
+                </div>
+            `;
+            
+            // Insertar el contenedor en el elemento con el id "stateText"
+            $('#stateText').html(userProfileContainer);
+
+            console.log(`Connected to roomId`, state);
             sendToServer('connected', uniqueId);
             // reset stats
             viewerCount = 0;
@@ -113,8 +129,9 @@ function sanitize(text) {
 }
 
 function updateRoomStats() {
-    $('#roomStats').html(`Espectadores: <b>${viewerCount.toLocaleString()}</b> Likes: <b>${likeCount.toLocaleString()}</b> Diamantes: <b>${diamondsCount.toLocaleString()}</b>`)
+    $('#roomStats').html(`Espectadores: <b>${viewerCount.toLocaleString()}</b><br>Likes: <b>${likeCount.toLocaleString()}</b><br>Diamantes: <b>${diamondsCount.toLocaleString()}</b>`);
 }
+
 
 function generateUsernameLink(data) {
     return `<a class="usernamelink" href="https://www.tiktok.com/@${data.uniqueId}" target="_blank">${data.uniqueId}</a>`;
@@ -207,8 +224,8 @@ function addChatItem(color, data, text, summarize) {
     }
     
     if (!userPoints[data.nickname]) {
-        userPoints[data.nickname] = 20; // Asignar 10 puntos por defecto
-        console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
+        userPoints[data.nickname] = 20; // Asignar 10 punts por defecto
+        //console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
     }
 
 
@@ -244,17 +261,13 @@ function addChatItem(color, data, text, summarize) {
     for (let word of customfilterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 0) {
-                console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                //console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
             if (userPoints[data.nickname] >= 1) {
                 userPoints[data.nickname]--;
-                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
                 return;
-            }
-            if (userPoints[data.nickname] >= 30) {
-                userPoints[data.nickname]--;
-                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
             }
         }
     }
@@ -269,7 +282,7 @@ function addChatItem(color, data, text, summarize) {
 
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            if (userPoints[data.nickname] <= 2) {
+            if (userPoints[data.nickname] <= 0) {
                 console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
@@ -278,10 +291,7 @@ function addChatItem(color, data, text, summarize) {
                 console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
                 return;
             }
-            if (userPoints[data.nickname] >= 30) {
-                userPoints[data.nickname]--;
-                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-            }
+
         }
     }
 
@@ -290,11 +300,9 @@ function addChatItem(color, data, text, summarize) {
     if (sendDataCheckbox.checked) {
         if (startsWithSpecialChar) {
             if (userPoints[data.nickname] <= 3) {
-                console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+                //console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
                 return;
             }
-            userPoints[data.nickname] -= 3;
-            console.log('Usuario con puntos:', data.nickname, userPoints[data.nickname]);
         }
         enviarMensaje(message);
     }
@@ -310,9 +318,25 @@ function addChatItem(color, data, text, summarize) {
         }
         userPoints[data.nickname]--;
         playSoundByText(message);
-        console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
         lastNickname = nickname
     }
+    /*if (data.isNewGifter || data.isSubscriber || data.isModerator || (data.topGifterRank && data.topGifterRank > 1)) {
+        // Aumentar los puntos según la condición
+        if (data.isNewGifter) {
+            userPoints[data.nickname] = (userPoints[data.nickname] || 0) + 20;
+        }
+        if (data.isSubscriber) {
+            userPoints[data.nickname] = (userPoints[data.nickname] || 0) + 10;
+        }
+        if (data.isModerator) {
+            userPoints[data.nickname] = (userPoints[data.nickname] || 0) + 10;
+        }
+        if (data.topGifterRank && data.topGifterRank > 1) {
+            userPoints[data.nickname] = (userPoints[data.nickname] || 0) + 10;
+        }
+
+        console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
+    }*/
     if (sendDataCheckbox.checked) {
         if (userPoints[data.nickname] <= 3) {
             console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
@@ -322,7 +346,7 @@ function addChatItem(color, data, text, summarize) {
             console.log('anti spam commandos');
             return;
         }
-        userPoints[data.nickname] -= 3;
+        userPoints[data.nickname] -= 1;
         obtenerYenviarCommandID({ eventType: 'chat', string: message });
         lastNickname = nickname
     }
@@ -681,23 +705,18 @@ connection.on('chat', (data) => {
       }
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            userPoints[data.nickname] -= 25;
+            userPoints[data.nickname] -= 2;
 
         }
-        if (userPoints[data.nickname] <= -500) {
-            userPoints[data.nickname] += 300;
-            console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
-            return;
-        } 
         if (userPoints[data.nickname] >= 1) {
             userPoints[data.nickname] -= 1;
             userPoints[data.nickname]--;
-            console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+            //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
         } 
     }
     if (!userPoints[data.nickname]) {
         userPoints[data.nickname] = 20; // Asignar 10 puntos por defecto
-        console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
+        //console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
     }
 
 
@@ -717,9 +736,7 @@ connection.on('chat', (data) => {
     if (tiempoActual - data.ultimoTiempo <= 60) {
         return data.nickname; // Retorna la cantidad actual de puntos sin cambios
     }
-    if (data.nickname < 20) {
-        data.nickname += 5;
-    }
+
     data.ultimoTiempo = tiempoActual;
     return data.nickname;
 });
@@ -730,7 +747,7 @@ connection.on('gift', (data) => {
     } else if (userPoints[data.nickname] >= 1) {
         userPoints[data.nickname] += 20;
         userPoints[data.nickname] + 10;
-        console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
+        //console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
     }
     if (sendDataCheckbox.checked) {
     obtenerYenviarCommandID({ eventType: 'gift', string: data.giftName });
@@ -805,30 +822,82 @@ connection.on('streamEnd', () => {
     sendToServer('streamEnd', message);
 })
 
-connection.on('questionNew', (data) => {
-    console.log(`${data.uniqueId} asks ${data.questionText}`);
-
-})
+connection.on('questionNew', data => {
+    // Crear modal
+    const modal = document.createElement('div');
+    modal.classList.add('modal');
+    
+    // Contenido de la modal
+    modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>${data.nickname} asks:</h2>
+            <p>${data.questionText}</p>
+        </div>
+    `;
+    
+    // Agregar modal al cuerpo del documento
+    document.body.appendChild(modal);
+    
+    // Cerrar modal cuando se hace clic en la "x"
+    const closeBtn = modal.querySelector('.close');
+    closeBtn.addEventListener('click', () => {
+        modal.remove();
+    });
+});
 connection.on('linkMicBattle', (data) => {
+    /*const table = document.createElement('table');
+    const headerRow = table.insertRow();
+    const header1 = document.createElement('th');
+    header1.textContent = 'Unique ID';
+    headerRow.appendChild(header1);
+    const header2 = document.createElement('th');
+    header2.textContent = 'Points';
+    headerRow.appendChild(header2);
 
-    console.log(`New Battle: ${data.battleUsers[0].uniqueId} VS ${data.battleUsers[1].uniqueId}`);
+    data.battleUsers.forEach(user => {
+        const row = table.insertRow();
+        const cell1 = row.insertCell();
+        cell1.textContent = user.uniqueId;
+        const cell2 = row.insertCell();
+        cell2.textContent = '0'; // Puedes iniciar los puntos en 0
+        cell2.setAttribute('id', user.uniqueId); // Establece el ID del elemento de la celda con el Unique ID del usuario
+    });
 
-})
+    document.body.appendChild(table);*/
+});
+
 connection.on('linkMicArmies', (data) => {
-    console.log('linkMicArmies', data);
-    console.log(`${data.uniqueId} linkMicArmies!`);
-})
+    /* Itera sobre los ejércitos de batalla
+    data.battleArmies.forEach(army => {
+        // Itera sobre los participantes de cada ejército
+        army.participants.forEach(participant => {
+            // Encuentra la celda correspondiente en la tabla por el Unique ID del usuario
+            const cell = document.getElementById(participant.userId);
+            if (cell) {
+                // Actualiza los puntos en la celda
+                cell.textContent = army.points;
+            }
+        });
+    });*/
+});
+  
 connection.on('liveIntro', (msg) => {
-    console.log(msg);
-})
+    console.log('User Details:', msg.userDetails);
+    console.log('Nickname:', msg.nickname);
+    console.log('Unique ID:', msg.uniqueId);
+});
+
 connection.on('emote', (data) => {
     console.log(`${data.uniqueId} emote!`);
     console.log('emote received', data);
 })
-connection.on('envelope', (data) => {
-    console.log(`${data.uniqueId} envelope!`);
-    console.log('envelope received', data);
-})
+connection.on('envelope', data => {
+    console.log('Unique ID:', data.uniqueId);
+    console.log('Coins:', data.coins);
+    fetchAudio(`${data.uniqueId} envio cofre de ${data.coins} monedas para ${data.canOpen} personas`);
+});
+
 connection.on('subscribe', (data) => {
     console.log(`${data.uniqueId} subscribe!`);
 })
@@ -1029,7 +1098,7 @@ var VOICE_LIST = {
     "Enrique (Spanish, European)": "Enrique",
     "Conchita (Spanish, European)": "Conchita",
     "Mia (Spanish, Mexican)": "Mia",
-    "Rosalinda (Spanish, Castilian)": "es-ES-Standard-A",
+    "Rosalinda (Spanish, Castilian)": "Rosalinda Standard",
     "Brian (English, British)": "Brian",
     "Amy (English, British)": "Amy",
     "Emma (English, British)": "Emma",
@@ -1243,7 +1312,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     voiceSelectContainer.appendChild(voiceSelect);
 });
 
-console.log('Voz seleccionada:', voiceSelect.value);
 voiceSelect.addEventListener('change', function() {
     fetchAudio(voiceSelect.value);
 });
@@ -1697,51 +1765,23 @@ function importSettings() {
     }
 }
 const sentData = new Set(); // Conjunto para almacenar los datos enviados
-document.addEventListener('DOMContentLoaded', function() {
-    const playerName = localStorage.getItem('playerName');
-  
-    // Verificar si hay un nombre de jugador guardado
-    if (playerName) {
-      const playerNameInput = document.getElementById('playerNameInput');
-      playerNameInput.value = playerName;
-    }
-});
-const keyplayerName = localStorage.getItem('playerName') || 'defaultPlayerName';
+
 let keywords = {}; // Inicializar como un objeto vacío en lugar de null
-let commandList = null;
+let commandList = {};
 let lastCommand = null;
-const playerNames = [`${keyplayerName}`, `${keyplayerName}`];
 let currentPlayerIndex = 0;
 const keywordsInput = localStorage.getItem('keywords');
-const commandListInput = localStorage.getItem('commandList');
+keywords = jsyaml.load(keywordsInput);
 
-if (keywordsInput) {
-  keywords = jsyaml.load(keywordsInput); // Asignar los datos cargados desde el localStorage a 'keywords'
-} else {
-  keywords = {}; // Asignar un objeto vacío si no hay datos en el localStorage
-}
-
-if (commandListInput) {
-  commandList = jsyaml.load(commandListInput);
-} else {
-  commandList = {};
-}
 function testHandleEvent() {
+    const commandListInput = localStorage.getItem('commandList');
+    commandList = jsyaml.load(commandListInput);
     var eventType = document.getElementById('eventType').value;
     var data = document.getElementById('data').value;
-    let playerName = null;
     let eventCommands = [];
+
+    let playerName = localStorage.getItem('playerName');
   
-    if (playerNames[currentPlayerIndex] === undefined || playerNames[currentPlayerIndex].length < 2) {
-      playerName = `${keyplayerName}`;
-    } else {
-      playerName = playerNames[currentPlayerIndex];
-    }
-  
-    currentPlayerIndex++;
-    if (currentPlayerIndex >= playerNames.length) {
-      currentPlayerIndex = 0;
-    }
     if (eventType === 'gift') {
         let dataname = data.trim().toLowerCase();
         let foundGift = Object.keys(commandList.gift).find(gift => gift.toLowerCase() === dataname);
@@ -1764,16 +1804,16 @@ function testHandleEvent() {
       if (Array.isArray(eventCommands)) {
         eventCommands.forEach(command => {
           let replacedCommand = command
-            .replace('{playername}', playerName || '');
+            .replace('playername', playerName || '');
             if (eventType === 'gift') {
                 setTimeout(() => {
-                  console.log('comando1', replacedCommand);
+                  //console.log('comando1', replacedCommand);
                   sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
                 }, 100); // antes de enviar el comando
               } else if (replacedCommand !== lastCommand) {
                 setTimeout(() => {
                   lastCommand = replacedCommand;
-                  console.log('comando2', replacedCommand);
+                  //console.log('comando2', replacedCommand);
                   sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
                 }, 100); // antes de enviar el comando
               }
@@ -1785,67 +1825,58 @@ let commandCounter = 0; // Variable de control de contador
 const maxRepeatCount = 50; // Valor máximo para repeatCount
 
 function handleEvent(eventType, data, msg, likes) {
-  let playerName = null;
-  let eventCommands = [];
+    const commandListInput = localStorage.getItem('commandList');
+    commandList = jsyaml.load(commandListInput);
+    let playerName = localStorage.getItem('playerName');
+    let eventCommands = [];
 
-  if (playerNames[currentPlayerIndex] === undefined || playerNames[currentPlayerIndex].length < 2) {
-    playerName = `${keyplayerName}`;
-  } else {
-    playerName = playerNames[currentPlayerIndex];
-  }
-
-  currentPlayerIndex++;
-  if (currentPlayerIndex >= playerNames.length) {
-    currentPlayerIndex = 0;
-  }
-
-  if (eventType === 'gift') {
-    let giftName = data.giftName.trim().toLowerCase();
-    let foundGift = Object.keys(commandList.gift).find(gift => gift.toLowerCase() === giftName);
-    if (foundGift) {
-      eventCommands = commandList.gift[foundGift];
-    } else {
-      eventCommands = commandList.gift['default'];
-    }
-  } else if (commandList[eventType]) {
-    if (typeof commandList[eventType] === 'object' && !Array.isArray(commandList[eventType])) {
-      if (data.likes && commandList[eventType][data.likes]) {
-        eventCommands = commandList[eventType][data.likes];
-      } else {
-        eventCommands = commandList[eventType]['default'];
-      }
-    } else {
-      eventCommands = commandList[eventType];
-    }
-  }
-
-  if (Array.isArray(eventCommands)) {
-    eventCommands.forEach(command => {
-      let replacedCommand = command
-        .replace('uniqueId', data.uniqueId || '')
-        .replace('comment', data.comment || '')
-        .replace('{milestoneLikes}', likes || '')
-        .replace('{likes}', likes || '')
-        .replace('message', data.comment || '')
-        .replace('giftName', data.giftName || '')
-        .replace('repeatCount', data.repeatCount || '')
-        .replace('playername', playerName || '');
-
-      if (eventType !== 'gift' && replacedCommand === lastCommand) {
-        return;
-      }
-      if (data.repeatCount > maxRepeatCount) {
-        // Verificar si el comando contiene "tellraw" o "title" y si el contador no es múltiplo de 10
-        if ((command.includes("tellraw") || command.includes("title")) && commandCounter % 10 !== 0) {
-          return; // No se ejecuta el comando
+    if (eventType === 'gift') {
+        let giftName = data.giftName.trim().toLowerCase();
+        let foundGift = Object.keys(commandList.gift).find(gift => gift.toLowerCase() === giftName);
+        if (foundGift) {
+            eventCommands = commandList.gift[foundGift];
+        } else {
+            eventCommands = commandList.gift['default'];
         }
-      }
-      commandCounter++;
+    } else if (commandList[eventType]) {
+        if (typeof commandList[eventType] === 'object' && !Array.isArray(commandList[eventType])) {
+            if (data.likes && commandList[eventType][data.likes]) {
+                eventCommands = commandList[eventType][data.likes];
+            } else {
+                eventCommands = commandList[eventType]['default'];
+            }
+        } else {
+            eventCommands = commandList[eventType];
+        }
+    }
+
+    if (Array.isArray(eventCommands)) {
+        eventCommands.forEach(command => {
+            let replacedCommand = command
+                .replace('uniqueId', data.uniqueId || '')
+                .replace('comment', data.comment || '')
+                .replace('{milestoneLikes}', likes || '')
+                .replace('{likes}', likes || '')
+                .replace('message', data.comment || '')
+                .replace('giftName', data.giftName || '')
+                .replace('repeatCount', data.repeatCount || '')
+                .replace('playername', playerName || '');
+
+            if (eventType !== 'gift' && replacedCommand === lastCommand) {
+                return;
+            }
+            if (data.repeatCount > maxRepeatCount) {
+                // Verificar si el comando contiene "tellraw" o "title" y si el contador no es múltiplo de 10
+                if ((command.includes("tellraw") || command.includes("title")) && commandCounter % 10 !== 0) {
+                    return; // No se ejecuta el comando
+                }
+            }
+            commandCounter++;
       if (data.comment && keywords.keywordToGive[data.comment.toLowerCase()]) {
         let itemKeyword = Object.keys(keywords.keywordToGive).find(keyword => data.comment.toLowerCase().includes(keyword.toLowerCase()));
         if (itemKeyword) {
           replacedCommand = `/execute at @a run give @a ${keywords.keywordToGive[itemKeyword]}`;
-          console.info(replacedCommand);
+          //console.info(replacedCommand);
         }
       } else if (command.includes('item')) {}
 
@@ -1853,28 +1884,25 @@ function handleEvent(eventType, data, msg, likes) {
         let mobKeyword = Object.keys(keywords.keywordToMob).find(keyword => data.comment.toLowerCase().includes(keyword.toLowerCase()));
         if (mobKeyword) {
           replacedCommand = `/execute at ${playerName} run summon ${keywords.keywordToMob[mobKeyword]}`;
-          console.info(replacedCommand);
+          //console.info(replacedCommand);
         }
       } else if (command.includes('mob')) {}
       
-      let repeatCount = data.repeatCount || 1;
-      for (let i = 0; i < repeatCount; i++) {
-          if (eventType === 'gift') {
-            setTimeout(() => {
-              console.log('comando1', replacedCommand);
-              sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
-            }, 100); // antes de enviar el comando
-          } else if (replacedCommand !== lastCommand) {
-            setTimeout(() => {
-              lastCommand = replacedCommand;
-              console.log('comando2', replacedCommand);
-              sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
-            }, 100); // antes de enviar el comando
-          }
-        }
-      
-    });
-  }
+       let repeatCount = data.repeatCount || 1;
+
+
+           for (let i = 0; i < repeatCount; i++) {
+               if (eventType === 'gift') {
+                   sendReplacedCommand(replacedCommand);
+               } else if (replacedCommand !== lastCommand) {
+                   lastCommand = replacedCommand;
+                   sendReplacedCommand(replacedCommand);
+                   
+               }
+           }
+ // Convertir segundos a milisegundos
+   });
+}
 }
 
 function sendReplacedCommand(replacedCommand) {
@@ -1887,7 +1915,7 @@ function sendReplacedCommand(replacedCommand) {
     })
     .then(response => response.json())
     .then(data => {
-      console.log(data); // Maneja la respuesta del servidor si es necesario
+      //console.log(data); // Maneja la respuesta del servidor si es necesario
     })
     .catch(error => {
       console.error('Error:', error);
@@ -1904,7 +1932,7 @@ async function sendToServer(eventType, data, text, color, msg, message) {
       })
       .then(response => response.json())
       .then(data => {
-        console.log(data); // Maneja la respuesta del servidor si es necesario
+        //console.log(data); // Maneja la respuesta del servidor si es necesario
       })
       .catch(error => {
         console.error('Error:', error);

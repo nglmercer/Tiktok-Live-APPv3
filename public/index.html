@@ -16,7 +16,8 @@ meta
   style-src 'self' 'unsafe-inline';
 ">
  -->
-
+ <div class="title-bar">
+</div>  
 </head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -32,55 +33,42 @@ meta
     }
 </style>
 <link rel="stylesheet" href="styles.css">
+
 </head>
-<div class="title-bar">
-    <button class="button close" onclick="closeWindow()">x</button>
-    <script>
-        // Funciones para cerrar, minimizar y maximizar la ventana
-        function closeWindow() {
-            window.close();
-        }
-    </script>
-</div>
-<table class="splitstatetable">
-    <div id="stateText"></div>
-    <div id="roomStats"></div>
-</table>
-
 <body>
-
-    <div class="tab">
+    <div class="tab-content">
+        <div id="stateText"></div>
+        <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
+        <input type="button" id="connectButton" value="Conectar">
         <button class="tablinks" onclick="openTab(event, 'Tab1')">chat</button>
         <button class="tablinks" onclick="openTab(event, 'Tab2')">Minecraft</button>
         <button class="tablinks" onclick="openTab(event, 'Tab3')">Sonidos</button>
         <button class="tablinks" onclick="openTab(event, 'Tab4')">Config y otros</button>
         <button class="tablinks" onclick="openTab(event, 'Tab5')">prox...</button>
-        <div class="toggleWrapper">
-            <input type="checkbox" class="dn" id="dn" checked>
-            <label for="dn" class="toggle">
-              <span class="toggle__handler">
-              </span>
-          </label>
+        <label class="cyberpunk-checkbox-label">
+            <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
+            mixitupAlerts</label>
+        <input id="skip-button" type="button" value="SKIP"> </button>
+        <div id="roomStats"></div>
         </div>
+        <audio id="audio" controls autoplay>
+        </audio>
+        <audio id="audio" autoplay></audio>
+        <audio id="soundPlayer" type="audio/mp3"></audio>
     </div>
-
-    <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 100%; position: absolute; background: transparent;"></div>
-
-    <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
-    <input type="button" id="connectButton" value="Conectar">
-    <audio id="audio" controls autoplay>
-    </audio>
-    <audio id="audio" autoplay></audio>
-    <audio id="soundPlayer" type="audio/mp3"></audio>
-    <input id="skip-button" type="button" value="SKIP"> </button>
+    <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 90%; position: absolute; background: transparent;"></div>
+    <div class="toggleWrapper">
+        <input type="checkbox" class="dn" id="dn" checked>
+        <label for="dn" class="toggle">
+          <span class="toggle__handler">
+          </span>
+      </label>
+    
     <div id="durationDisplay"></div>
 
     </div>
 
     <div>
-        <label class="cyberpunk-checkbox-label">
-            <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
-            mixitupAlerts</label>
         <!-- Contenido de las pestañas -->
         <div id="Tab1" class="tabcontent">
             <div class="inputFields">
@@ -129,18 +117,22 @@ meta
                 setupLocalStorage(filterUsersInput, 'lastfilterUsers');
             </script>
         </div>
-
+        <div id="battle-progress-bar" class="progress-bar">
+            <div class="progress-bar-inner red" style="width: 50%;"></div>
+            <div class="progress-bar-inner blue" style="width: 50%;"></div>
+          </div>
+        
         <div id="Tab2" class="tabcontent">
 
             <form id="createBotForm">
-                <label for="keyBOT">-MinecraftBOT:</label>
+                <label for="keyBOT">Nombre del Bot:</label>
                 <input type="text" id="keyBOT" name="keyBOT" value="" required>
                 <br>
-                <label for="keySERVER">--IP del Server:</label>
+                <label for="keySERVER">IP del Server:</label>
                 <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
                 <br>
-                <button type="submit">--Conectar Bot</button>
-                <button id="disconnectButton">-Desconectar Bot</button>
+                <button type="submit">Conectar Bot</button>
+                <button id="disconnectButton">Desconectar Bot</button>
             </form>
 
             <script>
@@ -211,24 +203,18 @@ meta
                         })
                         .then(response => response.json())
                         .then(result => {
-                            console.log(result);
-                            const resultMessage = document.getElementById('resultMessage');
-                            resultMessage.textContent = result.message;
-
-                            // Cambiar el color del resultado según el estado
-                            if (result.success.contains('conectado ')) {
-                                console.log('%cEl bot está conectado', 'color: green');
-                                resultMessage.style.color = 'green'; // Cambiar a color verde si es exitoso
-                            } else {
-                                console.log('%cEl bot está desconectado', 'color: red'); // Cambiar a color rojo si hay un error
-                            }
-                            if (result.botStatus) {
-                                console.log('%cEl bot está conectado', 'color: green');
-                                resultMessage.style.color = 'green';
-                            } else {
-                                console.log('%cEl bot está desconectado', 'color: red');
-                            }
-                            disconnectButton.disabled = false;
+                          console.log(result);
+                          const resultMessage = document.getElementById('resultMessage');
+                          resultMessage.textContent = result.message;
+                      
+                          if (result.message) {
+                            console.log('%cEl bot está conectado', 'color: green');
+                            resultMessage.style.color = 'green';
+                          } else {
+                            console.log('%cEl bot está desconectado', 'color: red');
+                            resultMessage.style.color = 'red';
+                          }
+                          disconnectButton.disabled = false;
                         })
                         .catch(error => {
                             console.error(error);
@@ -295,42 +281,48 @@ meta
                         });
                 }
             </script>
-            <label onclick="savePlayerName()">-Tu Minecraft playerName:</label>
+            <div class="leer-tutorial">
+                <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
+                  <span>Leer Tutorial Minecraft</span>
+                </a>
+              </div>
+            <label onclick="savePlayerName()">Tu nombre de Minecraft:</label>
             <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
             <br>
-            <label onclick="saveInitcommand()">--BOT Comando en login:</label>
+            <label onclick="saveInitcommand()">Comando Inicial de BOT:</label>
             <input type="text" id="InitcommandInput" placeholder="login">
             <br>
 
-            <div> <label for="eventType"> test Event Type:</label>
-                <input type="text" id="eventType" placeholder="Event Type" value="gift">
-                <label for="data"> test Data :</label>
-                <input type="text" id="data" placeholder="Data Default">
-                <button onclick="testHandleEvent()">Test Handle Event</button> </div>
+            <div> <label for="eventType"> Test comando:</label>
+                <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
+                <label for="data"> -</label>
+                <input type="text" id="data" placeholder="Default">
+                <button onclick="testHandleEvent()">Test comando</button> </div>
+                <button style="position: relative;" onclick="saveCommandList()">Guardar COMANDOS</button>
 
             <div style="position: relative;">
-                <textarea type="text" id="commandListInput" rows="15" cols="100" placeholder="chat:
-                    -
+                
+                <textarea type="text" id="commandListInput">
+chat:
+    - "/say comment"
 likes:
-                  default:
-                    -
+    default:
+        - "/say likes"
 gift:
-                  default:
-                    -
-                    Rose:
-                    -"></textarea>
-                <button style="position: relative;" onclick="saveCommandList()">Guardar COMANDOS para Minecraft interactivo</button>
+    default:
+        - "/say GiftName"
+    Rose:
+        - "/say Giftname"</textarea>
             </div>
 
             <div style="position: relative;">
-                <textarea type="text" id="keywordsInput" rows="15" cols="100" placeholder="keywordToGive:
+                <textarea type="text" id="keywordsInput" placeholder="keywordToGive:
                     escudo: minecraft:shield
                     cama: minecraft:red_bed
 keywordToMob:
                     enderman: minecraft:enderman
                     cerdo: minecraft:pig
                   "></textarea>
-                <button style="position: relative;" onclick="saveKeywords()">Guardar COMANDOS para el chat, mobs, items FREE</button>
             </div>
             <div style="position: relative;" id="errorOutput"></div>
             <script>
@@ -345,18 +337,20 @@ keywordToMob:
                   }
                 
                 </script>
+                <button style="position: relative;" onclick="saveKeywords()">Guardar COMANDOS del chat, FREE</button>
 
             <script>
                 // Cargar el comando inicial guardado
                 const initCommandInput = document.getElementById('InitcommandInput');
-                setupLocalStorage(initCommandInput, 'Initcommand');
+                setupLocalStorage(document.getElementById('InitcommandInput'), 'Initcommand');
+                setupLocalStorage(document.getElementById('playerNameInput'), 'playerName');
+                setupLocalStorage(document.getElementById('keywordsInput'), 'keywords');
+                setupLocalStorage(document.getElementById('commandListInput'), 'commandList');
 
                 // Cargar el nombre del jugador guardado
                 const playerNameInput = document.getElementById('playerNameInput');
-                setupLocalStorage(playerNameInput, 'playerName');
                 const storedKeywords = localStorage.getItem('keywords');
                 const storedCommandList = localStorage.getItem('commandList');
-
                 // Actualizar el contenido de los campos de texto si hay datos guardados
                 if (storedKeywords) {
                     document.getElementById('keywordsInput').value = storedKeywords;
@@ -373,8 +367,8 @@ keywordToMob:
                 }
 
                 function saveCommandList() {
-                    const commandListInputValue = document.getElementById('commandListInput').value;
-                    localStorage.setItem('commandList', commandListInputValue);
+                    const commandListInput = document.getElementById('commandListInput').value;
+                    localStorage.setItem('commandList', commandListInput);
                     console.log('Datos de la lista de comandos guardados en el localStorage');
                 }
             </script>
@@ -382,10 +376,12 @@ keywordToMob:
 
     </div>
     <div id="Tab3" class="tabcontent">
+
         <form id="soundForm">
             <input type="file" id="soundFiles" accept=".mp3,.wav,.ogg,.webm" multiple>
             <button type="submit">Añadir sonido</button>
         </form>
+
         <div id="dropdownButton" onclick="toggleDropdownMenu()">
             <div id="selectedSound">
                 Sonidos
@@ -483,15 +479,20 @@ keywordToMob:
 
     </div>
     <div id="Tab4" class="tabcontent">
+
+        Importa Exporte Settings.Json, actualize la pagina al cargar
+        <div>
         <input type="file" id="importButton">
         <button onclick="importSettings()">ImportarCONFIG</button>
         <button id="exportButton" onclick="exportSettings()">ExportarCONFIG</button>
         <span id="loadingIndicator" style="display: none;">Loading...</span>
+        </div>
         <div>
-            <form id="overlayForm">OverlayURL:
+            Crea un overlay, F11 para cerrar
+            <form id="overlayForm">OverlayLink:
                 <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required>ancho:
-                <input type="number" id="widthInput" value="800" name="width" required>alto:
-                <input type="number" id="heightInput" value="800" name="height" required>
+                <input type="number" id="widthInput" value="400" name="width" required>alto:
+                <input type="number" id="heightInput" value="400" name="height" required>
                 <button type="submit">Crear Overlay</button>
             </form>
 
@@ -530,22 +531,9 @@ keywordToMob:
         </div>
 
         <div style="padding-top: 10px;">
-            <a href="#" onclick="generateOverlay()">overlay</a>
             <input type="text" id="inputest"><button onclick="testOverlay()">testOverlay</button>
-            <script>
-                function generateOverlay() {
-                    let username = $('#uniqueIdInput').val();
-                    let url = `obs.html?username=${username}&showLikes=1&showChats=1&showGifts=1&showFollows=1&showJoins=1&bgColor=rgb(24,23,28)&fontColor=rgb(227,229,235)&fontSize=1.3em`;
-
-                    if (username) {
-                        window.open(url, '_blank');
-                    } else {
-                        alert("Enter username");
-                    }
-                }
-            </script>
             <div class="inputFields">
-                <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GO" type="button"></button>
+                <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GOOO" type="button"></button>
             </div>
             <div id="chatbox"></div>
         </div>

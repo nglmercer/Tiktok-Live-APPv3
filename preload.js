@@ -1,10 +1,13 @@
-const { ipcRenderer } = require('electron');
+const { contextBridge } = require('electron');
 
-// Manejar el evento click del botón para abrir la nueva ventana
-document.getElementById('openOverlayButton').addEventListener('click', () => {
-  // Obtener el contenido del div
-  const content = document.getElementById('overlayEventContainer').outerHTML;
-  
-  // Enviar el contenido al proceso principal para clonarlo en una nueva ventana
-  ipcRenderer.send('cloneContent', content);
+contextBridge.exposeInMainWorld('electronAPI', {
+  addDivToOverlay: () => {
+    const div = document.createElement('div');
+    // Customize the div's appearance and behavior
+    div.style.width = '100px';
+    div.style.height = '50px';
+    div.style.backgroundColor = 'red';
+    div.textContent = 'This is a div in the overlay';
+    document.body.appendChild(div);
+  },
 });

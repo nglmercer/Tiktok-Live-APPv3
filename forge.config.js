@@ -7,8 +7,8 @@ module.exports = {
           owner: 'nglmercer',
           name: 'Tiktok-Live-TTS-APPv2'
         },
-        authToken: "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", 
-        prerelease: true
+        authToken: "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", 
+        release: true
       }
     }
   ],

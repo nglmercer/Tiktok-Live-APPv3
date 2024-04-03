@@ -8,7 +8,12 @@ Object.keys(VOICE_LIST).forEach(function(key) {
 });
 console.log('Voz seleccionada:', voiceSelect.value);
 voiceSelect.addEventListener('change', function() {
-    fetchAudio(voiceSelect.value);
+    var selectedOption = this.options[this.selectedIndex];
+    var selectedText = selectedOption.textContent.replace(/[#$%^&*/(),.":{}|<>]/, "");
+    var selectedValue = selectedOption.value;
+    
+    console.log('Voz seleccionada:', selectedValue, selectedText);
+    fetchAudio(selectedText);
 });
 // Función para insertar texto en el chatbox
 function insertText(txt) {
