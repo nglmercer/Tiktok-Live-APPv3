@@ -1,8 +1,13 @@
-## TiktokLiveApp
-¡WebApp TiktokLIVE! herramienta para tiktok live interactivo
-# Instalacion
-Para instalar la version estable, deber ir a descargar el archivo.zip o el ejecutable EN RELEASES
-![image](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/e9a72c41-75f9-4c3e-b859-0be289159720)
+# TiktokLiveApp
+¡WebApp TiktokLIVE!
+herramienta para tiktok live interactivo
+- [![English](https://img.shields.io/badge/English--blue.svg)](READMEEN.md) 
+- [![Español](https://img.shields.io/badge/Español--red.svg)](README.md)
+## Instalacion
+Para instalar , deber ir y descargar el archivo.zip  ``` no el source code ```  o el ejecutable del siguiente link: 
+### [Link para descargar de releases en Github](https://github.com/nglmercer/Tiktok-Live-TTS-APPv2/releases).
+- ``Todas las versiones se subiran en Releases`` 
+
 LEER O REVISAR DOCUMENTACION.
 [nglmercer.github.io/TikLiveApp](https://nglmercer.github.io/TikLiveApp/)
 1. Speechchat voice chat(el bot lee tus mensajes)
@@ -14,69 +19,32 @@ LEER O REVISAR DOCUMENTACION.
 ![image](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/135e09ff-5177-4087-a8c9-3f630a2a098e)
 
 
-# tiktokMIXPLUGIN GITHUB 
+### Versiones Disponibles
+Se recomienda instalar y utilizar la version mas reciente. Presione sobre el nombre del articulo a descargar:
+- ```  TikLiveapp-32-64.exe o TikLiveapp-32-64.zip  ``` 
 
-**SOUND ALERT and command-action TikTok plugin for MixItUpApp** // Sonidos de alerta, comandos y acciones de TikTok conectados a MixItUpApp
+:::danger[Download exe]
+la aplicacion todavia no tiene un certificado por lo tanto
+el exe esta en conflicto, por que esta en desarrollo.
+:::
 
-## CÓMO USAR
+:::tip[recomiendo]
+Utilze la el zip TikLiveapp-32-64.zip que no genera estos conflictos
+:::
+#### una vez instalado ejecute sin problemas , si desconfia puedes revisar el codigo 😊
+## Como utilizar
+Esta documentacion es un tutorial de como utilizar puede revisar cada apartado para saber de todo lo que contiene.
+## <font color="Green">Caracteristicas y opciones.</font>
 
-1. **Descargar Todo en un Archivo ZIP**: Comienza por descargar todos los archivos necesarios en un archivo ZIP.
-
-2. **Modificar el Código o Revisarlo**: Puedes modificar el código según tus necesidades o simplemente revisarlo para asegurarte de que cumple con tus requisitos.
-
-3. **Ejecutar INDEX.HTML**: Ejecuta el archivo INDEX.HTML para iniciar el plugin.
-
-4. **Ingresar @USERNAME y Conectar**: Ingresa tu @USERNAME y establece la conexión.
-
-5. **Descargar MixItUpApp**: Descarga MixItUpApp desde su sitio web oficial.
-
-6. **Conectar MixItUpApp a tu Transmisión y Configurarlo**: Vincula MixItUpApp a tu transmisión y configúralo según sea necesario.
-
-7. **Verificar la Funcionalidad y Disfrutar**: Verifica si todo funciona correctamente y disfruta del plugin.
-
-## ACERCA DE
-
-Este plugin es una página web que envía mensajes al chat de YouTube o Twitch utilizando MixItUpApp con una API de localhost.
-
-Los mensajes recibidos se utilizan como palabras clave para comandos y otras herramientas de Twitch.
-
-Ejemplo: Si se envía un mensaje como "donación 1 Rose", aparecerá como "Rose" en el chat. Puedes configurar un sonido para reproducirse cada vez que se mencione o escuche "Rose".
-
-Además, con TwitchSpawn, puedes crear comandos, mensajes y diversos eventos interactivos para Minecraft.
-
-SongRequest te permite poner en cola solicitudes de música, que se pueden reproducir utilizando Nightbot o Streamlabs. Consulta tutoriales para un funcionamiento perfecto.
-
-## Instalación OVERLAY OBS
-solo ejecute index.html o sige lo siguiente 
-
-Para ejecutar el lector de chat localmente, sigue estos pasos:
-
-1. **Instalar [Node.js](https://nodejs.org/) en tu sistema.
-
-2. **Clonar este repositorio o descargar y extraer [este archivo ZIP](https://github.com/zerodytrash/TikTok-Chat-Reader/archive/refs/heads/main.zip).
-
-3. **Abrir una consola/terminal en el directorio raíz del proyecto.
-
-4. **Ejecutar `npm i` para instalar todas las dependencias requeridas.
-
-5. **Ejecutar `node server.js` para iniciar el servidor de la aplicación. server.bat hace este comando 
-
-Ahora deberías ver el siguiente mensaje: `Server running! Please visit http://localhost:8091`<br>
-Simplemente abre http://localhost:8081/ en tu navegador. Eso es todo.
-
-Si tienes problemas con Node.js, también puedes abrir el `index.html` desde la carpeta `public`.<br>
-Esto utilizará el servidor backend del [sitio de demostración](https://tiktok-chat-reader.zerody.one/), que es suficiente para fines de prueba. Si deseas ofrecerlo a otros o realizar muchas conexiones al mismo tiempo, considera usar tu propio servidor.
+Este programa es opensouce revise
+Funcionalidades:
+### Speechchat voice chat <font color="Gold">Texto a voz.</font>
+## Como conectarse
+Coloque su UniqueID para conectarse ejemplo:
+- https://www.tiktok.com/@melserng en este caso seria @melserng
+y presione conectar y estara conectado.
 
 ## Captura de pantalla
 antiguo
 ![TikTok LIVE Chat Reader (Demo)](https://user-images.githubusercontent.com/59258980/153956504-c585b14b-a50e-43f0-a994-64adcaface2e.png)
-[![English](https://img.shields.io/badge/English--blue.svg)](READMEEN.md) [![Español](https://img.shields.io/badge/Español--red.svg)](README.md)
-nuevo 
-![image](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/135e09ff-5177-4087-a8c9-3f630a2a098e)
-
-![activarDEVELOPERAPI](https://github.com/nglmercer/Tiktok-twitch-tts-mixitup-v2/assets/128845117/e94c8465-1433-4fc4-8245-52cb9a7fa66a)
-
 ---
-
-[![English](https://img.shields.io/badge/English--blue.svg)](README_EN.md)  [![Español](https://img.shields.io/badge/Español--red.svg)](README.md)
-
