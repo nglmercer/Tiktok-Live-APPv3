@@ -6,8 +6,8 @@ tool for interactive tiktok live
 ## Installation
 To install , you must go and download the .zip file ``` not the source code ``` or the executable from the following link: 
 ### [Link to download from releases on Github](https://github.com/nglmercer/Tiktok-Live-TTS-APPv2/releases).
-- ``All versions will be uploaded in Releases``. 
-READ OR REVIEW DOCUMENTATION.
+- ``All versions will be uploaded in Releases``
+- READ OR REVIEW DOCUMENTATION.
 [nglmercer.github.io/TikLiveApp](https://nglmercer.github.io/TikLiveApp/)
 1. Speechchat voice chat(bot reads your messages)
 2. SoundAlerts (has support for audio and video alerts)
@@ -38,5 +38,21 @@ Features:
 Enter your UniqueID to connect example:
 - https://www.tiktok.com/@melserng in this case it would be @melserng
 and press connect and you will be connected.
-
----
+![UniqueID](UniqueID.png)
+- After connecting you will hear the speechchat is on.
+## How to use
+This documentation is a tutorial on how to use it. You can review each section to learn about everything it contains.
+## <font color="Green">Features and options.</font>.
+- Features:
+### Speechchat voice chat <font color="Gold">Text to speech.</font>
+(the bot reads your messages)
+### SoundAlerts <font color="Gold">Sounds and Alerts.</font>
+(has support for audio and video alerts)
+### twitch Crossover <font color="Gold">MixitupChat.</font>
+(you can connect your commands and twitch chat)
+### MixitupApp API support <font color="Gold">MixitupApi.</font>
+(connect mixitupApp to use all tools) 
+### Minecraft interactive Bot <font color="Gold">Minecraft Live.</font>
+(create a bot to send the commands you set up )
+###  VRChat chatbox support <font color="Gold">VRchat Chat ingame.</font>
+(send messages to the chatbox to read it or show it in game)
