@@ -1,7 +1,7 @@
 # TiktokLiveApp
 ¡WebApp TiktokLIVE!
 herramienta para tiktok live interactivo
-- [![English](https://img.shields.io/badge/English--blue.svg)](READMEEN.md) 
+- [![English](https://img.shields.io/badge/English--blue.svg)](README_EN.md) 
 - [![Español](https://img.shields.io/badge/Español--red.svg)](README.md)
 ## Instalacion
 Para instalar , deber ir y descargar el archivo.zip  ``` no el source code ```  o el ejecutable del siguiente link: 
