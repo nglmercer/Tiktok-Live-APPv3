@@ -12,17 +12,32 @@ body {
 #createBotForm {
     color: rgb(89, 0, 255); rgb(0, 191, 255)
   }
-
-.title-bar {
-    background: #a5a5a598;
-    position: fixed;
-    -webkit-app-region: drag;
-    height: 20px;
-    top: -5px;
-    right: 40px;
-    left: -5px;
+.diamond-icon::before {
+    content: "●"; /* Agregar el icono */
+    color: yellow; /* Cambiar el color del icono a amarillo */
 }
 
+.title-bar {
+    background: #fcfcfcec;
+    position: fixed;
+    -webkit-user-select: none;
+    -webkit-app-region: drag;
+    height: 30px;
+    left: 0px;
+    top: 1px;
+    width: 100%;
+}
+.title-bar h1 {
+    color: #030238;
+    font-family: Arial, sans-serif;
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+  }
+  .title-bar p {
+    display: absolute;
+    font-size: 10px;
+  }
 
 .title-bar .button {
 }
@@ -41,7 +56,9 @@ body {
 .button.close:hover {
     background-color: rgb(193, 48, 48);
 }
-
+.custom-file-upload:hover {
+    background-color: rgb(134, 134, 134);
+}
   
 .tab-content {
     position: fixed;
@@ -51,9 +68,6 @@ body {
     flex-direction: column;
 }
 
-  
-  /* Otros estilos para botones, etc. */
-  
 
 .tab-content button {
     background-color: inherit;
@@ -78,7 +92,8 @@ body {
 }
 
 .tabcontent {
-    margin-left: calc(160px + 1%);
+    margin-left: calc(170px + 1%);
+    margin-top: calc(20px + 1%);
 }
 
 ::-webkit-scrollbar {
@@ -93,9 +108,6 @@ body {
     background: #ae00ff00; /* Set a different color when the handle is hovered */
 }
 
-
-/* Estilo para los botones */
-
 button {
     padding: 0.55em;
     min-height: 35px;
@@ -109,7 +121,6 @@ button {
 textarea {
     float: inherit;
     field-sizing: content;
-    min-height: 200px;
     max-height: 800px;
     min-width: 800px;
     max-width: 1600px;
@@ -127,7 +138,6 @@ textarea {
 }
 button:hover {
     background-color: #5e5dcd;
-    border: 1px solid lightgrey;
 }
 
 input[type="button"] {
@@ -141,6 +151,9 @@ input[type="button"] {
     font-weight: bolder;
     font-size: 15px;
     transition: background-color .3s ease-in-out;
+}
+input[type="checkbox"] {
+display: grid;  
 }
 input[type="text"] {
     color: #f84cfe;
@@ -213,50 +226,47 @@ a {
 .user-profile-container {
     display: flex;
     flex-direction: column;
-    align-items: center; /* Centra los elementos horizontalmente */
 }
 
 /* Estilos para la imagen de perfil */
 .user-profile-image img {
-    width: 120px; /* Ancho deseado de la imagen */
-    height: 120px; /* Altura deseada de la imagen */
+    width: 140px; /* Ancho deseado de la imagen */
+    height: 140px; /* Altura deseada de la imagen */
 }
 
 /* Estilos para el enlace de perfil */
 .user-profile-link {
     /* Agrega estilos según sea necesario */
 }
+
+
 #stateText {
     font-size: 24px; /* Tamaño de fuente deseado */
     /* Puedes agregar más estilos según sea necesario */
-}
-
-
-
-/* Estilos para el contenedor principal */
-.user-profile-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Centra los elementos horizontalmente */
-}
-
-/* Estilos para la imagen de perfil */
-.user-profile-image img {
-    width: 100px; /* Ancho deseado de la imagen */
-    height: 100px; /* Altura deseada de la imagen */
 }
 
 /* Estilos para el enlace de perfil */
 .user-profile-link {
     /* Agrega estilos según sea necesario */
 }
-#stateText {
-    font-size: 24px; /* Tamaño de fuente deseado */
-    /* Puedes agregar más estilos según sea necesario */
+.gift-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 5px;
+    overflow: hidden;   
+}
+
+.gift-box {
+    margin: 10px;
+    text-align: center;
+}
+
+.gift-box img {
+    max-width: 120px; /* Ajusta el tamaño según sea necesario */
 }
 
 .containerheader {
-    display: flex;
+    display: block;
     gap: 1;
     min-width: 400px;
     overflow: auto;
@@ -265,13 +275,6 @@ a {
 }
 /* Estilos CSS para la modal */
 .modal {
-    display: none; /* Por defecto, la modal no se muestra */
-    position: fixed; /* Posición fija para que se sobreponga al contenido */
-    z-index: 9999; /* Capa superior para que esté sobre todos los demás elementos */
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
     overflow: auto; /* Añadir desplazamiento si la modal es demasiado grande */
     background-color: rgba(0,0,0,0.4); /* Fondo oscuro semitransparente */
 }
@@ -286,7 +289,12 @@ a {
     max-width: 600px; /* Ancho máximo de la modal */
     border-radius: 10px;
 }
-
+.modal-dialog {
+    background-color: #000000a6;
+    border: 1px solid black; /* Borde negro */
+    z-index: 9999; /* Índice z alto para estar encima de otros elementos */
+    padding: 10px; /* Espaciado interior */
+}
 /* Estilos para el botón de cerrar */
 .close {
     color: #aaa;
@@ -301,26 +309,38 @@ a {
     text-decoration: none;
     cursor: pointer;
 }
+.event[data-type="gift"][data-name="default"] > div,
+.event[data-type="gift"][data-name="default"] > .eventInput {
+    display: none;
+}
 
-.progress-bar {
+#battle-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f5f5f5;
+    padding: 10px;
     border-radius: 5px;
-    overflow: hidden;
-    position: relative;
-    width: 400px; /* Ancho de la barra de progreso */
   }
   
-  .progress-bar-inner {
-    height: 100%;
-    position: absolute;
-    top: 0;
+  .user {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
   
-  .red {
-    background-color: #ff0000; /* Color rojo para el usuario 1 */
+  .username {
+    font-weight: bold;
   }
   
-  .blue {
-    background-color: #0000ff; /* Color azul para el usuario 2 */
+  .points {
+    font-size: 24px;
+    margin-top: 5px;
+  }
+  
+  #battle-status {
+    font-size: 20px;
+    font-weight: bold;
   }
 .chatcontainer {
     margin: 10px 0; /* Add some spacing between gift items */
@@ -337,9 +357,6 @@ a {
     max-width: 1000px;
     overflow: auto;
 }
-
-
-
 
 @media (orientation: portrait) {
     body {
@@ -367,12 +384,15 @@ a {
 
 .miniprofilepicture,
 .gifticon {
-    border-radius: 50%;
     border: 5px solid #f09e0500;
     box-shadow: 0 0 20px rgba(166, 5, 240, 0.7);
     animation: pulse 2s infinite; /* Adjust the animation duration as needed */
-    max-width: 300px; /* Increase the max-width to make the images larger */
+    max-width: 50px; /* Increase the max-width to make the images larger */
     height: auto; /* Ensure responsive images */
+}
+.thumbnail-img {
+    width: 20px; /* Ajustar el tamaño de acuerdo a tus necesidades */
+    height: 20px; /* Ajustar el tamaño de acuerdo a tus necesidades */
 }
 
 .username {
@@ -387,7 +407,6 @@ a {
 
 #dropdownMenu div {
     display: flex;
-    flex-direction: row-reverse;
     /* Invierte el orden de los elementos */
     padding-top: 5px;
     border-bottom: 1px solid #ddd;
@@ -467,11 +486,6 @@ audio .mask-custom {
 }
 
 #soundList li {
-    list-style-type: japanese-informal;
-    /* Esto eliminará el marcador de lista */
-    padding-right: 20px;
-    /* Esto agregará una sangría de 20px a todo el bloque de texto */
-    margin: 30px;
 }
 
 .deleteButton {
@@ -521,12 +535,16 @@ audio .mask-custom {
 }
 
 audio {
-    position: absolute;
-    bottom: 1%;
+    position: relative;
+    transition: 10s;
+    width: 200px; /* Nueva altura cuando se hace hover */
     height: 43px;
-    vertical-align: middle;
-    text-align: right;
+    left: -15px;
   }
+  audio:hover {
+    transition: 2s;
+    width: 250px; /* Nueva altura cuando se hace hover */
+}
 audio::-webkit-media-controls-play-button {}
 
 audio::-webkit-media-controls-panel {
@@ -591,7 +609,6 @@ audio::-webkit-media-controls-panel {
     background-color: #ffec8c;
     border-radius: 10px;
     transition: all 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    transform: rotate(-45deg);
 }
 
 input:checked+.toggle {
@@ -693,127 +710,7 @@ input:checked+.toggle .toggle__handler .crater {
     /* Añade más estilos aquí */
 }
 
-@keyframes marquee {
-    0% {
-        transform: translateX(10%);
-        opacity: 0;
-    }
-    /* Entrada */
-    10% {
-        transform: translateX(-10%);
-        opacity: 1;
-    }
-    /* Entrada */
-    90% {
-        transform: translateX(-90%);
-        opacity: 1;
-    }
-    /* Salida */
-    100% {
-        transform: translateX(-100%);
-        opacity: 0;
-    }
-    /* Salida */
-}
 
-.marquee {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-    overflow: hidden;
-    white-space: nowrap;
-}
-
-.marquee span {
-    display: inline-block;
-    padding-left: 500px;
-    animation: marquee 18s linear forwards;
-    /* Duración reducida a 10s y eliminado infinite */
-}
-
-.profile-animation {
-    animation: profile-animation 12s linear forwards;
-}
-
-.text-animation {
-    animation: text-animation 12s linear forwards;
-}
-
-.gift-animation {
-    animation: gift-animation 18s linear forwards;
-}
-
-@keyframes profile-animation {
-    0% {
-        transform: translateX(100%);
-        opacity: 1;
-    }
-    /* Entrada */
-    20% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    /* Fin de la entrada */
-    50% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    /* Inicio de la salida */
-    100% {
-        transform: translateX(-100%);
-        opacity: 0;
-        display: none;
-    }
-    /* Salida */
-}
-
-@keyframes text-animation {
-    0% {
-        transform: translateX(10%);
-        opacity: 1;
-    }
-    /* Entrada */
-    10% {
-        transform: translateX(-10%);
-        opacity: 1;
-    }
-    /* Fin de la entrada */
-    90% {
-        transform: translateX(-90%);
-        opacity: 1;
-    }
-    /* Inicio de la salida */
-    100% {
-        transform: translateX(-100%);
-        opacity: 0;
-        display: none;
-    }
-    /* Salida */
-}
-
-@keyframes gift-animation {
-    0% {
-        transform: translateX(300%);
-        opacity: 1;
-    }
-    /* Entrada */
-    10% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    /* Fin de la entrada */
-    90% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    /* Inicio de la salida */
-    100% {
-        transform: translateX(-300%);
-        opacity: 0;
-        display: none;
-    }
-    /* Salida */
-}
 
 .playButton {
     padding: 0;
@@ -853,29 +750,19 @@ input:checked+.toggle .toggle__handler .crater {
 
 
 .container {
-    display: block;
-    float: inline-start;
-    position: relative;
-    top: 0;
-    right: 0;
-    cursor: pointer;
-    font-size: 20px;
+    right: 100px;
+    cursor: auto;
     user-select: none;
 }
 
 .checkmark {
-    position: relative;
-    top: 0;
-    left: 0;
+    cursor: pointer;
+    align-items: center;
+    display: grid;
     height: 1.6em;
-    width: 1.6em;
+    width: 4em;
     border-radius: 10%;
     background: #ffeded38;
-    transition: all 0.2s ease;
-}
-
-.checkmark {
-    opacity: 0.4;
 }
 
 .container input:checked~.checkmark {

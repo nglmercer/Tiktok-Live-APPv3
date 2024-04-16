@@ -23,21 +23,10 @@ let previousLikeCount = 0;
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
 document.addEventListener('DOMContentLoaded', (event) => {
-    document.body.addEventListener('mouseover', () => {
-        // Cuando el cursor está sobre el cuerpo del documento, aplicar el tema oscuro
-        if (document.body.className !== 'theme-dark') {
-        }
-    });
+
     document.body.className = 'theme-dark';
     window.settings.theme = 'dark'; // Guardar la configuración del tema
 
-    // Cambiar al tema claro después de 3 segundos
-    document.body.addEventListener('mouseout', () => {
-        // Cuando el cursor no está sobre el cuerpo del documento, hacerlo transparente
-        if (document.body.className === 'theme-light-hover') {
-            document.body.className = 'theme-light';
-        }
-    });
     const toggleButton = document.getElementById('dn');
 
     // Check if running in OBS
@@ -79,7 +68,18 @@ function connect() {
         connection.connect(uniqueId, {
             enableExtendedGiftInfo: true
         }).then(state => {
-            // Obtener información del usuario
+            console.log(`Connected to roomId ${state.roomId} updgrade ${state.upgradedToWebsocket}`, state);
+            console.log(`availableGifts ${state.availableGifts[0].name}`, state.availableGifts[0].image.url_list[1]);
+            // Función para cargar los datos desde el localStorage
+
+            availableGiftsimage(state);
+            
+            sendToServer('connected', uniqueId);
+            // reset stats
+            viewerCount = 0;
+            likeCount = 0;
+            diamondsCount = 0;
+            updateRoomStats();
             const userProfileLink = generateUsernameLink({ uniqueId });
             // Accede al segundo elemento (posición 1) de la lista url_list y utiliza su valor
             const userProfileImage = `<img src="${state.roomInfo.cover.url_list[1]}" alt="${uniqueId}" width="50" height="50">`;
@@ -91,18 +91,7 @@ function connect() {
                     <div class="user-profile-link">${userProfileLink}</div>
                 </div>
             `;
-            
-            // Insertar el contenedor en el elemento con el id "stateText"
             $('#stateText').html(userProfileContainer);
-
-            console.log(`Connected to roomId`, state);
-            sendToServer('connected', uniqueId);
-            // reset stats
-            viewerCount = 0;
-            likeCount = 0;
-            diamondsCount = 0;
-            updateRoomStats();
-
         }).catch(errorMessage => {
             $('#stateText').text(errorMessage);
 
@@ -118,6 +107,131 @@ function connect() {
         alert('no username entered');
     }
 }
+let globalSimplifiedStates = [];
+
+function availableGiftsimage(state) {
+    const giftImages = {};
+
+    if (!state || !state.availableGifts) {
+        // Intentar obtener los datos del localStorage
+        const savedStateJson = localStorage.getItem('simplifiedState');
+        const savedState = JSON.parse(savedStateJson);
+
+        // Verificar si se encontraron datos en el localStorage
+        if (savedState && savedState.availableGifts) {
+            // Utilizar los datos del localStorage
+            state = savedState;
+        } else {
+            // No se encontraron datos en el localStorage, salir de la función
+            console.error('No se encontraron datos de availableGifts en el localStorage.');
+            return giftImages;
+        }
+    }
+
+    // Obtener el contenedor donde se agregarán los cuadros
+    const container = document.getElementById('giftContainer');
+
+    // Limpiar el contenedor antes de agregar nuevos elementos
+    container.innerHTML = '';
+
+    state.availableGifts.sort((a, b) => a.diamond_count - b.diamond_count);
+
+    // Iterar sobre los regalos disponibles
+    state.availableGifts.forEach(gift => {
+        const giftName = gift.name;
+        const imageUrl = gift.image.url_list[1];
+
+        // Agregar la imagen al objeto de imágenes de regalo
+        giftImages[giftName] = imageUrl;
+
+        // Crear un nuevo elemento div para el cuadro
+        const giftBox = document.createElement('div');
+        giftBox.classList.add('gift-box'); // Agregar una clase para el estilo
+
+        // Crear una imagen para el regalo
+        const giftImage = document.createElement('img');
+        giftImage.src = imageUrl; // Aquí obtienes la URL de la imagen del segundo elemento de url_list
+        giftImage.alt = giftName; // Suponiendo que `name` es el nombre del regalo
+        giftBox.appendChild(giftImage); // Agregar la imagen al cuadro
+
+        // Crear un elemento de texto para el nombre del regalo
+        const giftNameText = document.createElement('p');
+        giftNameText.textContent = `${giftName} ${gift.diamond_count}🌟`;
+        giftBox.appendChild(giftNameText); // Agregar el nombre al cuadro
+
+        // Agregar el cuadro de regalo al contenedor
+        container.appendChild(giftBox);
+    });
+
+    // Convertir el estado a un objeto simplificado
+    const simplifiedState = {
+        availableGifts: state.availableGifts.map(gift => ({
+            name: gift.name,
+            diamondcost:  gift.diamond_count,
+            giftId: gift.id,
+            imageUrl: gift.image.url_list[1]
+        }))
+    };
+
+    // Convertir el estado simplificado a JSON
+    const simplifiedStateJson = JSON.stringify(state);
+    globalSimplifiedStates.push(simplifiedState);
+
+    // Guardar el estado simplificado en el localStorage
+    localStorage.setItem('simplifiedState', simplifiedStateJson);
+
+    return giftImages;
+}
+
+class Groups {
+    static start() {
+        popup_groups.querySelector("[name=close]").onclick = e => Groups.hide();
+        popup_groups.onclick = e => { e.target === e.currentTarget && Groups.hide() };
+        alerts_groups.onclick = e => Groups.display(config.alerts.groups, alerts_groups);
+        tts_groups.onclick = e => Groups.display(config.tts.groups, tts_groups);
+        Groups.update();
+    }
+
+    static update() {
+        [config.alerts.groups, config.tts.groups].forEach(e => e.forEach(x => {
+            if (!globalSimplifiedStates.includes(x))
+                globalSimplifiedStates.push(x);
+        }));
+        group_list.innerHTML = globalSimplifiedStates.map((e, i) => "<label><input type=checkbox name=" + e + ">" + e + "</label>").join("");
+    }
+
+    static display(input) {
+        group_list.querySelectorAll("input").forEach(e => {
+            e.checked = globalSimplifiedStates.includes(e.name);
+            e.onchange = (e => {
+                array_toggle(globalSimplifiedStates, e.target.name);
+                input.value = globalSimplifiedStates.join(", ");
+                Config.save();
+            });
+        });
+        popup_groups.classList.remove("hide");
+        document.addEventListener('keydown', Groups.hide);
+    }
+
+    static hide(e) {
+        if (e && e.keyCode !== 27)
+            return;
+        popup_groups.classList.add("hide");
+        document.removeEventListener('keydown', Groups.hide);
+    }
+}
+
+// Cargar los datos del localStorage al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    const simplifiedStateJson = localStorage.getItem('simplifiedState');
+    if (simplifiedStateJson) {
+        const state = JSON.parse(simplifiedStateJson);
+        console.log(" recibe state localstorage",state);
+        availableGiftsimage(state);
+    }
+});
+
+
 
 // Prevent Cross site scripting (XSS)
 function sanitize(text) {
@@ -150,7 +264,17 @@ function addChatItem(color, data, text, summarize) {
     if (container.find('div').length > 500) {
         container.find('div').slice(0, 200).remove();
     }
-   
+    const inputValue = userpointsInput.value;
+    const parsedValue = parseInt(inputValue);
+    if (!userPoints[data.nickname]) {
+    if (!isNaN(parsedValue)) {
+        // Si es un número válido, sumarlo al puntaje del usuario
+        userPoints[data.nickname] = parsedValue * 2;
+      } else {
+        // Si no es un número válido, utilizar el valor por defecto de 5
+        userPoints[data.nickname] = 10;
+      }
+    }
     // Modificación para eliminar o reemplazar los caracteres especiales
     container.find('.temporary').remove();;
 
@@ -168,68 +292,20 @@ function addChatItem(color, data, text, summarize) {
     container.animate({
         scrollTop: container[0].scrollHeight
     }, 400);
-    addOverlayEvent(data, text, color, false);
-    let nameuser = data.uniqueId;
+    if (text != "welcome") {
+        addOverlayEvent(data, text, color, false);
+    }
     let filterWordsInput = document.getElementById('filter-words').value;
     let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
     let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
     filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
     let lowerCaseText = text && text.toLowerCase() && text.replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
     let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
-    let filterUsersInput = document.getElementById('filter-users').value;
-    let lowerCaseUser = nameuser.toLowerCase();
-    let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
-    
-    const specialChars = /[#$%^&*()/,.?":{}|<>]/;
-    const startsWithSpecialChar = specialChars.test(text.charAt(0));
-    const messagePrefix = startsWithSpecialChar ? "!" : "";
-    const messageSuffix = summarize ? "" : ` ${text}`;
-    let cleanedText = text;
-    if (startsWithSpecialChar) {
-        cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
-    }
-    cleanedText = text.replace(/[#$%^&*/,.":{}|<>]/, "");
-    let emojiRegex = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/ug;
-    let emojis = text && text.match(emojiRegex);
-    if (emojis) {
-        let emojiCounts = {};
-        for (let emoji of emojis) {
-            if (emoji in emojiCounts) {
-                emojiCounts[emoji]++;
-            } else {
-                emojiCounts[emoji] = 1;
-            }
-
-            if (emojiCounts[emoji] >= 2) {
-                return;
-            }
-        }
-    }
-    const message = messagePrefix + (cleanedText.length > 60 ? `${data.nickname} dice ${messageSuffix}` : cleanedText);
-    let nickname = data.nickname
-    
-    if (message === lastMessage) {
-        return;
-    }
-    // Filtrar mensajes de usuarios con pocos puntos
-
-    lastMessage = message;
-    if (filterUsers.includes(lowerCaseUser)) {
-        console.log("usuario de WhiteList", lowerCaseUser);
-        obtenerYenviarCommandID({ eventType: 'chat', string: message });
-        playSoundByText(message);
-        leerMensajes(message);
-        enviarMensaje(message);
-        return;
+    if (sendsoundCheckbox.checked) {
+        playSoundByText(text);
     }
     
-    if (!userPoints[data.nickname]) {
-        userPoints[data.nickname] = 20; // Asignar 10 punts por defecto
-        //console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
-    }
-
-
-    const customfilterWords = [
+    const customFilterWords = [
         "opahsaron", "tedesku", "unanimalh", "doketesam", "unmachetedesfigurolacara",
         "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh", "tihtuh", "demih", "petatemah",
         "tonash", "klezyanas", "onunasko", "melavosh", "tttthummamma", "vansokonun", "beshilketiensh",
@@ -257,10 +333,140 @@ function addChatItem(color, data, text, summarize) {
         "", "", "", "", "", "", "", "", "", "", "", "",
 
       ];
+
+    for (let word of customFilterWords) {
+        if (word && lowerCaseText.includes(word.toLowerCase())) {
+            if (userPoints[data.nickname] <= 0) {
+                console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                return;
+            } 
+            if (userPoints[data.nickname] >= 1) {
+                userPoints[data.nickname]--;
+                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                return;
+            }
+            if (userPoints[data.nickname] >= 30) {
+                userPoints[data.nickname]--;
+                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+            }
+        }
+    }
+
+    for (let word of filterWords) {
+        if (word && lowerCaseText.includes(word.toLowerCase())) {
+            if (userPoints[data.nickname] <= 2) {
+                console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                return;
+            } 
+            if (userPoints[data.nickname] >= 2) {
+                userPoints[data.nickname]--;
+                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                return;
+            }
+            if (userPoints[data.nickname] >= 30) {
+                userPoints[data.nickname]--;
+                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+            }
+        }
+    }
+
+    const specialChars = /[#$%^&*()/,.?":{}|<>]/;
+    const startsWithSpecialChar = specialChars.test(text.charAt(0));
+    const messagePrefix = startsWithSpecialChar ? "!" : "";
+    const messageSuffix = summarize ? "" : ` ${text}`;
+    let cleanedText = text;
+    if (startsWithSpecialChar) {
+        cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
+    }
+    cleanedText = text.replace(/[#$%^&*/,.":{}|<>]/, "");
+    let emojiRegex = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/ug;
+    let emojis = text && text.match(emojiRegex);
+    if (emojis) {
+        let emojiCounts = {};
+        for (let emoji of emojis) {
+            if (emoji in emojiCounts) {
+                emojiCounts[emoji]++;
+            } else {
+                emojiCounts[emoji] = 1;
+            }
+
+            if (emojiCounts[emoji] >= 2) {
+                return;
+            }
+        }
+    }
+    const message = messagePrefix + (cleanedText.length > 60 ? `${data.nickname} dice ${messageSuffix}` : cleanedText);
+    let nickname = data.nickname;
+    
+    if (message === lastMessage) {
+        return;
+    }
+    
+    // Comparar mensajes basados en longitud y similitud de caracteres
+    if (Math.abs(message.length - lastMessage.length) <= 2) {
+        const messageSet = new Set(message);
+        const lastMessageSet = new Set(lastMessage);
+        const intersection = new Set([...messageSet].filter(x => lastMessageSet.has(x)));
+        const uniqueCharsDiff = Math.abs(messageSet.size - lastMessageSet.size);
+        if (uniqueCharsDiff <= 2 && intersection.size >= message.length - 2) {
+            console.log('Mensajes similares encontrados.',message);
+        }
+    }
+    
+    // Filtrar mensajes de usuarios con pocos puntos
+    
+    lastMessage = message;
+    const regex = /(.)\1{7,}/g;
+    const matches = lowerCaseText.match(regex);
+    
+    if (matches && matches.length > 0) {
+        console.log(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
+        return;
+    }
+    let nameuser = data.uniqueId; 
+    let filterUsersInput = document.getElementById('filter-users').value;
+    let lowerCaseUser = nameuser.toLowerCase();
+    let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
+    if (filterUsers.includes(lowerCaseUser)) {
+        console.log("usuario de WhiteList", lowerCaseUser);
+        obtenerYenviarCommandID({ eventType: 'chat', string: message });
+        playSoundByText(message);
+        leerMensajes(message);
+        enviarMensaje(message);
+        return;
+    }
+
+    const customfilterWords = [
+        "opahsaron", "tedesku", "unanimalh", "doketesam", "unmachetedesfigurolacara",
+        "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh", "tihtuh", "demih", "petatemah",
+        "tonash", "klezyanas", "onunasko", "melavosh", "tttthummamma", "vansokonun", "beshilketiensh",
+        "ghram", "thekomeshtu", "phuto", "bherga", "chivholitos", "endopreh", "ejakah", "nenegrho",
+        "pordio0", "ñateh", "graphuta", "portuhkabeh", "poniatazo", "tumamalaneh", "belkuh", "lodedah", "satejar",
+        "eztesujeto", "miliah", "datufa",
+        "chupa", "phinga", "haciah", "tiradoenelpuen", "tolasvo", "pidocalen", "péné",
+        "joshua.ticona", "welcome", "wó", "jaja", "30hp", "phyngal", "0hp", "ijodephutha",
+        "tucuh", "darunapa", "belkun", "ª", "teboyasacarlamih", "nodeni", "narentukara",
+        "pides", "graphuta", "tumamalaneh", "mentirachupamibhrgha", "ilagranpehra",
+        "rretiyeroijoepuhta", "astakeh", "directo", "comparti", "kameh", "neenunaba",
+        "gobioh", "@admin", "comerh", "azekkk", "kometeh", "miqaqa", "mabaslapin",
+        "íbamaos", "sigue", "éramoschivolitos", "enguyete", "soychih", "Yaaaaaaa",
+        "grospeh", "tolaphin", "enapretadi", "ginadebe", "gokareka", "medarisaestepela",
+        "drehesunazohrra", "unahpros", "🐈‍⬛", "kuloh", "kasinoh", "muchosh", "babhosoh",
+        "nalditha", "wª", "bahsura", "anopahsaron", "tedesku", "unanimalh", "doketesam",
+        "unmachetedesfigurolacara", "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh",
+        "tihtuh", "demih", "petatemah", "tonash", "klezyanas", "onunasko", "wibond", "kalateate",
+        "grabadazo", "sinenbargo", "correte", "manko", "gueh", "pohortah", "queh", "rashpeh",
+        "latemueh", "grih", "mhih", "ardhah", "vah", "llah", "driya", "temuh", "wi bom",
+        "feh ih", "ih toh", "neh grih", "grih toh", "yosi tepar", "tola kah", "kah beza", "beza deum", "iasi temuh",
+        "zojar jacha", "driya zojar", "lah driya", "+tur", "tu boca escuchaste", "ohn tu boca",
+        "harda", "gemi2", "ghemi", "hemi2",
+
+      ];
       
     for (let word of customfilterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 0) {
+                userPoints[data.nickname]--;
                 //console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
@@ -272,83 +478,72 @@ function addChatItem(color, data, text, summarize) {
         }
     }
 
-    const regex = /(.)\1{7,}/g;
-    const matches = lowerCaseText.match(regex);
-    
-    if (matches && matches.length > 0) {
-      console.log(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
-      return;
-    }
-
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            if (userPoints[data.nickname] <= 0) {
-                console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
-                return;
-            } 
-            if (userPoints[data.nickname] >= 2) {
-                userPoints[data.nickname]--;
-                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-                return;
-            }
-
+            console.log(message + 'filterwords__dirname=');
+        return;  
         }
     }
 
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+    
+    let userpointsCheckbox = document.getElementById('userpointsCheckbox');
 
+    if (userpointsCheckbox.checked) {
+        //console.log(userpointsCheckbox)
+        if (userPoints[data.nickname] <= 0) {
+            console.log('Usuario con 0 puntos,userpointsCheckbox:', data.nickname, userPoints[data.nickname]);
+            return;
+        }
+    }
+
+    if (text.length <= 10) {
+        if (userPoints[data.nickname] <= 0) {
+            console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+            return;
+        }
+    }
+    if (text.length <= 3) {
+            return;
+    }
     if (sendDataCheckbox.checked) {
         if (startsWithSpecialChar) {
-            if (userPoints[data.nickname] <= 3) {
-                //console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
-                return;
+            if (userPoints[data.nickname] <= 4) {
+                console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             }
         }
         enviarMensaje(message);
     }
-    if (message.length <= 3) {
-        console.log('filtrado');
-        return;
-    }
+
     leerMensajes(message);
+    if (nickname !== lastNickname) {
+        if (!isNaN(parsedValue)) {
+            // Si es un número válido, sumarlo al puntaje del usuario
+            userPoints[data.nickname] += parsedValue;
+          } else {
+            // Si no es un número válido, utilizar el valor por defecto de 5
+            userPoints[data.nickname] += 2;
+          }
+        console.log(`el usuario ${data.nickname}tiene mas puntos`,userPoints[data.nickname]);
+    }
     if (sendsoundCheckbox.checked) {
-        if (nickname === lastNickname) {
-            console.log('anti spam commandos');
-            return;
+        if (nickname !== lastNickname) {
+            playSoundByText(message);
         }
         userPoints[data.nickname]--;
-        playSoundByText(message);
         lastNickname = nickname
     }
-    /*if (data.isNewGifter || data.isSubscriber || data.isModerator || (data.topGifterRank && data.topGifterRank > 1)) {
-        // Aumentar los puntos según la condición
-        if (data.isNewGifter) {
-            userPoints[data.nickname] = (userPoints[data.nickname] || 0) + 20;
-        }
-        if (data.isSubscriber) {
-            userPoints[data.nickname] = (userPoints[data.nickname] || 0) + 10;
-        }
-        if (data.isModerator) {
-            userPoints[data.nickname] = (userPoints[data.nickname] || 0) + 10;
-        }
-        if (data.topGifterRank && data.topGifterRank > 1) {
-            userPoints[data.nickname] = (userPoints[data.nickname] || 0) + 10;
-        }
 
-        console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
-    }*/
     if (sendDataCheckbox.checked) {
         if (userPoints[data.nickname] <= 3) {
             console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             return;
         }
-        if (nickname === lastNickname) {
-            console.log('anti spam commandos');
-            return;
+        if (nickname !== lastNickname) {
+            userPoints[data.nickname] -= 1;
+            obtenerYenviarCommandID({ eventType: 'chat', string: message });
+            lastNickname = nickname
         }
-        userPoints[data.nickname] -= 1;
-        obtenerYenviarCommandID({ eventType: 'chat', string: message });
-        lastNickname = nickname
     }
 }
 
@@ -394,12 +589,12 @@ function testOverlay() {
         numMessages = 30;
     }
 
-    // Crear un objeto de datos ficticio para pasar a addOverlayEvent
+    // Crear un objeto de datos ficticio para pasar 
     const fakeData = {
         profilePictureUrl: 'https://example.com/profile.jpg' // Reemplazar con una URL de imagen real
     };
 
-    // Llamar a addOverlayEvent tantas veces como numMessages
+    // Llamar  tantas veces como numMessages
     const message = messageWords.join(' ');
     for (let i = 0; i < numMessages; i++) {
         const messageWithNumber = `${message} ${i + 1}`;
@@ -432,163 +627,34 @@ connection.on('like', (data) => {
 
         // Send data or data.uniqueId and $ likes
         addOverlayEvent(data, `${userStats[data.uniqueId].milestone} likes`, 'blue', false, 1);
-        handleEvent('likes', data);
+        handleEvent2('likes', data);
         userStats[data.uniqueId].likes -= userStats[data.uniqueId].milestone; // Deduct milestone likes from user's like count
         userStats[data.uniqueId].milestone += 50; // Increase the milestone
+        userPoints[data.nickname] + 15;
+        userPoints[data.nickname] += 15;
         if (userStats[data.uniqueId].milestone > 300) {
             userStats[data.uniqueId].milestone = 50; // Reset the milestone
         }
     }
 });
-let comboCounters = {};
-let isImageLink = false;
+
+let overlaypage = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('testButton').addEventListener("click", function() {
+        const customEvent = new CustomEvent('pageAB', { detail: 'Hola' });
+        //pageB.dispatchEvent(customEvent);
+    });
+});
 
 function addOverlayEvent(data, text, color, isGift, repeatCount) {
-    const eventContainer = document.getElementById('overlayEventContainer');
-    // Update the last event and last text
-    lastEvent = { text, isGift };
-    lastText = text;
-    const spacing = 30;
-
-    // Initialize comboCounters[text] if it doesn't exist
-    if (!comboCounters[text]) {
-        comboCounters[text] = { count: 0, timeout: null, div: null };
+    if (!overlaypage) {
+        pageB = window.open('index2.html', 'transparent', 'top=1000,left=1000,width=auto,height=auto,frame=false,transparent=true,nodeIntegration=no');
+        //pageB = window.open('index2.html', 'transparent', 'top=500,left=200,width=auto,height=auto,frame=true,transparent=false,nodeIntegration=no');
+        overlaypage = true;
     }
-
-    // Increment comboCounters[text]
-    comboCounters[text].count++;
-
-    let baseTime = isGift ? 20000 : 18000; // 5 seconds for gifts, 3 seconds for text
-    let totalTime = baseTime * Math.pow(1.01, comboCounters[text].count);
-    let imageExtensions = ['.jpg', '.jpeg', '.png', '.gif'];
-    isImageLink = text && imageExtensions.some(ext => text.endsWith(ext)); // Update isImageLink here
-
-    let eventDiv; // Define eventDiv here
-
-    if (comboCounters[text].count > 1) {
-        // If we're in a combo, clear the existing timeout, update the existing div and set a new timeout
-        clearTimeout(comboCounters[text].timeout);
-        eventDiv = comboCounters[text].div; // Update eventDiv with the existing div
-        if (isImageLink) {
-            // If the text is an image link, display the image
-            eventDiv.innerHTML = `<img src="${text}" class="event-image"><img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"> <span style="color:red;">x${comboCounters[text].count}</span>`;
-            let left = Math.random() * (eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth - spacing);
-            eventDiv.style.left = `${left}px`; // Set left to a random value within the container
-        } else {
-            eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)} <span style="color:red;">x${comboCounters[text].count}</span></span>`;
-        }
-        comboCounters[text].timeout = setTimeout(() => {
-            comboCounters[text].count = 0;
-            if (eventDiv.parentNode) {
-                eventContainer.removeChild(eventDiv);
-            }
-            comboCounters[text].div = null;
-        }, totalTime);
-    } else {
-        eventDiv = document.createElement('div'); // Assign a new div to eventDiv
-        eventDiv.className = 'event-div';
-        let { top, left } = getRandomPosition(eventContainer, eventDiv, 100);
-        eventDiv.style.top = `${top}px`;
-        eventDiv.style.left = `${(eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth) / 2}px`;
-        if (isImageLink) {
-            // If the text is an image link, display the image
-            eventDiv.innerHTML = `<img src="${text}" class="event-image"><img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;">`;
-            let left = Math.random() * (eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth - spacing);
-            eventDiv.style.left = `${left}px`;
-        } else if (text && (text.includes('sige') || text.includes('compartió') || text.includes('gato') || text.includes('directo') || text && text.includes('likes'))) {
-            eventDiv.innerHTML = `<img class="profile-picture profile-animation" src="${data.profilePictureUrl}" style="border-radius: 50%;"><span class="event-text text-animation" style="color: ${color};">${text}</span>`;
-
-        } else {
-            eventDiv.className += ' marquee';
-            eventDiv.innerHTML = `<span class="event-text text-animation" style="color:${color}">${sanitize(text)}</span>`;
-            eventDiv.style.left = `${(eventContainer.getBoundingClientRect().width - eventDiv.offsetWidth) / 2}px`;
-        }
-        // Add the div to the container
-        eventContainer.appendChild(eventDiv);
-        comboCounters[text].div = eventDiv;
-    }
-
-    if (comboCounters[text].timeout) {
-        clearTimeout(comboCounters[text].timeout);
-    }
-
-    // Set a timeout to reset comboCounters[text] to 0 after totalTime
-    comboCounters[text].timeout = setTimeout(() => {
-        comboCounters[text].count = 0;
-        if (eventDiv.parentNode) {
-            eventContainer.removeChild(eventDiv);
-        }
-        comboCounters[text].div = null;
-    }, totalTime);
-}
-let grid = [];
-const gridSize = 150; // Tamaño de la celda de la cuadrícula en píxeles
-let precalculatedPositions = [];
-
-function initializeGrid(container) {
-    const containerRect = container.getBoundingClientRect();
-    const gridRows = Math.floor(containerRect.height / gridSize);
-    const gridColumns = Math.floor(containerRect.width / gridSize);
-    grid = new Array(gridRows).fill(0).map(() => new Array(gridColumns).fill(false));
-
-    // Precalculate 15 random positions
-    for (let i = 0; i < 15; i++) {
-        let row, column;
-        do {
-            row = Math.floor(Math.random() * gridRows);
-            column = Math.floor(Math.random() * gridColumns);
-        } while (grid[row][column] || isNearCorner(row, column, gridRows, gridColumns));
-
-        grid[row][column] = true;
-        precalculatedPositions.push({
-            top: row * gridSize,
-            left: column * gridSize
-        });
-    }
-}
-
-function isNearCorner(row, column, gridRows, gridColumns) {
-    const cornerMargin = 2; // Margen para evitar las esquinas
-    return (
-        (row < cornerMargin && column < cornerMargin) || // Esquina superior izquierda
-        (row < cornerMargin && column >= gridColumns - cornerMargin) || // Esquina superior derecha
-        (row >= gridRows - cornerMargin && column < cornerMargin) || // Esquina inferior izquierda
-        (row >= gridRows - cornerMargin && column >= gridColumns - cornerMargin) // Esquina inferior derecha
-    );
-}
-let existingPositions = [];
-
-function getRandomPosition() {
-    const elementSize = 80; // Define el tamaño del elemento que estás generando
-    const spacing = 80; // Define el espaciado entre elementos
-    const maxAttempts = 20; // Define el número máximo de intentos para encontrar una nueva posición
-
-    const container = document.getElementById('overlayEventContainer');
-    const containerRect = container.getBoundingClientRect();
-
-    for (let attempts = 0; attempts < maxAttempts; attempts++) {
-        // Generar una nueva posición
-        const newPosition = {
-            top: Math.random() * (containerRect.height - elementSize - spacing), // Resta elementSize y spacing del valor aleatorio generado para top
-            left: Math.random() * (containerRect.width - elementSize) // Resta elementSize del valor aleatorio generado para left
-        };
-
-        // Comprobar si la nueva posición está demasiado cerca de alguna de las posiciones existentes
-        if (!existingPositions.some(existingPosition => Math.abs(existingPosition.top - newPosition.top) < elementSize + spacing)) {
-            // Si la nueva posición no está demasiado cerca, añadirla a la lista de posiciones existentes y devolverla
-            existingPositions.push(newPosition);
-            return newPosition;
-        }
-    }
-
-    // Si no se puede encontrar una nueva posición después de maxAttempts intentos, reiniciar la lista de posiciones existentes
-    existingPositions = [];
-    return getRandomPosition();
-}
-// Llamar a initializeGrid con el contenedor cuando la página se carga
-window.onload = function() {
-    const eventContainer = document.getElementById('overlayEventContainer');
-    initializeGrid(eventContainer);
+    const customEvent = new CustomEvent('pageAB', { detail: { data, text, color, isGift, repeatCount } }); // Corrige la forma en que se crea el evento personalizado
+    pageB.dispatchEvent(customEvent);
 }
 
 // Resto del código...
@@ -642,6 +708,7 @@ function addGiftItem(data) {
 
     if (sendsoundCheckbox.checked) {
         for (let i = 0; i < data.repeatCount; i++) {
+
             playSound(data.giftName);
 
         }
@@ -677,7 +744,7 @@ connection.on('member', (data) => {
         joinMsgDelay -= addDelay;
         addChatItem('#CDA434', data, 'welcome', true);
         message = data.uniqueId;
-        handleEvent('welcome', data, message, null, data);
+        handleEvent2('welcome', data, message, null, data);
     }, joinMsgDelay);
 })
 let processedMessages = {};
@@ -686,7 +753,19 @@ let lastTenMessages = [];
 let userPoints = {};
 
 connection.on('chat', (data) => {
-    let message = data.comment;
+    const inputValue = userpointsInput.value;
+    const parsedValue = parseInt(inputValue);
+    if (!userPoints[data.nickname]) {
+        if (!isNaN(parsedValue)) {
+            // Si es un número válido, sumarlo al puntaje del usuario
+            userPoints[data.nickname] = parsedValue * 2;
+        } else {
+            // Si no es un número válido, utilizar el valor por defecto de 5
+            userPoints[data.nickname] = 10;
+        }
+        console.log("puntos asignados",data.nickname,userPoints[data.nickname]);
+    }
+    let message = data.comment; 
     let nameuser = data.uniqueId; 
     let filterWordsInput = document.getElementById('filter-words').value;
     let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
@@ -700,23 +779,18 @@ connection.on('chat', (data) => {
         console.log("WhiteList", lowerCaseUser);
         addChatItem('', data, message);
         sendToServer('chat', data);
-        handleEvent('chat', data);
+        handleEvent2('chat', data);
         return;
       }
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            userPoints[data.nickname] -= 2;
-
+            userPoints[data.nickname] -= 1;
+            
         }
         if (userPoints[data.nickname] >= 1) {
             userPoints[data.nickname] -= 1;
-            userPoints[data.nickname]--;
             //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
         } 
-    }
-    if (!userPoints[data.nickname]) {
-        userPoints[data.nickname] = 20; // Asignar 10 puntos por defecto
-        //console.log("puntos asignados nuevo usuario",userPoints[data.nickname]);
     }
 
 
@@ -724,7 +798,7 @@ connection.on('chat', (data) => {
 
     addChatItem('', data, message);
     sendToServer('chat', data);
-    handleEvent('chat', data);
+    handleEvent2('chat', data);
 
     if (message === lastMessage) {
         return;
@@ -745,7 +819,7 @@ connection.on('gift', (data) => {
     if (!userPoints[data.nickname]) {
         userPoints[data.nickname] = 10; // Asignar 10 puntos por defecto
     } else if (userPoints[data.nickname] >= 1) {
-        userPoints[data.nickname] += 20;
+        userPoints[data.nickname] += 10;
         userPoints[data.nickname] + 10;
         //console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
     }
@@ -755,9 +829,11 @@ connection.on('gift', (data) => {
     addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
     handleEvent('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
     sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
+
     if (!isPendingStreak(data) && data.diamondCount > 0) {
         diamondsCount += (data.diamondCount * data.repeatCount);
 
+        userPoints[data.nickname] + data.diamondCount;
         updateRoomStats();
     }
 
@@ -780,7 +856,7 @@ connection.on('social', (data) => {
         if (sendDataCheckbox.checked) {
             if (!seguidores.has(data.nickname)) {
                 obtenerYenviarCommandID({ eventType: 'follow', string: `follow` });
-                handleEvent('follow', data);
+                handleEvent2('follow', data);
                 sendToServer('follow', data);
                 console.log(`${data.nickname} es un gato mas`);
                 seguidores.add(data.nickname);
@@ -793,7 +869,7 @@ connection.on('social', (data) => {
     } else if (data.displayType.includes('share')) {
         color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
         message = `${data.nickname} compartió el directo`;
-        handleEvent('share', data);
+        handleEvent2('share', data);
         if (sendDataCheckbox.checked) {
             obtenerYenviarCommandID({ eventType: 'share', string: `share` });
         }
@@ -845,42 +921,30 @@ connection.on('questionNew', data => {
         modal.remove();
     });
 });
+/*
+const battleBar = document.getElementById('battle-bar');
+const user1 = document.getElementById('user-1');
+const user2 = document.getElementById('user-2');
+const battleStatus = document.getElementById('battle-status');
+
 connection.on('linkMicBattle', (data) => {
-    /*const table = document.createElement('table');
-    const headerRow = table.insertRow();
-    const header1 = document.createElement('th');
-    header1.textContent = 'Unique ID';
-    headerRow.appendChild(header1);
-    const header2 = document.createElement('th');
-    header2.textContent = 'Points';
-    headerRow.appendChild(header2);
-
-    data.battleUsers.forEach(user => {
-        const row = table.insertRow();
-        const cell1 = row.insertCell();
-        cell1.textContent = user.uniqueId;
-        const cell2 = row.insertCell();
-        cell2.textContent = '0'; // Puedes iniciar los puntos en 0
-        cell2.setAttribute('id', user.uniqueId); // Establece el ID del elemento de la celda con el Unique ID del usuario
-    });
-
-    document.body.appendChild(table);*/
+console.log(`New Battle: ${data.battleUsers[0].uniqueId} VS ${data.battleUsers[1].uniqueId}`,data);
+/*user1.querySelector('.username').textContent = data.battleUsers[0].uniqueId;
+user2.querySelector('.username').textContent = data.battleUsers[1].uniqueId;
+battleStatus.textContent = 'Battle in Progress'
 });
 
 connection.on('linkMicArmies', (data) => {
-    /* Itera sobre los ejércitos de batalla
-    data.battleArmies.forEach(army => {
-        // Itera sobre los participantes de cada ejército
-        army.participants.forEach(participant => {
-            // Encuentra la celda correspondiente en la tabla por el Unique ID del usuario
-            const cell = document.getElementById(participant.userId);
-            if (cell) {
-                // Actualiza los puntos en la celda
-                cell.textContent = army.points;
-            }
-        });
-    });*/
-});
+console.log('linkMicArmies', data);
+user1.querySelector('.points').textContent = data.battleArmies[0].points;
+user2.querySelector('.points').textContent = data.battleArmies[1].points;
+if (data.battleStatus === 1) {
+    battleStatus.textContent = 'Battle in Progress';
+} else if (data.battleStatus === 2) {
+    battleStatus.textContent = 'Battle Ended';
+}
+});*/
+
   
 connection.on('liveIntro', (msg) => {
     console.log('User Details:', msg.userDetails);
@@ -908,6 +972,7 @@ function obtenerYenviarCommandID(event) {
         console.error('El string es demasiado largo:', string);
         return;
     }
+
     const listaComandos = [];
     const pageSize = 100;
     let skip = 0;
@@ -1005,12 +1070,8 @@ function obtenerYenviarCommandID(event) {
                                         enviarcomandoConRetraso();
                                     })
                                     .catch(error => {
-                                        console.error('Error al enviar el comando:', error);
+                                        console.error('Error al enviar el comando:', error,comando.ID);
                                         // Si el servidor responde con un error 404, incrementa el índice y llama a enviarcomandoConRetraso
-                                        if (error.message.includes('404')) {
-                                            index++;
-                                            enviarcomandoConRetraso();
-                                        }
                                     });
                             }, delay);
                         }
@@ -1024,47 +1085,6 @@ function obtenerYenviarCommandID(event) {
     }
 
     obtenerPaginaDeComandos();
-}
-
-window.isIframePlaying = false;
-
-function mostrarOverlay() {
-    const overlayContainer = document.getElementById("overlayEventContainer");
-    let iframeElement = document.getElementById("overlay-frame");
-
-    // Si el iframe ya existe, no hagas nada
-    if (iframeElement) return;
-
-    // Crear y configurar el iframe
-    iframeElement = document.createElement("iframe");
-    iframeElement.id = "overlay-frame";
-    iframeElement.src = "http://localhost:8111/overlay/";
-    iframeElement.frameborder = "0";
-    iframeElement.style.width = "100%";
-    iframeElement.style.height = "100%";
-    iframeElement.allow = "autoplay";
-
-
-    // Agregar el iframe al contenedor del overlay
-    overlayContainer.appendChild(iframeElement);
-
-    // Mostrar el contenedor del overlay
-    overlayContainer.style.display = "flex";
-    window.isIframePlaying = true;
-}
-
-function ocultarOverlay() {
-    const overlayContainer = document.getElementById("overlayEventContainer");
-    const iframeElement = document.getElementById("overlay-frame");
-
-    // Si el iframe no existe, no hagas nada
-    if (!iframeElement) return;
-
-    // Eliminar el iframe
-    overlayContainer.removeChild(iframeElement);
-
-    // Ocultar el contenedor del overlay
-    overlayContainer.style.display = "none";
 }
 
 var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;
@@ -1406,21 +1426,6 @@ async function fetchAudio(txt) {
             return audioMap[txt];
         }
 
-        // Si menos del 80% del texto está en el rango de 'a' a 'z', usar la voz anterior que es distinta a la actual
-        // Si menos del 80% del texto está en el rango de 'a' a 'z', usar la segunda voz anterior que sea distinta a la actual
-        let selectedVoice;
-        if (calculatePercentageOfAlphabets(txt) < 80) {
-            selectedVoice = lastTwoSelectedVoices[1];
-        } else {
-            // Seleccionar una nueva voz que no sea la última voz seleccionada ni la segunda voz anterior
-            do {
-                selectedVoice = selectVoice(language);
-            } while (selectedVoice === lastSelectedVoice || selectedVoice === lastTwoSelectedVoices[1]);
-            lastTwoSelectedVoices[0] = lastSelectedVoice;
-            lastTwoSelectedVoices[1] = selectedVoice;
-            lastSelectedVoice = selectedVoice;
-        }
-
         // Si el audio no existe en el mapa, solicitar un nuevo audio
         const resp = await fetch(TTS_API_ENDPOINT + makeParameters({ voice: selectedVoice, text: txt }));
         if (resp.status !== 200) {
@@ -1460,13 +1465,11 @@ function skipAudio() {
     // If the queue is not empty, dequeue the next audio and start playing it
     if (!audioqueue.isEmpty()) {
         audio.src = audioqueue.dequeue();
-        audio.load();
-        audio.play();
+        audio.load(); // Cargar el audio
+        audio.play(); // Reproducir el audio
     } else {
-        isPlaying = true;
-        audio.src = audioqueue.dequeue();
-        audio.load();
-        audio.play();
+        // Si no hay más elementos en la cola, simplemente restablece el estado de reproducción
+        isPlaying = false;
     }
 }
 
@@ -1569,29 +1572,6 @@ function isValidUrl(string) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    let soundList = document.getElementById('soundList');
-
-    // Load existing sounds
-    for (let i = 0; i < localStorage.length; i++) {
-        let giftName = localStorage.key(i);
-        addSoundToList(giftName, soundList);
-    }
-
-    soundList.addEventListener('click', function(event) {
-        if (event.target.matches('.deleteButton')) {
-            handleDelete(event);
-        } else if (event.target.matches('.renameButton')) {
-            handleRename(event);
-        }
-        event.stopPropagation(); // Stop event propagation
-    });
-
-    // Hide soundList when clicking outside of it
-    document.addEventListener('click', function() {
-        soundList.style.display = 'none';
-    });
-});
-document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('soundForm').addEventListener('submit', function(event) {
         event.preventDefault(); // Evita que el formulario se envíe y la página se recargue
         let soundFiles = document.getElementById('soundFiles').files;
@@ -1607,51 +1587,211 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsDataURL(soundFile);
         }
     });
-});
+    let soundList = document.getElementById('soundList');
 
-function addSoundToList(giftName, soundList) {
-    let listItem = document.createElement('li');
-    listItem.textContent = giftName;
-
-    let deleteButton = document.createElement('button');
-    deleteButton.textContent = 'X';
-    deleteButton.className = 'deleteButton';
-
-    let renameButton = document.createElement('button');
-    renameButton.textContent = 'Renombrar';
-    renameButton.className = 'renameButton';
-
-    let playButton = document.createElement('button'); // Crear el botón de reproducción
-    playButton.textContent = '';
-    playButton.className = 'playButton';
-    playButton.addEventListener('click', function() { // Agregar un controlador de eventos al botón
-        playSound(giftName);
-    });
-
-    listItem.prepend(playButton); // Agregar el botón de reproducción al elemento de la lista
-    listItem.prepend(renameButton);
-    listItem.prepend(deleteButton);
-    soundList.appendChild(listItem);
-}
-
-function handleDelete(event) {
-    let giftName = event.target.parentElement.dataset.giftName; // Obtener el nombre del sonido del atributo de datos
-    if (confirm('¿Estás seguro de que quieres eliminar este sonido?')) {
-        localStorage.removeItem(giftName);
-        event.target.parentElement.remove();
+    // Función para cargar los sonidos desde el localStorage y agregarlos al menú desplegable
+    function loadSoundsFromLocalStorage() {
+        const sounds = [];
+        // Load existing sounds from localStorage and add them to the array if they are multimedia files
+        for (let i = 0; i < localStorage.length; i++) {
+            const itemName = localStorage.key(i);
+            const itemData = localStorage.getItem(itemName);
+            // Verificar si los datos almacenados corresponden a un archivo de audio (u otro tipo multimedia)
+            if (isMultimedia(itemData)) {
+                sounds.push(itemName);
+            }
+        }
+    
+        // Sort the sounds alphabetically
+        sounds.sort();
+    
+        // Add each sound to the dropdown menu
+        sounds.forEach(soundName => {
+            addSoundToList(soundName);
+        });
     }
+    
+    function isMultimedia(data) {
+        // Verificar si los datos comienzan con el prefijo 'data:audio/' o 'data:video/' o 'data:image/'
+        return data.startsWith('data:audio/') || data.startsWith('data:video/') || data.startsWith('data:image/');
+    }
+    
+    
+    loadSoundsFromLocalStorage();
+
+    // Función para agregar un sonido a la lista
+    function addSoundToList(giftName) {
+
+        const listItem = document.createElement('div');
+        listItem.dataset.giftName = giftName; // Almacenar el nombre del sonido como un atributo de datos
+    
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'X';
+        deleteButton.className = 'deleteButton';
+        deleteButton.addEventListener('click', handleDelete);
+    
+        const renameButton = document.createElement('button');
+        renameButton.textContent = 'ReAsignar';
+        renameButton.className = 'renameButton';
+        renameButton.addEventListener('click', handleRename);
+    
+        const playButton = document.createElement('button'); // Crear el botón de reproducción
+        playButton.textContent = '';
+        playButton.className = 'playButton';
+        playButton.addEventListener('click', () => {
+            // Agregar un controlador de eventos al botón
+            playSound(giftName);
+        });
+    
+        const soundNameSpan = document.createElement('span');
+        soundNameSpan.textContent = giftName;
+    
+        // Agregar miniatura del sonido si existe
+        const thumbnailSrc = localStorage.getItem(giftName + '_thumbnail');
+        if (thumbnailSrc) {
+            const thumbnailImg = document.createElement('img');
+            thumbnailImg.src = thumbnailSrc;
+            thumbnailImg.alt = 'Thumbnail';
+            listItem.appendChild(thumbnailImg); // Agregar la miniatura del sonido
+        }
+    
+        listItem.appendChild(playButton); // Agregar el botón de reproducción al elemento de la lista
+        listItem.appendChild(renameButton);
+        listItem.appendChild(deleteButton);
+        listItem.appendChild(soundNameSpan); // Agregar el span con el nombre del sonido
+        soundList.appendChild(listItem);
+    }
+    
+
+    // Función para manejar la eliminación de un sonido
+    function handleDelete(event) {
+        let giftName = event.target.parentElement.dataset.giftName; // Obtener el nombre del sonido del atributo de datos
+        if (confirm('¿Estás seguro de que quieres eliminar este sonido?')) {
+            localStorage.removeItem(giftName);
+            event.target.parentElement.remove();
+        }
+    }
+    function handleRename(event) {
+        const listItem = event.target.parentElement;
+        const giftName = listItem.dataset.giftName; // Obtener el nombre del regalo del atributo de datos
+    
+        // Obtener el elemento que llama a la modal (el botón "ReAsignar")
+        const triggerElement = event.target;
+    
+        // Llamar a la función para abrir la modal de renombrar
+        openRenameModal(giftName, (newName) => {
+            if (newName && newName !== giftName) {
+                // Si se proporciona un nuevo nombre y es diferente al nombre actual
+                const audioSrc = localStorage.getItem(giftName);
+                localStorage.removeItem(giftName);
+                localStorage.setItem(newName, audioSrc);
+                listItem.dataset.giftName = newName; // Actualizar el nombre del regalo en el atributo de datos
+                listItem.querySelector('span').textContent = newName; // Actualizar el texto visible del nombre del regalo
+            }
+        }, triggerElement); // Pasar el elemento que llama a la modal como tercer argumento
+    }
+    
+    
+});    
+let isModalOpen = false; // Variable global para controlar si la modal está abierta
+let currentModalBackdrop; // Variable global para almacenar la modal actualmente abierta
+
+function openRenameModal(currentName, onSave, triggerElement) {
+    if (isModalOpen) {
+        closeModal();
+    }
+    
+    const modalInput = document.createElement('input');
+    modalInput.type = 'text';
+    modalInput.value = currentName;
+
+    const modalDialog = document.createElement('div');
+    modalDialog.classList.add('modal-dialog');
+    modalDialog.appendChild(modalInput);
+
+    const modalButton = document.createElement('button');
+    modalButton.textContent = 'Aceptar';
+    modalButton.addEventListener('click', () => {
+        const newName = modalInput.value.trim();
+        onSave(newName);
+        modalInput.value = newName;
+        closeModal();
+    });
+    modalDialog.appendChild(modalButton);
+
+    // Crear un select en lugar de una lista de botones de sugerencia
+    const selectInput = document.createElement('select');
+    selectInput.classList.add('select2'); // Agregar la clase de Select2 para inicializarlo
+    modalDialog.appendChild(selectInput);
+
+    $(selectInput).select2({
+        data: globalSimplifiedStates.flatMap(state => state.availableGifts.map(gift => ({
+            placeholder: "Select a giftname",
+            allowClear: true,
+            id: gift.name,
+            text: gift.name,
+            imageUrl: gift.imageUrl
+        }))),
+        templateResult: formatGiftOption, // Función para formatear cada opción en el dropdown
+        escapeMarkup: function(markup) {
+            return markup;
+        }
+    });
+    
+    // Manejar el evento de selección de una opción
+        $(selectInput).on('select2:select', function(e) {
+            
+            const selectedGift = e.params.data;
+            if (currentName.endsWith('mp3')) {
+                modalInput.value = selectedGift.text + ' ' + currentName;
+            } else {
+                modalInput.value = selectedGift.text;
+            }
+        });
+
+
+    // Obtener las coordenadas del elemento que llama a la modal
+    const triggerRect = triggerElement.getBoundingClientRect();
+
+    // Establecer las coordenadas de la modal para que se superponga al elemento
+    const bottomPosition = window.innerHeight - triggerRect.bottom;
+
+    // Calcular la posición de la modal
+    let topPosition;
+    if (bottomPosition > window.innerHeight / 2) {
+        topPosition = triggerRect.top + window.scrollY + 500;
+    } else {
+        topPosition = triggerRect.top + window.scrollY;
+    }
+    
+    // Establecer las coordenadas de la modal
+    modalDialog.style.position = 'absolute';
+    modalDialog.style.top = `${topPosition}px`;
+    modalDialog.style.left = `${triggerRect.left + window.scrollX + 10}px`;
+
+    const modalBackdrop = document.createElement('div');
+    modalBackdrop.classList.add('modal-backdrop');
+    modalBackdrop.appendChild(modalDialog);
+    document.body.appendChild(modalBackdrop);
+
+    currentModalBackdrop = modalBackdrop;
+    isModalOpen = true;
+    modalInput.focus();
 }
 
-function handleRename(event) {
-    let listItem = event.target.parentElement;
-    let giftName = listItem.dataset.giftName; // Obtener el nombre del sonido del atributo de datos
-    let newName = prompt('Introduce el nuevo nombre para el sonido:', giftName);
-    if (newName && newName !== giftName) {
-        let audioSrc = localStorage.getItem(giftName);
-        localStorage.removeItem(giftName);
-        localStorage.setItem(newName, audioSrc);
-        listItem.dataset.giftName = newName; // Actualizar el nombre del sonido en el atributo de datos
-        listItem.firstChild.textContent = newName; // Actualizar el texto del elemento de la lista
+// Función para formatear cada opción en el dropdown de Select2
+function formatGiftOption(gift) {
+    if (!gift.id) {
+        return gift.text;
+    }
+
+    return $('<span><img src="' + gift.imageUrl + '" class="thumbnail-img" /> ' + gift.text + '</span>');
+}
+function closeModal() {
+    if (currentModalBackdrop) {
+        document.body.removeChild(currentModalBackdrop); // Eliminar el elemento de la modal del DOM
+        currentModalBackdrop = null; // Restablecer la variable global de la modal actual
+        isModalOpen = false; // Establecer el estado de la modal como cerrada
     }
 }
 
@@ -1764,6 +1904,18 @@ function importSettings() {
         document.getElementById('loadingIndicator').style.display = 'none';
     }
 }
+function testHandleEvent() {
+    var eventType = document.getElementById('eventType').value;
+
+    if (eventType === 'gift') {
+        var dataInput = document.getElementById('data').value;
+        let data = { giftName: dataInput };
+        handleEvent(eventType, data);
+    } else {
+        var data = document.getElementById('data').value;
+        handleEvent2(eventType, data);
+    }
+}
 const sentData = new Set(); // Conjunto para almacenar los datos enviados
 
 let keywords = {}; // Inicializar como un objeto vacío en lugar de null
@@ -1772,138 +1924,126 @@ let lastCommand = null;
 let currentPlayerIndex = 0;
 const keywordsInput = localStorage.getItem('keywords');
 keywords = jsyaml.load(keywordsInput);
+let playerName = localStorage.getItem('playerName');
 
-function testHandleEvent() {
-    const commandListInput = localStorage.getItem('commandList');
-    commandList = jsyaml.load(commandListInput);
-    var eventType = document.getElementById('eventType').value;
-    var data = document.getElementById('data').value;
-    let eventCommands = [];
 
-    let playerName = localStorage.getItem('playerName');
-  
-    if (eventType === 'gift') {
-        let dataname = data.trim().toLowerCase();
-        let foundGift = Object.keys(commandList.gift).find(gift => gift.toLowerCase() === dataname);
-        if (foundGift) {
-          eventCommands = commandList.gift[foundGift];
-        } else {
-          eventCommands = commandList.gift['default'];
-        }
-      } else if (commandList[eventType]) {
-        if (typeof commandList[eventType] === 'object' && !Array.isArray(commandList[eventType])) {
-          if (data.likes && commandList[eventType][data.likes]) {
-            eventCommands = commandList[eventType][data.likes];
-          } else {
-            eventCommands = commandList[eventType]['default'];
-          }
-        } else {
-          eventCommands = commandList[eventType];
-        }
-      }
-      if (Array.isArray(eventCommands)) {
-        eventCommands.forEach(command => {
-          let replacedCommand = command
-            .replace('playername', playerName || '');
-            if (eventType === 'gift') {
-                setTimeout(() => {
-                  //console.log('comando1', replacedCommand);
-                  sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
-                }, 100); // antes de enviar el comando
-              } else if (replacedCommand !== lastCommand) {
-                setTimeout(() => {
-                  lastCommand = replacedCommand;
-                  //console.log('comando2', replacedCommand);
-                  sendReplacedCommand(replacedCommand); // Enviar replacedCommand al servidor
-                }, 100); // antes de enviar el comando
-              }
-        });
-        
-    }    
-}
 let commandCounter = 0; // Variable de control de contador
 const maxRepeatCount = 50; // Valor máximo para repeatCount
 
 function handleEvent(eventType, data, msg, likes) {
-    const commandListInput = localStorage.getItem('commandList');
-    commandList = jsyaml.load(commandListInput);
-    let playerName = localStorage.getItem('playerName');
-    let eventCommands = [];
+    let MinecraftLivetoggle = document.getElementById("MinecraftLive")
 
-    if (eventType === 'gift') {
-        let giftName = data.giftName.trim().toLowerCase();
-        let foundGift = Object.keys(commandList.gift).find(gift => gift.toLowerCase() === giftName);
-        if (foundGift) {
-            eventCommands = commandList.gift[foundGift];
-        } else {
-            eventCommands = commandList.gift['default'];
-        }
-    } else if (commandList[eventType]) {
-        if (typeof commandList[eventType] === 'object' && !Array.isArray(commandList[eventType])) {
-            if (data.likes && commandList[eventType][data.likes]) {
-                eventCommands = commandList[eventType][data.likes];
-            } else {
-                eventCommands = commandList[eventType]['default'];
-            }
-        } else {
-            eventCommands = commandList[eventType];
-        }
+    //console.log(MinecraftLivetoggle.checked);
+    if (!MinecraftLivetoggle.checked) {
+        return;
     }
 
-    if (Array.isArray(eventCommands)) {
+    // Obtener los datos de los eventos del localStorage
+    const commandListInput = localStorage.getItem('events');
+    const commandList = JSON.parse(commandListInput);
+    const giftName = data.giftName.toLowerCase(); // Normaliza el nombre del regalo
+
+    let foundGift = commandList.gift.default.find(gift => gift.name.toLowerCase() === giftName);
+    console.log(data.gifName,giftName);
+    if (!foundGift) {
+        // Si no se encontró un regalo específico, usar el regalo predeterminado
+        foundGift = commandList.gift.default.find(gift => gift.name.toLowerCase() === 'default');
+    }
+
+    if (foundGift) {
+        const eventCommands = foundGift.commands.split('\n');
+
         eventCommands.forEach(command => {
-            let replacedCommand = command
-                .replace('uniqueId', data.uniqueId || '')
-                .replace('comment', data.comment || '')
-                .replace('{milestoneLikes}', likes || '')
-                .replace('{likes}', likes || '')
-                .replace('message', data.comment || '')
-                .replace('giftName', data.giftName || '')
-                .replace('repeatCount', data.repeatCount || '')
-                .replace('playername', playerName || '');
-
-            if (eventType !== 'gift' && replacedCommand === lastCommand) {
-                return;
-            }
-            if (data.repeatCount > maxRepeatCount) {
-                // Verificar si el comando contiene "tellraw" o "title" y si el contador no es múltiplo de 10
-                if ((command.includes("tellraw") || command.includes("title")) && commandCounter % 10 !== 0) {
-                    return; // No se ejecuta el comando
-                }
-            }
-            commandCounter++;
-      if (data.comment && keywords.keywordToGive[data.comment.toLowerCase()]) {
-        let itemKeyword = Object.keys(keywords.keywordToGive).find(keyword => data.comment.toLowerCase().includes(keyword.toLowerCase()));
-        if (itemKeyword) {
-          replacedCommand = `/execute at @a run give @a ${keywords.keywordToGive[itemKeyword]}`;
-          //console.info(replacedCommand);
-        }
-      } else if (command.includes('item')) {}
-
-      if (data.comment && keywords.keywordToMob[data.comment.toLowerCase()]) {
-        let mobKeyword = Object.keys(keywords.keywordToMob).find(keyword => data.comment.toLowerCase().includes(keyword.toLowerCase()));
-        if (mobKeyword) {
-          replacedCommand = `/execute at ${playerName} run summon ${keywords.keywordToMob[mobKeyword]}`;
-          //console.info(replacedCommand);
-        }
-      } else if (command.includes('mob')) {}
-      
-       let repeatCount = data.repeatCount || 1;
-
-
-           for (let i = 0; i < repeatCount; i++) {
-               if (eventType === 'gift') {
-                   sendReplacedCommand(replacedCommand);
-               } else if (replacedCommand !== lastCommand) {
-                   lastCommand = replacedCommand;
-                   sendReplacedCommand(replacedCommand);
-                   
-               }
-           }
- // Convertir segundos a milisegundos
-   });
+            const replacedCommand = replaceVariables(command, data, likes);
+            sendReplacedCommand(replacedCommand);
+            console.log(replacedCommand);
+        });
+    } else {
+        console.log("No se encontró un regalo correspondiente para:", data.giftName);
+    }
 }
+
+
+// Función para reemplazar variables en los comandos
+
+const escapeMinecraftCommand = (command) => {
+    // Escape only double quotes, not backslashes (unchanged)
+    return command.replace(/"/g, '\\"');
+  };
+  
+  // Función para reemplazar variables en los comandos
+  const replaceVariables = (command, data, likes) => {
+    console.log(command);
+    // Reemplazar variables en el comando (unchanged)
+    let replacedCommand = command
+      .replace(/uniqueId/g, data.uniqueId || '')
+      .replace(/nickname/g, data.nickname || '')
+      .replace(/comment/g, data.comment || '')
+      .replace(/{milestoneLikes}/g, likes || '')
+      .replace(/{likes}/g, likes || '')
+      .replace(/message/g, data.comment || '')
+      .replace(/giftName/g, data.giftName || '')
+      .replace(/repeatCount/g, data.repeatCount || '')
+      .replace(/playername/g, playerName || '');
+  
+    // Convertir el comando a minúsculas
+    replacedCommand = replacedCommand.toLowerCase();
+  
+    // Remove all backslashes (proceed with caution!)
+    replacedCommand = replacedCommand.replace(/\\/g, '');
+  
+    //console.log(replacedCommand);
+    return replacedCommand;
+  };
+  
+
+function handleEvent2(eventType, data, msg, likes) {
+    let MinecraftLivetoggle = document.getElementById("MinecraftLive")
+
+    //console.log(MinecraftLivetoggle.checked);
+    if (!MinecraftLivetoggle.checked) {
+        return;
+    }
+    // Obtener la lista de comandos del localStorage
+    const commandjsonlist = localStorage.getItem('commandjsonlist');
+    const commandjson = JSON.parse(commandjsonlist);
+
+    if (eventType === 'gift') {
+        return;
+    }
+    // Verificar si se encontró la lista de comandos
+    if (commandjson) {
+        // Verificar si el eventType tiene un comando predeterminado
+        if (commandjson[eventType] && commandjson[eventType].default) {
+            const defaultCommand = commandjson[eventType].default;
+
+            // Ejecutar el comando predeterminado
+            defaultCommand.forEach(command => {
+                const replacedCommand = replaceVariables(command, data, likes);
+                sendReplacedCommand(replacedCommand);
+                console.log(replacedCommand);
+            });
+        } else {
+            console.error(`No se encontraron comandos predeterminados para el evento "${eventType}"`);
+        }
+    } else {
+        console.error(`No se encontraron datos válidos en el localStorage`);
+    }
 }
+
+
+function getChatCommands() {
+    let eventCommands = [];
+    let userCommands = localStorage.getItem('userCommands');
+
+    // Obtener comandos personalizados del usuario
+    if (userCommands) {
+        eventCommands = JSON.parse(userCommands);
+    }
+
+    return eventCommands;
+}
+
 
 function sendReplacedCommand(replacedCommand) {
     fetch('/api/receive', {
@@ -1938,6 +2078,7 @@ async function sendToServer(eventType, data, text, color, msg, message) {
         console.error('Error:', error);
       });
 }
+
 window.onload = async function() {
     try {
         audio = document.getElementById("audio");

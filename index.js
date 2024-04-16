@@ -1,9 +1,22 @@
-const { app, BrowserWindow, globalShortcut, localStorage } = require('electron');
+const { app, BrowserWindow, globalShortcut, localStorage, autoUpdater, dialog, shell } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const url = require('url');
 const Store = require('electron-store');
+const server = 'https://update.electronjs.org'
+const feed = `${server}/nglmercer/Tiktok-Live-TTS-APPv2/${process.platform}-${process.arch}/${app.getVersion()}`
+const isSquirrelInstalled = fs.existsSync('squirrel-installed.txt');
+
+autoUpdater.setFeedURL(feed)
+if (isSquirrelInstalled) {
+  setInterval(() => {
+    autoUpdater.checkForUpdates()
+    console.log(feed);
+  }, 600 * 1000) // 600 segundos
+}
 
 const store = new Store(); 
+
 /*
 require('electron-reload')(__dirname, {
   electron: path.join(__dirname, 'node_modules', '.bin', 'electron')
@@ -35,14 +48,13 @@ app.on('ready', () => {
   let mainWindow = new BrowserWindow({
     width: store.get('windowWidth', 1000), // Obtener el ancho de la ventana desde Electron Store, si no está definido, usar 1200
     height: store.get('windowHeight', 800), // Obtener la altura de la ventana desde Electron Store, si no está definida, usar 1000
-    frame: false,
-    autoHideMenuBar: true,
+    frame: true,
     transparent: true,
     alwaysOnTop: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
-      color: 'red',
-      symbolColor: '#74b1be',
+      color: 'gray',
+      symbolColor: '#00000081',
       height: 20
     },
     webPreferences: {
@@ -68,7 +80,6 @@ app.on('ready', () => {
   if (ventanaAbierta) {
       createOverlay(url);
   } else {
-    // Mantener la ventana cerrada si estaba cerrada en la sesión anterior
   }
 
 
@@ -134,7 +145,7 @@ app.on('ready', () => {
   }
   let commandCount = 0;
   let lastMinuteTimestamp = Date.now();
-  
+  mainWindow.webContents.setFrameRate(60)
   const COMMAND_LIMIT = 1; // Límite de comandos por minuto
   const DELAY_PER_COMMAND = 10; // Retraso en milisegundos por cada comando adicional
   
@@ -150,7 +161,7 @@ app.on('ready', () => {
 
     // Verificar si replacedCommand es un número
     if (!isNaN(replacedCommand)) {
-        delay = parseInt(replacedCommand) + 100;
+        delay = parseInt(replacedCommand) + 20;
     } else {
         delay = additionalDelay;
     }
@@ -161,16 +172,22 @@ app.on('ready', () => {
         bot.chat(replacedCommand);
       }
       //console.log('comando minecraft', replacedCommand);
-      res.json({ message: 'Datos recibidos' });
+      
     }, delay);
-
+    res.json({ message: 'Datos recibidos' });
     // Incrementar el contador de comandos después de haber asignado el retraso
     commandCount++;
-  
+    
     //console.log(`Comando recibido. Retraso adicional: ${additionalDelay}ms`);
-});
+  });
 
+  app1.post('/guardarEstado', (req, res) => {
+    const state = req.body.state; // Obtiene el estado del cuerpo de la petición
+    store.set('state', state);
 
+    console.log('Estado guardado:', state);
+    res.sendStatus(200); // Envía una respuesta de éxito al cliente
+  });
 
 
   app1.post('/api/receive1', (req, res) => {
@@ -220,32 +237,39 @@ app.on('ready', () => {
     if (eventType === 'createBot') {
       const { keyBot, keyServer, Initcommand } = data;
       if (keyBot && keyServer) {
-        if (!botStatus) {
+        if (!bot) {
           const serverParts = keyServer.split(':');
           const serverAddress = serverParts[0];
           const serverPort = serverParts[1] ? parseInt(serverParts[1]) : null;
-  
-          createBot(keyBot, serverAddress, serverPort);
+          setTimeout(() => {
+              createBot(keyBot, serverAddress, serverPort);
+          }, 3000);
           bot.once('login', () => {
-            res.json({ message: 'Bot creado' });
             bot.chat(Initcommand);
+            ///fill 166 122 -26 180 134 -12 minecraft:diamond_block
           });
+          const startPos = { x: 166, y: 122, z: -26 };
+          const endPos = { x: 180, y: 134, z: -12 };
+          res.json({ message: 'Bot creado' });
         } else {
           res.json({ message: 'Bot ya está conectado', botStatus });
         }
       } else if (!disconnect) {
-        createBot(keyBot, keyServer);
+        setTimeout(() => {
+            createBot(keyBot, serverAddress, serverPort);
+        }, 3000);
         bot.once('login', () => {
-          res.json({ message: 'Bot creado sin puerto' });
+          res.json({ message: 'Bot creado sin puerto', botStatus });
           bot.chat(Initcommand);
         });
       }
     } else if (eventType === 'disconnectBot') {
+      botStatus = false;
       disconnect = true;
-      disconnectBot();
-      res.json({ message: 'Bot desconectado' });
+      removeBot();
+      res.json({ message: 'Bot desconectado', botStatus });
     } else {
-      res.json({ message: 'Datos recibidos' });
+      res.json({ message: 'Datos recibidos', botStatus });
     }
   });
 
@@ -318,38 +342,33 @@ app.on('ready', () => {
           }
         });
       };
-  
+
       createBotInternal(); // Initial creation attempt
     } else {
       console.log("No se creó el bot, estado:", botStatus);
     }
   }
+  function removeBot() {
+    if (bot) {
+      bot.quit(); // Desconectar el bot del servidor
+      bot = null; // Limpiar la referencia al bot
+      botStatus = false; // Actualizar el estado del bot a desconectado
+      console.log("Bot desconectado y eliminado correctamente.");
+    } else {
+      console.log("No hay ningún bot para desconectar.");
+    }
+  }
+  
   app1.post('/api/disconnect', (req, res) => {
     const { eventType } = req.body;
     if (eventType === 'disconnectBot') {
-      disconnectBot();
+      removeBot();
       disconnect = true;
       res.json({ message: 'Bot desconectado' });
     } else {
       res.json({ message: 'Datos recibidos' });
     }
   });
-  app1.post('/api/reconnect', (req, res) => {
-    const { eventType } = req.body;
-    if (eventType === 'reconnectBot') {
-      reconnectBot();
-      res.json({ message: 'Bot reconectado' });
-    } else {
-      res.json({ message: 'Datos recibidos' });
-    }
-  });
-  function disconnectBot() {
-    if (botStatus) {
-      bot.quit();
-      botStatus = false;
-      console.log('Bot desconectado');
-    }
-  }
 
   // Inicia el servidor web
 
@@ -405,12 +424,6 @@ app.on('ready', () => {
           } else {
               options = {};
           }
-          
-          // Session ID in .env file is optional
-          //if (process.env.SESSIONID) {
-            //  options.sessionId = process.env.SESSIONID || undefined;
-              //console.info('Using SessionId');
-          //}
 
           // Check if rate limit exceeded
           if (process.env.ENABLE_RATE_LIMIT && clientBlocked(io, socket)) {
@@ -421,7 +434,7 @@ app.on('ready', () => {
               tiktokConnectionWrapper = new TikTokConnectionWrapper(uniqueId, options, true, {
                 processInitialData: false,
                 enableExtendedGiftInfo: true,
-                enableWebsocketUpgrade: true,
+                enableWebsocketUpgrade: false,
                 requestPollingIntervalMs: 2000,
                 clientParams: {
                     "app_language": "en-US",
@@ -507,3 +520,70 @@ app.on('activate', function () {
     createMainWindow();
   }
 });
+
+
+if (isSquirrelInstalled) {
+  // Lógica para cuando se está ejecutando mediante Squirrel
+  autoUpdater.on('update-available', (_event, releaseNotes, releaseName) => {
+    const dialogOpts = {
+      type: 'info',
+      buttons: ['Okay'],
+      title: '¡Actualización disponible!',
+      message: process.platform === 'win32' ? releaseNotes : releaseName,
+      detail: 'Hay una nueva versión disponible.'
+    };
+  
+    dialog.showMessageBox(null, dialogOpts).then((_response) => {
+      // Aquí puedes agregar lógica adicional según la respuesta, si es necesario
+    });
+  });
+} else {
+  // Lógica para cuando no se está ejecutando mediante Squirrel
+  console.log('La aplicación no se está ejecutando mediante Squirrel.');
+}
+
+
+if (isSquirrelInstalled) {
+autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
+  const dialogOpts = {
+    type: 'info',
+    buttons: ['Restart', 'Later'],
+    title: 'Application Update',
+    message: process.platform === 'win32' ? releaseNotes : releaseName,
+    detail: 'Una nueva versión ha sido descargada. Reinicie la aplicación para aplicar las actualizaciones.'
+  };
+
+  dialog.showMessageBox(null, dialogOpts).then((returnValue) => {
+    if (returnValue.response === 0) {
+      autoUpdater.quitAndInstall();
+
+      // Abrir la carpeta de instalación
+      const appDirectory = path.dirname(app.getPath('exe'));
+      shell.openPath(appDirectory);
+
+      // Preguntar si desea crear un acceso directo en el escritorio
+      const createShortcutOpts = {
+        type: 'question',
+        buttons: ['Sí', 'No'],
+        title: 'Crear acceso directo en el escritorio',
+        message: '¿Desea crear un acceso directo en el escritorio para esta aplicación?',
+        detail: 'Un acceso directo en el escritorio le permitirá iniciar fácilmente la aplicación en el futuro.'
+      };
+
+      dialog.showMessageBox(null, createShortcutOpts).then((shortcutResponse) => {
+        if (shortcutResponse.response === 0) {
+          const shortcutPath = path.join(app.getPath('desktop'), 'MiAplicacion.lnk');
+          shell.writeShortcutLink(shortcutPath, 'desktop', {
+            target: app.getPath('exe'),
+            description: 'Mi Aplicación',
+            icon: app.getIcon()
+          });
+        }
+      });
+    }
+  });
+});
+} else {
+  // Lógica para cuando no se está ejecutando mediante Squirrel
+  console.log('La aplicación no se está ejecutando mediante Squirrel.');
+}

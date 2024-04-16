@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok LIVE</title>
+    <title>TikUniverse</title>
     <meta name="description" content="A chat reader for TikTok LIVE utilizing TikTok-Live-Connector and Socket.IO to forward the data to the client. This demo project uses the unofficial TikTok API to retrieve chat comments, gifts and other events from TikTok LIVE.">
     <!-- Content-Security
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://tiktok-chat-reader.zerody.one/ https://tiktok-chat-reader.zerody.one/ wss://irc-ws.chat.twitch.tv http://localhost:3001 http://localhost:3000 https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p77-sign-va.tiktokcdn.com/ https://p19-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-useast2a.tiktokcdn.com/ http://localhost:8081 https://api.streamelements.com https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-va.tiktokcdn.com/ http://localhost:8911; img-src 'self' https://p16-sign-va.tiktokcdn.com/ https://p16-pu-sign-useast8.tiktokcdn-us.com/; media-src 'self' blob:;"> 
@@ -17,6 +17,8 @@ meta
 ">
  -->
  <div class="title-bar">
+    <h1>tiktokLiveApp</h1>
+    <p>By Melser</p>
 </div>  
 </head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -26,6 +28,7 @@ meta
 <script src="app.js"></script>
 <script src="tmi.min.js"></script>
 <script src="TTSmain.js"></script>
+<script src="minejs.js"></script>
 <style>
     .error {
         color: red;
@@ -33,6 +36,10 @@ meta
     }
 </style>
 <link rel="stylesheet" href="styles.css">
+<link href="select2.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+
 
 </head>
 <body>
@@ -40,21 +47,29 @@ meta
         <div id="stateText"></div>
         <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
         <input type="button" id="connectButton" value="Conectar">
-        <button class="tablinks" onclick="openTab(event, 'Tab1')">chat</button>
+        <button class="tablinks" onclick="openTab(event, 'Tab1')">Chat LIVE</button>
         <button class="tablinks" onclick="openTab(event, 'Tab2')">Minecraft</button>
         <button class="tablinks" onclick="openTab(event, 'Tab3')">Sonidos</button>
-        <button class="tablinks" onclick="openTab(event, 'Tab4')">Config y otros</button>
-        <button class="tablinks" onclick="openTab(event, 'Tab5')">prox...</button>
+        <button class="tablinks" onclick="openTab(event, 'Tab4')">Overlay y otros</button>
+        <button class="tablinks" onclick="openTab(event, 'Tab5')">Tiktok Regalos</button>
+        <button class="tablinks" onclick="openTab(event, 'Tab6')">proximament.</button>
         <label class="cyberpunk-checkbox-label">
             <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
             mixitupAlerts</label>
-        <input id="skip-button" type="button" value="SKIP"> </button>
         <div id="roomStats"></div>
-        </div>
+        <input id="skip-button" type="button" value="SKIP"> </button>
+
         <audio id="audio" controls autoplay>
         </audio>
         <audio id="audio" autoplay></audio>
         <audio id="soundPlayer" type="audio/mp3"></audio>
+        <label for="importButton" class="custom-file-upload">subirArchivo</label>
+        <input type="file" id="importButton" style="display:none">
+        <button onclick="importSettings()">ImportarSet</button>
+        <button id="exportButton" onclick="exportSettings()">ExportarSet</button>
+        <span id="loadingIndicator" style="display: none;">Cargando...</span>
+        </div>
+
     </div>
     <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 90%; position: absolute; background: transparent;"></div>
     <div class="toggleWrapper">
@@ -67,10 +82,14 @@ meta
     <div id="durationDisplay"></div>
 
     </div>
+    <script src="renderer.js"></script>
 
     <div>
         <!-- Contenido de las pestañas -->
         <div id="Tab1" class="tabcontent">
+            <!-- 
+                <h1>Connection status: <strong id='status'></strong></h1>
+        -->
             <div class="inputFields">
                 <div class="splitchattable">
                     <div class="chatcontainer">
@@ -84,11 +103,21 @@ meta
             <div>
                 <div id="voiceSelectContainer"></div>
 
-                <label for="filter-words">filtrar (palabras separadas):</label>
+                <label for="filter-words">filtrar chat //:</label>
                 <input type="text" id="filter-words">
             </div>
             <label for="filter-users">WitheList:</label>
             <input type="text" id="filter-users">
+
+            <div>puntos del canal +1 -10
+                <input type="text" id="users-points" value="2">
+                <label class="cyberpunk-checkbox-label">
+                <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
+                si el usuario no tiene puntos no lee</label>
+            </div>
+            <label class="cyberpunk-checkbox-label">
+            <input type="checkbox" class="cyberpunk-checkbox" id="consoleOff" checked>
+            console.log off</label>
             <script>
                 function setupLocalStorage(inputElement, storageKey, callback) {
                     const storedValue = localStorage.getItem(storageKey);
@@ -115,15 +144,16 @@ meta
 
                 const filterUsersInput = document.getElementById('filter-users');
                 setupLocalStorage(filterUsersInput, 'lastfilterUsers');
+                const userpointsInput = document.getElementById('users-points');
+                setupLocalStorage(userpointsInput, 'userpoints');
             </script>
+
         </div>
-        <div id="battle-progress-bar" class="progress-bar">
-            <div class="progress-bar-inner red" style="width: 50%;"></div>
-            <div class="progress-bar-inner blue" style="width: 50%;"></div>
-          </div>
         
         <div id="Tab2" class="tabcontent">
-
+            <label class="cyberpunk-checkbox-label">
+                <input type="checkbox" class="cyberpunk-checkbox" id="MinecraftLive" checked>
+                MinecraftLive</label>
             <form id="createBotForm">
                 <label for="keyBOT">Nombre del Bot:</label>
                 <input type="text" id="keyBOT" name="keyBOT" value="" required>
@@ -218,7 +248,8 @@ meta
                         })
                         .catch(error => {
                             console.error(error);
-                            alert('Ocurrió un error al crear el bot');
+                            console.log(error);
+                            resultMessage.style.color = 'red';
                         });
                 });
 
@@ -259,27 +290,6 @@ meta
                         });
                 }
 
-                function reconnectBot() {
-                    fetch('/api/reconnect', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                eventType: 'reconnectBot'
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(result => {
-                            console.log(result);
-                            document.getElementById('resultMessage').textContent = result.message;
-                            disconnectButton.disabled = false;
-                        })
-                        .catch(error => {
-                            console.error(error);
-                            alert('Ocurrió un error al reconectar el bot');
-                        });
-                }
             </script>
             <div class="leer-tutorial">
                 <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
@@ -292,103 +302,285 @@ meta
             <label onclick="saveInitcommand()">Comando Inicial de BOT:</label>
             <input type="text" id="InitcommandInput" placeholder="login">
             <br>
-
+              
             <div> <label for="eventType"> Test comando:</label>
                 <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
                 <label for="data"> -</label>
                 <input type="text" id="data" placeholder="Default">
                 <button onclick="testHandleEvent()">Test comando</button> </div>
-                <button style="position: relative;" onclick="saveCommandList()">Guardar COMANDOS</button>
 
-            <div style="position: relative;">
-                
-                <textarea type="text" id="commandListInput">
-chat:
-    - "/say comment"
-likes:
-    default:
-        - "/say likes"
-gift:
-    default:
-        - "/say GiftName"
-    Rose:
-        - "/say Giftname"</textarea>
-            </div>
-
-            <div style="position: relative;">
-                <textarea type="text" id="keywordsInput" placeholder="keywordToGive:
-                    escudo: minecraft:shield
-                    cama: minecraft:red_bed
-keywordToMob:
-                    enderman: minecraft:enderman
-                    cerdo: minecraft:pig
-                  "></textarea>
-            </div>
-            <div style="position: relative;" id="errorOutput"></div>
-            <script>
-                try {
-                    // Tu código para analizar el YAML aquí
-                  } catch (error) {
-                    // Muestra el error completo en la consola del HTML
-                    console.error(error);
-                  
-                    // Muestra una alerta con un mensaje genérico
-                    alert('Se ha producido un error. Consulta la consola para obtener más detalles.');
-                  }
-                
-                </script>
-                <button style="position: relative;" onclick="saveKeywords()">Guardar COMANDOS del chat, FREE</button>
 
             <script>
                 // Cargar el comando inicial guardado
                 const initCommandInput = document.getElementById('InitcommandInput');
                 setupLocalStorage(document.getElementById('InitcommandInput'), 'Initcommand');
                 setupLocalStorage(document.getElementById('playerNameInput'), 'playerName');
-                setupLocalStorage(document.getElementById('keywordsInput'), 'keywords');
-                setupLocalStorage(document.getElementById('commandListInput'), 'commandList');
 
                 // Cargar el nombre del jugador guardado
                 const playerNameInput = document.getElementById('playerNameInput');
-                const storedKeywords = localStorage.getItem('keywords');
-                const storedCommandList = localStorage.getItem('commandList');
-                // Actualizar el contenido de los campos de texto si hay datos guardados
-                if (storedKeywords) {
-                    document.getElementById('keywordsInput').value = storedKeywords;
-                }
-
-                if (storedCommandList) {
-                    document.getElementById('commandListInput').value = storedCommandList;
-                }
-
-                function saveKeywords() {
-                    const keywordsInputValue = document.getElementById('keywordsInput').value;
-                    localStorage.setItem('keywords', keywordsInputValue);
-                    console.log('Datos de la lista de keywords guardados en el localStorage');
-                }
-
-                function saveCommandList() {
-                    const commandListInput = document.getElementById('commandListInput').value;
-                    localStorage.setItem('commandList', commandListInput);
-                    console.log('Datos de la lista de comandos guardados en el localStorage');
-                }
             </script>
-        </div>
+            <div>
+                <button onclick="saveAllChanges1()">Guardar Cambios</button>
 
+                <div>
+                    <div id="chat">chat</div>
+                    <textarea id="chatcommands" ></textarea>
+                  </div>
+                  <div>
+                    <div id="follow">follow</div>
+                    <textarea id="followcommands" ></textarea>
+                  </div>
+                  <div>
+                    <div id="likes">likes</div>
+                    <textarea id="likescommands" ></textarea>
+                  </div>
+                  <div>
+                    <div id="share">share</div>
+                    <textarea id="sharecommands" ></textarea>
+                  </div>
+                  <div>
+                    <div id="welcome">welcome</div>
+                    <textarea id="welcomecommands" ></textarea>
+                  </div>
+                  <div>
+                    <div id="envelope">envelope</div>
+                    <textarea id="envelopecommands" ></textarea>
+                  </div>
+                  <div>
+                    <div id="subscribe">subscribe</div>
+                    <textarea id="subscribecommands" ></textarea>
+                  </div>
+                  gift
+                  <div id="eventsContainer">gift</div>
+                  <button onclick="addEvent()">Añadir evento</button>
+                  <button onclick="cargarDatos()">Cargar datos</button>
+              
+                  <script>
+                        const eventsContainer = document.getElementById('eventsContainer');
+                        let events = JSON.parse(localStorage.getItem('events')) || {};
+                        let eventIndex = events.gift && events.gift.default ? events.gift.default.length : 0;
+                        console.log(events);
+                        if (eventIndex === 0) {
+                            addEvent();
+                        }
+                        function addEvent() {
+                            // Obtener el índice actual de los eventos
+                            eventIndex++;
+                        
+                            // Crear un nuevo evento con la plantilla
+                            const newEvent = {
+                                "name": "default",
+                                "commands": "command " + eventIndex,
+                            };
+                        
+                            // Añadir el nuevo evento al objeto events
+                            if (!events.gift || !events.gift.default) {
+                                events.gift = { default: [] };
+                            }
+                            events.gift.default.unshift({
+                                "index": eventIndex,
+                                "name": newEvent.name,
+                                "commands": newEvent.commands
+                            });
+                        
+                            localStorage.setItem('events', JSON.stringify(events));
+                        
+                            // Mostrar el nuevo evento en el contenedor
+                            const newEventHTML = `
+                                <div>${newEvent.name}</div>
+                                <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
+                                <input type="text" id="${eventIndex}input" value="${newEvent.name}" onclick="sendguardarcomando(${eventIndex})">
+                                <div>
+                                <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${newEvent.commands}</textarea>
+                            </div>
+                            `;
+                        
+                            const newEventDiv = document.createElement('div');
+                            newEventDiv.classList.add('event');
+                            newEventDiv.innerHTML = newEventHTML;
+                            
+                            // Insertar el nuevo evento al principio del contenedor
+                            eventsContainer.insertBefore(newEventDiv, eventsContainer.firstChild);
+                        }
+                        
+                    
+                        // Función para enviar los datos al actualizar
+                        function sendguardarcomando(eventIndex) {
+                            const eventName = document.getElementById(`${eventIndex}input`).value.trim();
+                            const eventCommands = document.getElementById(`${eventIndex}command`).value.trim();
+                            guardarcomando(eventIndex, eventName, eventCommands);
+                        }
+                    
+                        // Función para enviar los datos al eliminar
+                        function senddeleteEvent(eventIndex) {
+                            deleteEvent(eventIndex);
+                        }
+                    
+                        function guardarcomando(eventIndex, eventNameinput, eventNamecommands) {
+                    
+                            const eventType = 'gift'; // Tipo de evento específico
+                            const defaultEventName = 'default'; // Nombre del evento predeterminado
+                    
+                            if (!events[eventType]) {
+                                events[eventType] = {}; // Inicializar el tipo de evento si no existe
+                            }
+                    
+                            if (!events[eventType][defaultEventName]) {
+                                events[eventType][defaultEventName] = []; // Inicializar el evento predeterminado si no existe
+                            }
+                    
+                            // Verificar si ya existe un evento con el mismo nombre
+                            const existingEventIndex = events[eventType][defaultEventName].findIndex(event => event.index === eventIndex);
+                    
+                            if (existingEventIndex !== -1) {
+                                // Actualizar los valores del evento
+                                events[eventType][defaultEventName][existingEventIndex].name = eventNameinput;
+                                events[eventType][defaultEventName][existingEventIndex].commands = eventNamecommands;
+                    
+                                // Guardar los eventos actualizados en el localStorage
+                                localStorage.setItem('events', JSON.stringify(events));
+                    
+                                console.log('Los cambios se guardaron exitosamente en el almacenamiento local.');
+                    
+                                // Recargar los datos para reflejar los cambios en el contenedor
+                                cargarDatos();
+                            } else {
+                                console.error('No se pudo encontrar el evento en el almacenamiento local.');
+                            }
+                        }
+                    
+                        function deleteEvent(eventIndex) {
+                            let events = JSON.parse(localStorage.getItem('events')); // Obtener los eventos del almacenamiento local
+                    
+                            const eventType = 'gift'; // Tipo de evento específico
+                            const defaultEventName = 'default'; // Nombre del evento predeterminado
+                    
+                            // Verificar si existen eventos y si el índice del evento a eliminar es válido
+                            if (events && events[eventType] && events[eventType][defaultEventName]) {
+                                const eventToDeleteIndex = events[eventType][defaultEventName].findIndex(event => event.index === eventIndex);
+                    
+                                if (eventToDeleteIndex !== -1) {
+                                    // Eliminar el evento del arreglo de eventos
+                                    events[eventType][defaultEventName].splice(eventToDeleteIndex, 1);
+                    
+                                    // Guardar los eventos actualizados en el almacenamiento local
+                                    localStorage.setItem('events', JSON.stringify(events));
+                    
+                                    // Remover el elemento del contenedor de eventos
+                                    const eventDiv = document.getElementById(`${eventIndex}input`).parentNode;
+                                    eventDiv.remove();
+                    
+                                    // Volver a cargar los datos para reflejar los cambios en el contenedor
+                                    cargarDatos();
+                                } else {
+                                    console.error('No se pudo encontrar el evento con el índice proporcionado.');
+                                }
+                            } else {
+                                console.error('No se pudieron encontrar eventos válidos.');
+                            }
+                        }
+                    
+                        function cargarDatos() {
+                            let events = JSON.parse(localStorage.getItem('events'));
+                            //console.log(JSON.stringify(events));
+                            // Limpiar el contenedor de eventos
+                            eventsContainer.innerHTML = '';
+                        
+                            // Verificar si hay eventos guardados
+                            if (events && events.gift && Array.isArray(events.gift.default)) {
+                                // Recorrer todos los eventos guardados y agregarlos al contenedor en orden inverso
+                                events.gift.default.slice().reverse().forEach((eventData) => {
+                                    const eventIndex = eventData.index; // Índice del evento
+                                    const eventNameinput = eventData.name;
+                                    const eventNamecommands = eventData.commands;
+                        
+                                    const newEventHTML = `
+                                        <div>${eventNameinput}</div>
+
+                                        <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
+                                        <input type="text" id="${eventIndex}input" value="${eventNameinput}" onclick="handleRenameModal(${eventIndex})" onchange="sendguardarcomando(${eventIndex})">
+                                        <div>
+                                            <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${eventNamecommands}</textarea>
+                                        </div>
+                                    `;
+                        
+                                    const newEventDiv = document.createElement('div');
+                                    newEventDiv.classList.add('event');
+                                    newEventDiv.innerHTML = newEventHTML;
+                        
+                                    // Insertar el nuevo evento al principio del contenedor
+                                    eventsContainer.insertBefore(newEventDiv, eventsContainer.firstChild);
+                                });
+                            }
+                        }
+                        
+
+                        function handleRenameModal(eventIndex) {
+                            let inputField = document.getElementById(`${eventIndex}input`);
+                            let listItem = inputField.parentElement;
+                            let giftName = inputField.value; // Obtener el valor actual del input en lugar del texto del div
+                        
+                            openRenameModal(giftName, (newName) => {
+                                if (newName && newName !== giftName) {
+                                    // Aquí puedes realizar las operaciones necesarias con el nuevo nombre
+                                    inputField.value = newName; // Actualizar el valor del input
+                                    sendguardarcomando(eventIndex); // Llamar a la función para guardar los datos
+                                }
+                            }, inputField); // Pasar inputField como argumento adicional a openRenameModal
+                        }
+                        
+
+                        cargarDatos(); // Cargar los datos al cargar la página
+
+                    
+                    
+                    
+                    // Función para guardar todos los cambios
+                    function saveAllChanges1() {
+                    
+                    const commandjsonlist = {};
+                    
+                    const types = ['chat', 'follow', 'likes', 'share', 'welcome', 'envelope', 'subscribe'];
+                    
+                    types.forEach(type => {
+                      const commands = document.getElementById(`${type}commands`).value.trim();
+                    
+                      if (commands !== "") {
+                          commandjsonlist[type] = {
+                              "default": commands.split('\n')
+                          };
+                      } else {
+                          commandjsonlist[type] = {
+                              "default": []
+                          };
+                      }
+                    });
+                    
+                    localStorage.setItem('commandjsonlist', JSON.stringify(commandjsonlist));
+
+                    // Muestra los datos guardados en la consola
+                    console.log('Datos almacenados en el localStorage:');
+                    console.log(commandjsonlist);
+                    }
+
+                     </script>
+
+        </div>
     </div>
     <div id="Tab3" class="tabcontent">
 
-        <form id="soundForm">
-            <input type="file" id="soundFiles" accept=".mp3,.wav,.ogg,.webm" multiple>
-            <button type="submit">Añadir sonido</button>
-        </form>
-
-        <div id="dropdownButton" onclick="toggleDropdownMenu()">
-            <div id="selectedSound">
-                Sonidos
-                <label class="container">
+        <label class="container">
             <input id="sendsoundCheckbox" type="checkbox" checked>
-            <div class="checkmark"></div>
-        </label>
+
+            <div class="checkmark">Sonidos</div>
+        <div id="selectedSound">
+    </label>
+    <form id="soundForm">
+        <input type="file" id="soundFiles" accept=".mp3,.wav,.ogg,.webm" multiple>
+        <button type="submit">Añadir sonido</button>
+    </form>
+        <div id="dropdownButton">
+            </div>
             </div>
             <ul id="soundList" style="display: block;"></ul>
             <!-- Muestra la lista de sonidos por defecto 
@@ -403,97 +595,16 @@ keywordToMob:
             </div>
         </div>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                let dropdownButton = document.getElementById('dropdownButton');
-                let dropdownMenu = document.createElement('div');
-                dropdownMenu.id = 'dropdownMenu';
-                dropdownMenu.style.display = 'block';
-
-
-                let soundList = document.getElementById('soundList');
-                for (let i = 0; i < soundList.children.length; i++) {
-                    let listItem = soundList.children[i];
-
-                    let optionDiv = document.createElement('div');
-                    optionDiv.dataset.giftName = listItem.textContent.replace('X', '').replace('Renombrar', '').trim(); // Almacenar el nombre del sonido en un atributo de datos
-
-                    let soundName = document.createElement('span');
-                    soundName.textContent = optionDiv.dataset.giftName;
-
-                    let deleteButton = listItem.querySelector('.deleteButton').cloneNode(true);
-                    deleteButton.addEventListener('click', handleDelete);
-
-                    let renameButton = listItem.querySelector('.renameButton').cloneNode(true);
-                    renameButton.addEventListener('click', handleRename);
-
-                    let playButton = listItem.querySelector('.playButton').cloneNode(true); // Crear el botón de reproducción
-                    playButton.addEventListener('click', function() { // Agregar un controlador de eventos al botón
-                        playSound(optionDiv.dataset.giftName);
-                    });
-
-                    optionDiv.appendChild(soundName);
-                    optionDiv.appendChild(deleteButton);
-                    optionDiv.appendChild(renameButton);
-                    optionDiv.appendChild(playButton); // Agregar el botón de reproducción al div de opción
-
-                    dropdownMenu.appendChild(optionDiv);
-                }
-
-                dropdownButton.appendChild(dropdownMenu);
-                dropdownButton.addEventListener('click', function(event) {
-                    event.stopPropagation();
-                    dropdownMenu.style.display = 'block';
-                });
-
-                let isMenuVisible = true;
-
-                dropdownButton.addEventListener('click', function(event) {
-                    event.stopPropagation();
-                    dropdownMenu.style.display = 'block';
-                    isMenuVisible = true;
-                });
-
-                dropdownButton.addEventListener('dblclick', function(event) {
-                    event.stopPropagation();
-                    dropdownMenu.style.display = 'none';
-                    isMenuVisible = false;
-                });
-
-                document.addEventListener('click', function() {
-                    if (!isMenuVisible) {
-                        dropdownMenu.style.display = 'none';
-                    }
-                });
-            });
-
-            function toggleDropdownMenu() {
-                var dropdownMenu = document.getElementById('dropdownMenu');
-                if (dropdownMenu.style.display === 'none') {
-                    dropdownMenu.style.display = 'block';
-                } else {
-                    dropdownMenu.style.display = 'none';
-                }
-            }
-        </script>
 
     </div>
     <div id="Tab4" class="tabcontent">
-
-        Importa Exporte Settings.Json, actualize la pagina al cargar
         <div>
-        <input type="file" id="importButton">
-        <button onclick="importSettings()">ImportarCONFIG</button>
-        <button id="exportButton" onclick="exportSettings()">ExportarCONFIG</button>
-        <span id="loadingIndicator" style="display: none;">Loading...</span>
-        </div>
-        <div>
-            Crea un overlay, F11 para cerrar
+            Crea un overlay para mostrar en LIVE STUDIO, F11 para cerrar
             <form id="overlayForm">OverlayLink:
                 <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required>ancho:
-                <input type="number" id="widthInput" value="400" name="width" required>alto:
-                <input type="number" id="heightInput" value="400" name="height" required>
-                <button type="submit">Crear Overlay</button>
+                <input type="number" id="widthInput" value="800" name="width" required>alto:
+                <input type="number" id="heightInput" value="800" name="height" required>
+                <button type="submit">Crear Overlay con el tamaño indicado</button>
             </form>
 
             <script>
@@ -527,11 +638,12 @@ keywordToMob:
                         alert('Ocurrió un error al crear el overlay');
                     }
                 });
+                
             </script>
         </div>
 
         <div style="padding-top: 10px;">
-            <input type="text" id="inputest"><button onclick="testOverlay()">testOverlay</button>
+            <input type="text" id="inputest"><button id="testButton" onclick="testOverlay()">testOverlay</button>
             <div class="inputFields">
                 <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GOOO" type="button"></button>
             </div>
@@ -553,7 +665,7 @@ keywordToMob:
                 evt.currentTarget.className += " active";
             }
 
-            // Llama a openTab para mostrar Tab1 por defecto
+            // Llama a openTab para mostrar la pestaña por defecto
             openTab({
                 currentTarget: document.querySelector('.tablinks')
             }, 'Tab1');
@@ -578,6 +690,48 @@ keywordToMob:
                 });
             }
         </script>
+
+    </div>
+    <div id="Tab5" class="tabcontent">
+        <div id="giftContainer" class="gift-container">
+            <!-- Aquí se agregarán dinámicamente los cuadros de regalo -->
+        </div>
+        
+    </div>
+    <div id="Tab6" class="tabcontent">
+
+    </div>
+    <div id="Tab7" class="tabcontent">
+        
+    </div>
+    <script>
+        // Función para guardar el estado de los checkboxes en el almacenamiento local
+        function guardarEstadoCheckboxes() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                localStorage.setItem(checkbox.id, checkbox.checked);
+            });
+        }
+
+        // Función para aplicar el estado guardado de los checkboxes al cargar la página
+        function aplicarEstadoCheckboxes() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                const estadoGuardado = localStorage.getItem(checkbox.id);
+                if (estadoGuardado !== null) {
+                    checkbox.checked = estadoGuardado === 'true';
+                }
+                console.log(estadoGuardado);
+            });
+        }
+
+        // Ejecutar la función para aplicar el estado guardado al cargar la página
+        window.addEventListener('load', aplicarEstadoCheckboxes);
+
+        // Llamar a la función para guardar el estado de los checkboxes antes de salir de la página
+        window.addEventListener('beforeunload', guardarEstadoCheckboxes);
+
+    </script>
 </body>
 
 </html>
