@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikUniverse</title>
+    <title>tiktokLiveApp</title>
     <meta name="description" content="A chat reader for TikTok LIVE utilizing TikTok-Live-Connector and Socket.IO to forward the data to the client. This demo project uses the unofficial TikTok API to retrieve chat comments, gifts and other events from TikTok LIVE.">
     <!-- Content-Security
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://tiktok-chat-reader.zerody.one/ https://tiktok-chat-reader.zerody.one/ wss://irc-ws.chat.twitch.tv http://localhost:3001 http://localhost:3000 https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p77-sign-va.tiktokcdn.com/ https://p19-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-useast2a.tiktokcdn.com/ http://localhost:8081 https://api.streamelements.com https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-va.tiktokcdn.com/ http://localhost:8911; img-src 'self' https://p16-sign-va.tiktokcdn.com/ https://p16-pu-sign-useast8.tiktokcdn-us.com/; media-src 'self' blob:;"> 
@@ -18,8 +18,7 @@ meta
  -->
  <div class="title-bar">
     <h1>tiktokLiveApp</h1>
-    <p>By Melser</p>
-</div>  
+</div>
 </head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -43,7 +42,7 @@ meta
 
 </head>
 <body>
-    <div class="tab-content">
+    <div class="tabs-menu">
         <div id="stateText"></div>
         <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
         <input type="button" id="connectButton" value="Conectar">
@@ -83,8 +82,6 @@ meta
 
     </div>
     <script src="renderer.js"></script>
-
-    <div>
         <!-- Contenido de las pestañas -->
         <div id="Tab1" class="tabcontent">
             <!-- 
@@ -116,8 +113,8 @@ meta
                 si el usuario no tiene puntos no lee</label>
             </div>
             <label class="cyberpunk-checkbox-label">
-            <input type="checkbox" class="cyberpunk-checkbox" id="consoleOff" checked>
-            console.log off</label>
+            <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff" checked>
+            overlay on/off</label>
             <script>
                 function setupLocalStorage(inputElement, storageKey, callback) {
                     const storedValue = localStorage.getItem(storageKey);
@@ -596,79 +593,44 @@ meta
         </div>
 
 
-    </div>
     <div id="Tab4" class="tabcontent">
-        <div>
-            Crea un overlay para mostrar en LIVE STUDIO, F11 para cerrar
-            <form id="overlayForm">OverlayLink:
-                <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required>ancho:
-                <input type="number" id="widthInput" value="800" name="width" required>alto:
-                <input type="number" id="heightInput" value="800" name="height" required>
-                <button type="submit">Crear Overlay con el tamaño indicado</button>
-            </form>
 
-            <script>
-                document.getElementById('overlayForm').addEventListener('submit', async function(event) {
-                    event.preventDefault();
-
-                    const url = document.getElementById('urlInput').value;
-                    const width = document.getElementById('widthInput').value;
-                    const height = document.getElementById('heightInput').value;
-
-                    try {
-                        const response = await fetch('/crear-overlay', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                url,
-                                width,
-                                height
-                            })
-                        });
-
-                        if (response.ok) {
-                            alert('Overlay creado correctamente');
-                        } else {
-                            throw new Error('Error al crear el overlay');
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        alert('Ocurrió un error al crear el overlay');
-                    }
-                });
-                
-            </script>
-        </div>
 
         <div style="padding-top: 10px;">
-            <input type="text" id="inputest"><button id="testButton" onclick="testOverlay()">testOverlay</button>
             <div class="inputFields">
                 <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GOOO" type="button"></button>
             </div>
             <div id="chatbox"></div>
+            <div>
+                <form id="overlayForm">
+                    OverlayLink:
+                    <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required>
+                    <button type="submit">Crear Overlay </button>
+                </form>
+            </div>
         </div>
 
         <script>
             function openTab(evt, tabName) {
-                var i, tabcontent, tablinks;
-                tabcontent = document.getElementsByClassName("tabcontent");
-                for (i = 0; i < tabcontent.length; i++) {
-                    tabcontent[i].style.display = "none";
-                }
-                tablinks = document.getElementsByClassName("tablinks");
-                for (i = 0; i < tablinks.length; i++) {
-                    tablinks[i].className = tablinks[i].className.replace(" active", "");
-                }
-                document.getElementById(tabName).style.display = "block";
-                evt.currentTarget.className += " active";
-            }
-
-            // Llama a openTab para mostrar la pestaña por defecto
-            openTab({
-                currentTarget: document.querySelector('.tablinks')
-            }, 'Tab1');
+                const tabContents = document.querySelectorAll('.tabcontent');
+                const tabLinks = document.querySelectorAll('.tablinks');
+              
+                tabContents.forEach((tabContent) => {
+                  tabContent.hidden = true;
+                });
+              
+                tabLinks.forEach((tabLink) => {
+                  tabLink.classList.remove('active');
+                });
+              
+                document.getElementById(tabName).hidden = false;
+                evt.currentTarget.classList.add('active');
+              }
+              
+              // Llama a openTab para mostrar la pestaña por defecto
+              openTab({
+                currentTarget: document.querySelector('.tablinks'),
+              }, 'Tab1');
         </script>
         <script>
             const uniqueIdInput = document.getElementById('uniqueIdInput');

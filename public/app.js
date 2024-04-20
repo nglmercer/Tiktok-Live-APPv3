@@ -23,26 +23,19 @@ let previousLikeCount = 0;
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
 document.addEventListener('DOMContentLoaded', (event) => {
-
     document.body.className = 'theme-dark';
     window.settings.theme = 'dark'; // Guardar la configuración del tema
-
     const toggleButton = document.getElementById('dn');
+    toggleButton.addEventListener('change', () => {
+        if (toggleButton.checked) {
+            // Si el botón de alternancia está marcado, aplicar el tema oscuro
+            document.body.className = 'theme-dark';
+        } else {
+            // Si el botón de alternancia no está marcado, aplicar el tema claro
+            document.body.className = 'theme-light';
+        }
+    });
 
-    // Check if running in OBS
-    if (window.obsstudio) {
-        document.body.style.backgroundColor = 'transparent';
-    } else {
-        toggleButton.addEventListener('change', () => {
-            if (toggleButton.checked) {
-                // Si el botón de alternancia está marcado, aplicar el tema oscuro
-                document.body.className = 'theme-dark';
-            } else {
-                // Si el botón de alternancia no está marcado, aplicar el tema claro
-                document.body.className = 'theme-light';
-            }
-        });
-    }
 });
 
 $(document).ready(() => {
@@ -62,51 +55,65 @@ let currentUniqueId = null;
 function connect() {
     let uniqueId = window.settings.username || $('#uniqueIdInput').val();
     if (uniqueId !== '') {
-
         $('#stateText').text('Connecting...');
-
+        
         connection.connect(uniqueId, {
-            enableExtendedGiftInfo: true
+            processInitialData: true,
+            enableExtendedGiftInfo: true,
+            enableWebsocketUpgrade: true,
+            requestPollingIntervalMs: 2000,
+            clientParams: {
+                "app_language": "en-US",
+                "device_platform": "web"
+            },
+            requestOptions: {
+                timeout: 5000
+            },
+            websocketOptions: {
+                timeout: 5000
+            }
         }).then(state => {
-            console.log(`Connected to roomId ${state.roomId} updgrade ${state.upgradedToWebsocket}`, state);
-            console.log(`availableGifts ${state.availableGifts[0].name}`, state.availableGifts[0].image.url_list[1]);
+            console.log(`Connected to roomId ${state.roomId} upgraded ${state.upgradedToWebsocket}`, state);
+            console.log(`Available Gifts:`, state.availableGifts);
+            
             // Función para cargar los datos desde el localStorage
-
             availableGiftsimage(state);
             
+            // Enviar al servidor la información de la conexión establecida
             sendToServer('connected', uniqueId);
-            // reset stats
+            
+            // Restablecer estadísticas
             viewerCount = 0;
             likeCount = 0;
             diamondsCount = 0;
             updateRoomStats();
-            const userProfileLink = generateUsernameLink({ uniqueId });
-            // Accede al segundo elemento (posición 1) de la lista url_list y utiliza su valor
-            const userProfileImage = `<img src="${state.roomInfo.cover.url_list[1]}" alt="${uniqueId}" width="50" height="50">`;
             
-            // Crear un contenedor div para la imagen y el enlace
-            const userProfileContainer = `
-                <div class="user-profile-container">
-                    <div class="user-profile-image">${userProfileImage}</div>
-                    <div class="user-profile-link">${userProfileLink}</div>
-                </div>
-            `;
-            $('#stateText').html(userProfileContainer);
-        }).catch(errorMessage => {
-            $('#stateText').text(errorMessage);
-
-            // schedule next try if obs username set
-            if (window.settings.username) {
-                setTimeout(() => {
-                    connect(window.settings.username);
-                }, 30000);
+            // Generar enlace de perfil de usuario
+            const userProfileLink = generateUsernameLink({ uniqueId });
+            
+            // Si hay una imagen de portada de la sala, mostrarla junto con el enlace del perfil de usuario
+            if (state.roomInfo.cover) {
+                const userProfileImage = `<img src="${state.roomInfo.cover.url_list[1]}" alt="${uniqueId}" width="50" height="50">`;
+                const userProfileContainer = `
+                    <div class="user-profile-container">
+                        <div class="user-profile-image">${userProfileImage}</div>
+                        <div class="user-profile-link">${userProfileLink}</div>
+                    </div>
+                `;
+                $('#stateText').html(userProfileContainer);
             }
-        })
-
+        }).catch(errorMessage => {
+            // Manejar el error en caso de que falle la conexión
+            console.error("Error in connection:", errorMessage);
+            // Mostrar el mensaje de error en la interfaz de usuario
+            $('#stateText').text(errorMessage);
+        });
     } else {
-        alert('no username entered');
+        // Mostrar una alerta si no se proporciona un nombre de usuario
+        alert('No username entered');
     }
 }
+
 let globalSimplifiedStates = [];
 
 function availableGiftsimage(state) {
@@ -227,7 +234,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (simplifiedStateJson) {
         const state = JSON.parse(simplifiedStateJson);
         console.log(" recibe state localstorage",state);
-        availableGiftsimage(state);
     }
 });
 
@@ -292,9 +298,6 @@ function addChatItem(color, data, text, summarize) {
     container.animate({
         scrollTop: container[0].scrollHeight
     }, 400);
-    if (text != "welcome") {
-        addOverlayEvent(data, text, color, false);
-    }
     let filterWordsInput = document.getElementById('filter-words').value;
     let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
     let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
@@ -337,17 +340,17 @@ function addChatItem(color, data, text, summarize) {
     for (let word of customFilterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 0) {
-                console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                //console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
             if (userPoints[data.nickname] >= 1) {
                 userPoints[data.nickname]--;
-                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
                 return;
             }
             if (userPoints[data.nickname] >= 30) {
-                userPoints[data.nickname]--;
-                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //userPoints[data.nickname]--;
+                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
             }
         }
     }
@@ -355,17 +358,17 @@ function addChatItem(color, data, text, summarize) {
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 2) {
-                console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                //console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
             if (userPoints[data.nickname] >= 2) {
                 userPoints[data.nickname]--;
-                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
                 return;
             }
             if (userPoints[data.nickname] >= 30) {
                 userPoints[data.nickname]--;
-                console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
             }
         }
     }
@@ -429,8 +432,8 @@ function addChatItem(color, data, text, summarize) {
     let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
     if (filterUsers.includes(lowerCaseUser)) {
         console.log("usuario de WhiteList", lowerCaseUser);
-        obtenerYenviarCommandID({ eventType: 'chat', string: message });
-        playSoundByText(message);
+        enviarCommandID('chat', message);
+    /* */    playSoundByText(message);
         leerMensajes(message);
         enviarMensaje(message);
         return;
@@ -492,14 +495,14 @@ function addChatItem(color, data, text, summarize) {
     if (userpointsCheckbox.checked) {
         //console.log(userpointsCheckbox)
         if (userPoints[data.nickname] <= 0) {
-            console.log('Usuario con 0 puntos,userpointsCheckbox:', data.nickname, userPoints[data.nickname]);
+            //console.log('Usuario con 0 puntos,userpointsCheckbox:', data.nickname, userPoints[data.nickname]);
             return;
         }
     }
 
-    if (text.length <= 10) {
+    if (text.length <= 7) {
         if (userPoints[data.nickname] <= 0) {
-            console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+            //console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             return;
         }
     }
@@ -536,13 +539,13 @@ function addChatItem(color, data, text, summarize) {
 
     if (sendDataCheckbox.checked) {
         if (userPoints[data.nickname] <= 3) {
-            console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+            //console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             return;
         }
         if (nickname !== lastNickname) {
             userPoints[data.nickname] -= 1;
-            obtenerYenviarCommandID({ eventType: 'chat', string: message });
-            lastNickname = nickname
+            enviarCommandID( 'chat', message);
+    /* */        lastNickname = nickname
         }
     }
 }
@@ -563,44 +566,6 @@ let giftCounters = {};
 let lastFilteredPositions = [];
 let lastFilteredPositionIndex = 0;
 
-function testOverlay() {
-    // Obtener el valor del campo de entrada
-    const inputValue = document.getElementById('inputest').value;
-    var overlay = document.createElement('div');
-    overlay.style.position = 'absolute';
-
-    // Dividir el valor del campo de entrada en palabras
-    const words = inputValue.split(' ');
-
-    // Buscar la primera palabra que sea un número
-    let numMessages = 1;
-    const messageWords = [];
-    for (const word of words) {
-        const num = Number(word);
-        if (!isNaN(num)) {
-            numMessages = num;
-        } else {
-            messageWords.push(word);
-        }
-    }
-
-    // Si el número es mayor que 30, limitarlo a 30
-    if (numMessages > 30) {
-        numMessages = 30;
-    }
-
-    // Crear un objeto de datos ficticio para pasar 
-    const fakeData = {
-        profilePictureUrl: 'https://example.com/profile.jpg' // Reemplazar con una URL de imagen real
-    };
-
-    // Llamar  tantas veces como numMessages
-    const message = messageWords.join(' ');
-    for (let i = 0; i < numMessages; i++) {
-        const messageWithNumber = `${message} ${i + 1}`;
-        addOverlayEvent(fakeData, messageWithNumber, 'black', false, 1);
-    }
-}
 let userStats = {};
 
 connection.on('like', (data) => {
@@ -619,14 +584,14 @@ connection.on('like', (data) => {
 
     // Check if user's like count has reached the milestone
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
-    while (sendDataCheckbox.checked && userStats[data.uniqueId].likes >= userStats[data.uniqueId].milestone && userStats[data.uniqueId].milestone <= 300) {
+    while (sendDataCheckbox.checked && userStats[data.uniqueId].likes >= userStats[data.uniqueId].milestone && userStats[data.uniqueId].milestone <= 500) {
         const milestoneLikes = `${userStats[data.uniqueId].milestone}LIKES`;
 
         console.log('Milestone Likes:', milestoneLikes);
-        obtenerYenviarCommandID({ eventType: 'likes', string: milestoneLikes });
+        enviarCommandID( 'likes', `${userStats[data.uniqueId].milestone}LIKES`);
 
         // Send data or data.uniqueId and $ likes
-        addOverlayEvent(data, `${userStats[data.uniqueId].milestone} likes`, 'blue', false, 1);
+        addOverlayEvent('likes', data, `${userStats[data.uniqueId].milestone} likes`, 'blue', false, 1);
         handleEvent2('likes', data);
         userStats[data.uniqueId].likes -= userStats[data.uniqueId].milestone; // Deduct milestone likes from user's like count
         userStats[data.uniqueId].milestone += 50; // Increase the milestone
@@ -639,23 +604,32 @@ connection.on('like', (data) => {
 });
 
 let overlaypage = false;
-
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('testButton').addEventListener("click", function() {
-        const customEvent = new CustomEvent('pageAB', { detail: 'Hola' });
-        //pageB.dispatchEvent(customEvent);
+    document.getElementById('overlayForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const url = document.getElementById('urlInput').value;
+        const width = "100%";
+        const height = "100%";
+        addOverlayEvent('Newiframe', { url, width, height });        
     });
+    
 });
 
-function addOverlayEvent(data, text, color, isGift, repeatCount) {
-    if (!overlaypage) {
-        pageB = window.open('index2.html', 'transparent', 'top=1000,left=1000,width=auto,height=auto,frame=false,transparent=true,nodeIntegration=no');
-        //pageB = window.open('index2.html', 'transparent', 'top=500,left=200,width=auto,height=auto,frame=true,transparent=false,nodeIntegration=no');
-        overlaypage = true;
-    }
-    const customEvent = new CustomEvent('pageAB', { detail: { data, text, color, isGift, repeatCount } }); // Corrige la forma en que se crea el evento personalizado
-    pageB.dispatchEvent(customEvent);
+
+function addOverlayEvent(eventType, data) {
+        let overlayOff = document.getElementById('overlayOff');
+        if (overlayOff.checked) {
+            let overlayPage = null;
+            if (!overlayPage || overlayPage.closed) {
+                overlayPage = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,alwaysOnTop=true,nodeIntegration=no');
+                }
+            const event = new CustomEvent('pageAB', { detail: { eventType, indexData: data }});
+            overlayPage.dispatchEvent(event);
+        }
 }
+
+//        pageB = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,nodeIntegration=no');
+//        pageB = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=true,transparent=false,nodeIntegration=no');
 
 // Resto del código...
 /** ID[${data.giftId}] id regalo
@@ -743,6 +717,7 @@ connection.on('member', (data) => {
     setTimeout(() => {
         joinMsgDelay -= addDelay;
         addChatItem('#CDA434', data, 'welcome', true);
+        addOverlayEvent('welcome', data);
         message = data.uniqueId;
         handleEvent2('welcome', data, message, null, data);
     }, joinMsgDelay);
@@ -763,7 +738,7 @@ connection.on('chat', (data) => {
             // Si no es un número válido, utilizar el valor por defecto de 5
             userPoints[data.nickname] = 10;
         }
-        console.log("puntos asignados",data.nickname,userPoints[data.nickname]);
+        //console.log("puntos asignados",data.nickname,userPoints[data.nickname]);
     }
     let message = data.comment; 
     let nameuser = data.uniqueId; 
@@ -775,6 +750,8 @@ connection.on('chat', (data) => {
     let filterUsersInput = document.getElementById('filter-users').value;
     let lowerCaseUser = nameuser.toLowerCase();
     let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
+    addOverlayEvent('chat', data);
+
     if (filterUsers.includes(lowerCaseUser)) {
         console.log("WhiteList", lowerCaseUser);
         addChatItem('', data, message);
@@ -824,9 +801,9 @@ connection.on('gift', (data) => {
         //console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
     }
     if (sendDataCheckbox.checked) {
-    obtenerYenviarCommandID({ eventType: 'gift', string: data.giftName });
+    enviarCommandID( 'gift', data)/* */;
     }
-    addOverlayEvent(data, data.giftPictureUrl, 'red', true, data.repeatCount);
+    addOverlayEvent('gift',data, data.giftPictureUrl, 'red', true, data.repeatCount);
     handleEvent('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
     sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
 
@@ -855,9 +832,10 @@ connection.on('social', (data) => {
         message = `${data.nickname} te sige`;
         if (sendDataCheckbox.checked) {
             if (!seguidores.has(data.nickname)) {
-                obtenerYenviarCommandID({ eventType: 'follow', string: `follow` });
-                handleEvent2('follow', data);
+                enviarCommandID( 'follow', data);
+ /* */               handleEvent2('follow', data);
                 sendToServer('follow', data);
+                addOverlayEvent('follow', data);
                 console.log(`${data.nickname} es un gato mas`);
                 seguidores.add(data.nickname);
                 // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
@@ -870,9 +848,10 @@ connection.on('social', (data) => {
         color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
         message = `${data.nickname} compartió el directo`;
         handleEvent2('share', data);
+        addOverlayEvent('share', data);
         if (sendDataCheckbox.checked) {
-            obtenerYenviarCommandID({ eventType: 'share', string: `share` });
-        }
+            enviarCommandID( 'share', data);
+   /* */     }
     } else {
         color = '#CDA434'; // Color por defecto
         message = data.label.replace('{0:user}', '');
@@ -947,7 +926,7 @@ if (data.battleStatus === 1) {
 
   
 connection.on('liveIntro', (msg) => {
-    console.log('User Details:', msg.userDetails);
+    console.log('User Details:', msg.description);
     console.log('Nickname:', msg.nickname);
     console.log('Unique ID:', msg.uniqueId);
 });
@@ -965,127 +944,128 @@ connection.on('envelope', data => {
 connection.on('subscribe', (data) => {
     console.log(`${data.uniqueId} subscribe!`);
 })
+let comandosConNombres = null;
 
-function obtenerYenviarCommandID(event) {
-    const { eventType, likes, giftname, message, follow, share, string } = event;
-    if (string && string.length > 20) {
-        console.error('El string es demasiado largo:', string);
-        return;
+async function obtenerPaginaDeComandos() {
+    if (comandosConNombres) {
+        // Si ya tenemos la lista de comandos, simplemente la devolvemos
+        return comandosConNombres;
     }
 
     const listaComandos = [];
     const pageSize = 100;
     let skip = 0;
 
+    try {
+        const response = await fetch(`http://localhost:8911/api/commands?skip=${skip}&pageSize=${pageSize}`);
+        const data = await response.json();
 
-    function obtenerPaginaDeComandos() {
-        fetch(`http://localhost:8911/api/v2/commands?skip=${skip}&pageSize=${pageSize}`)
-            .then(response => response.json())
-            .then(data => {
-                if (!Array.isArray(data.Commands)) {
-                    throw new Error('La respuesta no contiene un array de comandos');
+        if (!Array.isArray(data)) {
+            throw new Error('La respuesta no contiene un array de comandos');
+        }
+
+        const comandos = data;
+        listaComandos.push(...comandos);
+
+        if (comandos.length === pageSize) {
+            skip += pageSize;
+            // Recursivamente obtenemos más comandos si es necesario
+            return obtenerPaginaDeComandos();
+        } else {
+            listaComandos.forEach(cmd => {
+                if (!cmd || cmd < 1) {
+                    console.error('Comando ignorado:', cmd);
+                    return;
                 }
-
-                const comandos = data.Commands;
-                listaComandos.push(...comandos);
-
-                if (comandos.length === pageSize) {
-                    skip += pageSize;
-                    obtenerPaginaDeComandos();
-                } else {
-                    listaComandos.forEach(cmd => {
-                        if (!cmd || cmd < 1) {
-                            console.error('Comando ignorado:', cmd);
-                            return;
-                        }
-                    });
-
-                    const MAX_COMMANDS = 50;
-                    let filterCondition;
-                    if (string) {
-                        filterCondition = cmd => {
-                            if (eventType === 'gift') {
-                                console.log('Filtrando comandos para giftname. Valor de string:', string); // Nuevo registro de consola
-                                return cmd.Name.toLowerCase().includes(string.toLowerCase());
-                            } else {
-                                return cmd.Name.toLowerCase().split(' ').includes(string.toLowerCase());
-                            }
-                        };
-                    } else {
-                        filterCondition = () => true;
-                    }
-
-                    const comandosEncontrados = listaComandos.filter(filterCondition);
-                    if (comandosEncontrados.length === 0) {
-                        console.error(`No hay comando con: ${string}`);
-                        return;
-                    }
-
-                    const comandosLimitados = comandosEncontrados.slice(0, MAX_COMMANDS);
-
-                    let index = 0;
-                    let ultimoComandoEnviado = "";
-
-                    function enviarcomandoConRetraso() {
-                        if (index < comandosLimitados.length) {
-                            const comando = comandosLimitados[index];
-                            if (!comando || comando < 1 || !comando.Name) {
-                                console.error('Comando ignorado:', cmd);
-                                return;
-                            }
-                            if (typeof comando.Name !== 'string') {
-                                console.error('El nombre del comando no es un string');
-                                return;
-                            }
-                            if (comando.Name === ultimoComandoEnviado && eventType !== 'gift') {
-                                console.error('El comando no puede ser repetido:', comando.Name);
-                                return;
-                            }
-                            let delay;
-                            if (comandosLimitados.length > 20) {
-                                delay = comando.Name === ultimoComandoEnviado ? 20000 : 10000;
-                            } else if (comandosLimitados.length > 10) {
-                                delay = comando.Name === ultimoComandoEnviado ? 15000 : 7000;
-                            } else {
-                                delay = 0;
-                            }
-
-                            setTimeout(() => {
-                                fetch(`http://localhost:8911/api/commands/${comando.ID}`, {
-                                        method: "POST",
-                                        headers: {
-                                            "Content-Type": "application/json"
-                                        },
-                                        body: JSON.stringify({
-                                            id: comando.ID,
-                                            name: comando.Name,
-                                        })
-                                    })
-                                    .then(response => {
-                                        if (!response.ok) {
-                                            throw new Error(`HTTP error! status: ${response.status}`);
-                                        }
-                                        ultimoComandoEnviado = comando.Name;
-                                        index++;
-                                        enviarcomandoConRetraso();
-                                    })
-                                    .catch(error => {
-                                        console.error('Error al enviar el comando:', error,comando.ID);
-                                        // Si el servidor responde con un error 404, incrementa el índice y llama a enviarcomandoConRetraso
-                                    });
-                            }, delay);
-                        }
-                    }
-                    enviarcomandoConRetraso();
-                }
-            })
-            .catch(error => {
-                console.error('Error al obtener la página de comandos:', error);
             });
+
+            const MAX_COMMANDS = 100;
+            const comandosLimitados = listaComandos.slice(0, MAX_COMMANDS);
+            
+            // Crear una lista de objetos con el ID y el nombre de cada comando
+            comandosConNombres = comandosLimitados.map(cmd => ({
+                commandId: cmd.ID,
+                commandName: cmd.Name,
+                Type: cmd.Type,
+                IsEnabled: cmd.IsEnabled,
+                Unlocked: cmd.Unlocked,
+                GroupName: cmd.GroupName
+            }));
+
+            // Almacenar la lista de comandos obtenida
+            return comandosConNombres;
+        }
+    } catch (error) {
+        console.error('Error al obtener la página de comandos:', error);
+        throw error;
+    }
+}
+
+let ultimoEnvio = 0;
+
+async function enviarCommandID(eventType, data) {
+    let Command;
+    if (eventType === "gift") {
+        Command = data.giftName;
+    } else if (eventType === "likes" || eventType === "chat") {
+        Command = data;
+    } else if (eventType === "follow") {
+        Command = "FOLLOW";
+    } else if (eventType === "share") {
+        Command = "share";
     }
 
-    obtenerPaginaDeComandos();
+    // Obtener la lista de comandos si aún no la tenemos
+    comandosConNombres = comandosConNombres || await obtenerPaginaDeComandos();
+
+    console.log('Lista de comandos recibida:', comandosConNombres);
+
+    // Buscar el comando correspondiente al commandName
+    const comandoEncontrado = comandosConNombres.find(comando => {
+        const commandNameParts = comando.commandName.toLowerCase().split(' ');
+        return commandNameParts.includes(Command.toLowerCase());
+    });
+
+    // Verificar si se encontró el comando
+    if (comandoEncontrado) {
+        const tiempoActual = Date.now();
+        const tiempoDiferencia = tiempoActual - ultimoEnvio;
+        const tiempoRestante = Math.max(0, 5000 - tiempoDiferencia); // 5000 ms = 5 segundos
+
+        setTimeout(() => {
+            fetch(`http://localhost:8911/api/commands/${comandoEncontrado.commandId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    id: comandoEncontrado.commandId,
+                    name: comandoEncontrado.commandName,
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                console.log('Comando enviado:', comandoEncontrado.commandName);
+                ultimoEnvio = Date.now();
+            })
+            .catch(error => {
+                console.error('Error al enviar el comando:', error, comandoEncontrado.commandId);
+            });
+        }, tiempoRestante);
+    } else {
+        console.error('No se encontró un comando con el nombre:', Command);
+    }
 }
+
+
+
+// Ejemplo de uso:
+obtenerPaginaDeComandos(comandos => {
+    // Aquí puedes hacer lo que quieras con la lista de comandos y nombres
+    console.log('Lista de comandos y nombres:', comandos);
+});
 
 var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;
 
@@ -2062,13 +2042,13 @@ function sendReplacedCommand(replacedCommand) {
     });
 }
 
-async function sendToServer(eventType, data, text, color, msg, message) {
+async function sendToServer(eventType, data, color, msg, message) {
     fetch('/api/receive1', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ eventType, data, text, color, msg, message }),
+        body: JSON.stringify({ eventType, data, color, msg, message }),
       })
       .then(response => response.json())
       .then(data => {

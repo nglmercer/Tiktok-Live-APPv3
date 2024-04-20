@@ -2,7 +2,6 @@
  * Envoltorio para conexión TikTok del lado del cliente a través de Socket.IO
  * Con funcionalidad de reconexión.
  */
-
 class TikTokIOConnection {
     constructor(backendUrl) {
         this.socket = io(backendUrl);
@@ -22,13 +21,8 @@ class TikTokIOConnection {
             console.warn("Socket disconnected!");
         })
 
-        this.socket.on('streamEnd', (actionId) => {
-            if (actionId === 3) {
-                console.warn('Stream ended by user');
-            }
-            if (actionId === 4) {
-                console.warn('Stream ended by platform moderator (ban)');
-            }
+        this.socket.on('streamEnd', () => {
+            console.warn("LIVE has ended!");
             this.uniqueId = null;
         })
 
@@ -52,7 +46,7 @@ class TikTokIOConnection {
 
             setTimeout(() => {
                 reject('Connection Timeout');
-            }, 30000)
+            }, 15000)
         })
     }
 

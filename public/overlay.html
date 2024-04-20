@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+  <!-----<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">----->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Overlay Live</title>
   <link rel="stylesheet" href="https://unpkg.com/xp.css" />
@@ -11,8 +11,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="overlay.js"></script>
+  <script src="connection.js"></script>
   <link rel="stylesheet" href="overlay.css">
 
 <style>
@@ -122,6 +122,7 @@
 <body>
 <div id="overlayEventContainer"></div>
     <div id="iframeContainer"></div>
+    <iframe id="iframeContainerDefault" src="http://localhost:8111/overlay/" style="position: absolute; pointer-events: none; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
 
 
     <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 100%; position: absolute; background: transparent;"></div>

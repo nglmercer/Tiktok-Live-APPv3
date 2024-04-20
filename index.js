@@ -73,76 +73,7 @@ app.on('ready', () => {
   let disconnect = false;
   app1.use(cors());
   app1.use(express.json());
-  const ventanaAbierta = store.get('ventanaAbierta');
-
-  let overlayWindow;
-  const url = store.get('url');
-  if (ventanaAbierta) {
-      createOverlay(url);
-  } else {
-  }
-
-
-  app1.post('/crear-overlay', (req, res) => {
-    store.set('ventanaAbierta', true);
-
-    const { url, width, height } = req.body;
-    createOverlay(url, width, height);
-    res.status(200).json({ message: 'Overlay creado correctamente' });
-  });
-
-  function createOverlay(url, width , height ) {
-    store.set('ventanaAbierta', true);
-
-    overlayWindow = new BrowserWindow({
-      width: parseInt(width),
-      height: parseInt(height),
-      frame: false,
-      transparent: true,
-      alwaysOnTop: true,
-      webPreferences: {
-        nodeIntegration: true
-      }
-    });
-    
-    overlayWindow.loadURL(url);
-    overlayWindow.webContents.on('did-finish-load', () => {
-      overlayWindow.webContents.insertCSS(`
-        #draggable-bar {
-          -webkit-app-region: drag;
-          width: 100%;
-          height: 20px;
-          background-color: rgba(0, 0, 0, 0.3);
-          position: fixed;
-          top: 0;
-          left: 0;
-          z-index: 9999;
-        }
-      `);
   
-      overlayWindow.webContents.executeJavaScript(`
-        const draggableBar = document.createElement('div');
-        draggableBar.id = 'draggable-bar';
-        document.body.appendChild(draggableBar);
-      `);
-    });
-    overlayWindow.on('closed', () => {
-      if (mainWindow) {
-      store.set('ventanaAbierta', false);
-      }
-      overlayWindow = null;
-    });
-
-    globalShortcut.register('F11', () => {
-      if (overlayWindow && !overlayWindow.isDestroyed()) {
-        store.set('ventanaAbierta', false);
-        overlayWindow.close();
-      }
-    });
-
-    // Guardar la URL en localStorage
-      store.set('url', url);
-  }
   let commandCount = 0;
   let lastMinuteTimestamp = Date.now();
   mainWindow.webContents.setFrameRate(60)
@@ -230,6 +161,27 @@ app.on('ready', () => {
     }
   
     res.json({ message: 'Datos recibidos receive1' });
+  });
+  app1.get('/api/send1', (req, res) => {
+    const { eventType, data } = req.body;
+  
+    switch (eventType) {
+      case 'chat':
+
+        break;
+      case 'gift':
+
+        break;
+      case 'social':
+
+        break;
+      case 'streamEnd':
+        break;
+      default:
+        console.log(`Evento desconocido: ${eventType}`);
+    }
+  
+    res.json();
   });
   app1.post('/api/create', (req, res) => {
     const { eventType, data } = req.body;
@@ -400,88 +352,139 @@ app.on('ready', () => {
   const httpServer = createServer(app1);
   const io = new Server(httpServer, {
     cors: {
-      origin: '*'
+      origin: '*',
     }
   });
+  
 
 
   // Abre las herramientas de desarrollo de Electron (opcional)
   app1.use(express.static(path.join(__dirname, 'public')));
 
+  let connectionCache = {};
+  const overlayNamespace = io.of('/overlay');
 
-  
   io.on('connection', (socket) => {
-      let tiktokConnectionWrapper;
+    let tiktokConnectionWrapper;
 
-      console.info('New connection from origin', socket.handshake.headers['origin'] || socket.handshake.headers['referer']);
+    console.info('New connection from origin', socket.handshake.headers['origin'] || socket.handshake.headers['referer']);
 
-      socket.on('setUniqueId', (uniqueId, options) => {
+    socket.on('setUniqueId', (uniqueId, options) => {
 
-          // Prohibit the client from specifying these options (for security reasons)
-          if (typeof options === 'object' && options) {
-              delete options.requestOptions;
-              delete options.websocketOptions;
-          } else {
-              options = {};
-          }
+        // Prohibit the client from specifying these options (for security reasons)
+        if (typeof options === 'object' && options) {
+            delete options.requestOptions;
+            delete options.websocketOptions;
+        } else {
+            options = {};
+        }
 
-          // Check if rate limit exceeded
-          if (process.env.ENABLE_RATE_LIMIT && clientBlocked(io, socket)) {
-              socket.emit('tiktokDisconnected', 'You have opened too many connections or made too many connection requests. Please reduce the number of connections/requests or host your own server instance. The connections are limited to avoid that the server IP gets blocked by TokTok.');
-          }
-          // Connect to the given username (uniqueId)
-          try {
-              tiktokConnectionWrapper = new TikTokConnectionWrapper(uniqueId, options, true, {
-                processInitialData: false,
-                enableExtendedGiftInfo: true,
-                enableWebsocketUpgrade: false,
-                requestPollingIntervalMs: 2000,
-                clientParams: {
-                    "app_language": "en-US",
-                    "device_platform": "web"
-                },
-                requestOptions: {
-                    timeout: 5000
-                },
-                websocketOptions: {
-                    timeout: 5000
-                }
-              });
-              tiktokConnectionWrapper.connect();
-          } catch (err) {
-              socket.emit('tiktokDisconnected', err.toString());
-              socket.emit('tiktokDisconnected', ('Failed to connect', err));
-          }
+        // Session ID in .env file is optional
+        if (process.env.SESSIONID) {
+            options.sessionId = process.env.SESSIONID || undefined;
+            console.info('Using SessionId');
+        }
 
-          // Redirect wrapper control events once
-          tiktokConnectionWrapper.once('connected', state => socket.emit('tiktokConnected', state));
-          tiktokConnectionWrapper.once('disconnected', reason => socket.emit('tiktokDisconnected', reason));
+        // Check if rate limit exceeded
+        if (process.env.ENABLE_RATE_LIMIT && clientBlocked(io, socket)) {
+            socket.emit('tiktokDisconnected', 'You have opened too many connections or made too many connection requests. Please reduce the number of connections/requests or host your own server instance. The connections are limited to avoid that the server IP gets blocked by TokTok.');
+            return;
+        }
 
-          // Notify client when stream ends
-          tiktokConnectionWrapper.connection.on('streamEnd', () => socket.emit('streamEnd'));
+        // Connect to the given username (uniqueId)
+        try {
+            tiktokConnectionWrapper = new TikTokConnectionWrapper(uniqueId, options, true);
+            tiktokConnectionWrapper.connect();
+        } catch (err) {
+            socket.emit('tiktokDisconnected', err.toString());
+            return;
+        }
 
-          // Redirect message events
-          tiktokConnectionWrapper.connection.on('roomUser', msg => socket.emit('roomUser', msg));
-          tiktokConnectionWrapper.connection.on('member', msg => socket.emit('member', msg));
-          tiktokConnectionWrapper.connection.on('chat', msg => socket.emit('chat', msg));
-          tiktokConnectionWrapper.connection.on('gift', msg => socket.emit('gift', msg));
-          tiktokConnectionWrapper.connection.on('social', msg => socket.emit('social', msg));
-          tiktokConnectionWrapper.connection.on('like', msg => socket.emit('like', msg));
-          tiktokConnectionWrapper.connection.on('questionNew', msg => socket.emit('questionNew', msg));
-          tiktokConnectionWrapper.connection.on('websocketConnected', msg => socket.emit('websocketConnected', msg));
-          tiktokConnectionWrapper.connection.on('linkMicBattle', msg => socket.emit('linkMicBattle', msg));
-          tiktokConnectionWrapper.connection.on('linkMicArmies', msg => socket.emit('linkMicArmies', msg));
-          tiktokConnectionWrapper.connection.on('liveIntro', msg => socket.emit('liveIntro', msg));
-          tiktokConnectionWrapper.connection.on('emote', msg => socket.emit('emote', msg));
-          tiktokConnectionWrapper.connection.on('envelope', msg => socket.emit('envelope', msg));
-          tiktokConnectionWrapper.connection.on('subscribe', msg => socket.emit('subscribe', msg));
-      });
+      // Escuchar eventos de conexión en el nuevo espacio de nombres
+      overlayNamespace.on('connection', (socket) => {console.info('New connection to overlay from origin', socket.handshake.headers['origin'] || socket.handshake.headers['referer']);});
+      // Redirect wrapper control events once
+      tiktokConnectionWrapper.once('connected', state => {
+        socket.emit('tiktokConnected', state); overlayNamespace.emit('tiktokConnected', state); });
+    
+    tiktokConnectionWrapper.once('disconnected', reason => {
+        socket.emit('tiktokDisconnected', reason); overlayNamespace.emit('tiktokDisconnected', reason); });
+    
+    // Notify client when stream ends
+    tiktokConnectionWrapper.connection.on('streamEnd', () => {
+        socket.emit('streamEnd'); overlayNamespace.emit('streamEnd'); });
+    
+    // Redirect message events
+    tiktokConnectionWrapper.connection.on('roomUser', msg => {
+        socket.emit('roomUser', msg); overlayNamespace.emit('roomUser', msg); });
+    
+    tiktokConnectionWrapper.connection.on('member', msg => {
+        socket.emit('member', msg); overlayNamespace.emit('member', msg); });
+// Redirect message events
+tiktokConnectionWrapper.connection.on('chat', msg => {
+    socket.emit('chat', msg);overlayNamespace.emit('chat', msg);});
 
-      socket.on('disconnect', () => {
-          if (tiktokConnectionWrapper) {
-              tiktokConnectionWrapper.disconnect();
-          }
-      });
+tiktokConnectionWrapper.connection.on('gift', msg => {
+    socket.emit('gift', msg);overlayNamespace.emit('gift', msg);});
+
+tiktokConnectionWrapper.connection.on('social', msg => {
+    socket.emit('social', msg);overlayNamespace.emit('social', msg);});
+
+tiktokConnectionWrapper.connection.on('like', msg => {
+    socket.emit('like', msg);overlayNamespace.emit('like', msg);});
+
+tiktokConnectionWrapper.connection.on('questionNew', msg => {
+    socket.emit('questionNew', msg);overlayNamespace.emit('questionNew', msg);});
+
+tiktokConnectionWrapper.connection.on('websocketConnected', msg => {
+    socket.emit('websocketConnected', msg);overlayNamespace.emit('websocketConnected', msg);});
+
+tiktokConnectionWrapper.connection.on('linkMicBattle', msg => {
+    socket.emit('linkMicBattle', msg);overlayNamespace.emit('linkMicBattle', msg);});
+
+tiktokConnectionWrapper.connection.on('linkMicArmies', msg => {
+    socket.emit('linkMicArmies', msg);overlayNamespace.emit('linkMicArmies', msg);});
+
+tiktokConnectionWrapper.connection.on('liveIntro', msg => {
+    socket.emit('liveIntro', msg);overlayNamespace.emit('liveIntro', msg);});
+
+tiktokConnectionWrapper.connection.on('emote', msg => {
+    socket.emit('emote', msg);overlayNamespace.emit('emote', msg);});
+
+tiktokConnectionWrapper.connection.on('envelope', msg => {
+    socket.emit('envelope', msg);overlayNamespace.emit('envelope', msg);});
+
+tiktokConnectionWrapper.connection.on('subscribe', msg => {
+    socket.emit('subscribe', msg);overlayNamespace.emit('subscribe', msg);});
+
+    
+  });
+
+  socket.on('disconnect', () => {
+      if (tiktokConnectionWrapper) {
+          tiktokConnectionWrapper.disconnect();
+      }
+  });
+// Define una función para enviar todos los datos al frontend
+function sendAllDataToClients(io, connectionCache) {
+    const allData = [];
+    for (const uniqueId in connectionCache) {
+        const connectionWrapper = connectionCache[uniqueId];
+        const state = connectionWrapper.connection.getState();
+        allData.push({
+            uniqueId: uniqueId,
+            state: state,
+            storedEvents: connectionWrapper.connection.storedEvents
+        });
+    }
+    // Emitir los datos a todos los clientes conectados
+    io.emit('allData', allData);
+}
+
+// Ejecutar la función en intervalos regulares (por ejemplo, cada 5 segundos)
+setInterval(() => {
+    sendAllDataToClients(io, connectionCache);
+}, 5000);
+
   });
   httpServer.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {

@@ -1,14 +1,25 @@
 body {
     font-family: Arial, Helvetica, sans-serif;
+    margin-top: 20px;
     font-weight: bold;
     font-size: 1.7em;
     transition: background-color 2s ease;
     cursor: auto;
-    overflow-x: hidden;
-    overflow-y: auto;
-    scrollbar-color: rgba(80, 80, 80, 0.2) rgba(80, 80, 80, 0.2);
+    width: 99%;
+    height: 99%;
+    overflow: hidden;
     background: none;
 }
+::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  /* Personalizar el pulgar */
+  ::-webkit-scrollbar-thumb {
+    width: 10px;
+    background-image: linear-gradient(to bottom, rgb(255, 0, 200), #00f);
+  }
+  
 #createBotForm {
     color: rgb(89, 0, 255); rgb(0, 191, 255)
   }
@@ -19,7 +30,7 @@ body {
 
 .title-bar {
     background: #fcfcfcec;
-    position: fixed;
+    position: fixed; 
     -webkit-user-select: none;
     -webkit-app-region: drag;
     height: 30px;
@@ -34,16 +45,11 @@ body {
     font-weight: bold;
     margin: 0;
   }
-  .title-bar p {
-    display: absolute;
+  .title-bar h2 {
     font-size: 10px;
   }
 
-.title-bar .button {
-}
 
-.title-bar .button.close {
-}
 .button.close {
     position: fixed;
     top: -1px;
@@ -60,56 +66,63 @@ body {
     background-color: rgb(134, 134, 134);
 }
   
-.tab-content {
-    position: fixed;
-    top: 50px;
-    left: 0;
-    display: flex;
-    flex-direction: column;
+.tabs-menu {
+    margin-top: 20px;
+    float: inline-start;
+    padding-right: 1.6rem;
+    width: 170px;
+    max-height: 100dvh; /* ajusta la altura máxima del contenedor */
+    overflow-x: hidden;
 }
-
-
-.tab-content button {
+.tabs-menu button {
+    box-sizing: content-box;
     background-color: inherit;
-    max-width: calc(170px + 1%);
-    border: none;
-    outline: none;
-    padding: 14px 16px;
+    width: inherit;
     font-size: 18px;
     color: rgb(204, 204, 204);
 }
-
-.tab-content button:after {
+:root {
+    --primary-color: rgb(204, 204, 204);
+    --secondary-color: rgb(139, 139, 139);
+    --accent-color: rgb(154, 0, 108);
+    --button-padding: 14px 16px;
+    --button-font-size: 18px;
+  }
+.tabs-menu button:after {
     content: "";
     pointer-events: none;
     width: 0%;
     height: 2px;
+    transition: width 0.3s ease;
+  }
+  
+  .tabs-menu button:hover {
+    background-color: var(--primary-color)!important;
+  }
+  
+  .tabs-menu button.active {
+    background-color: var(--secondary-color);
+    color: var(--accent-color);
+  }
+  ul#soundList {
+    font-size: 1.5rem;
+    margin: 0.2rem;
+    padding: 0.2rem;
 }
+span {
+    font-size: 1.5rem;
 
-.tab-content button.active {
-    background-color: rgb(139, 139, 139);
-    color: rgb(154, 0, 108)
 }
-
 .tabcontent {
-    margin-left: calc(170px + 1%);
-    margin-top: calc(20px + 1%);
-}
-
-::-webkit-scrollbar {
-    width: auto;
-}
-
-::-webkit-scrollbar-thumb {
-    background: transparent; /* Set the color of the scrollbar handle */
-    border-radius: 10px; /* Optional: Add rounded corners to the handle */
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #ae00ff00; /* Set a different color when the handle is hovered */
-}
+    flex-direction: row;
+    align-items: flex-start; /* ajusta la altura de los elementos */
+    overflow-x: hidden; 
+    padding: 20px;
+    max-height: 100dvh; /* ajusta la altura máxima del contenedor */
+  }
 
 button {
-    padding: 0.55em;
+    box-sizing: content-box;
     min-height: 35px;
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
@@ -141,7 +154,8 @@ button:hover {
 }
 
 input[type="button"] {
-    max-width: calc(170px + 1%);
+    box-sizing: content-box;
+    width: 10.4rem;
     height: 30px;
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
@@ -151,6 +165,7 @@ input[type="button"] {
     font-weight: bolder;
     font-size: 15px;
     transition: background-color .3s ease-in-out;
+    box-sizing: content-box;
 }
 input[type="checkbox"] {
 display: grid;  
@@ -162,6 +177,7 @@ input[type="text"] {
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
     background-color: #5e4dcd00;
+    box-sizing: content-box;
 }
 #uniqueIdInput{
     height: 30px;
@@ -230,7 +246,8 @@ a {
 
 /* Estilos para la imagen de perfil */
 .user-profile-image img {
-    width: 140px; /* Ancho deseado de la imagen */
+    box-sizing: border-box;
+    width: 100%;
     height: 140px; /* Altura deseada de la imagen */
 }
 
@@ -241,8 +258,9 @@ a {
 
 
 #stateText {
-    font-size: 24px; /* Tamaño de fuente deseado */
-    /* Puedes agregar más estilos según sea necesario */
+    text-wrap: wrap;
+    text-align: center;
+    padding: 0.2rem;
 }
 
 /* Estilos para el enlace de perfil */
@@ -262,7 +280,7 @@ a {
 }
 
 .gift-box img {
-    max-width: 120px; /* Ajusta el tamaño según sea necesario */
+    max-width: 90%; /* Ajusta el tamaño según sea necesario */
 }
 
 .containerheader {
@@ -296,19 +314,7 @@ a {
     padding: 10px; /* Espaciado interior */
 }
 /* Estilos para el botón de cerrar */
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
 
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
-    cursor: pointer;
-}
 .event[data-type="gift"][data-name="default"] > div,
 .event[data-type="gift"][data-name="default"] > .eventInput {
     display: none;
@@ -348,14 +354,16 @@ a {
     min-width: 400px;
     max-height: 600px;
     max-width: 1000px;
-    overflow: auto;
+    overflow-x: hidden;
 }
 
 .giftcontainer {
+    margin: 10px 0; /* Add some spacing between gift items */
+    padding: 10px; 
     min-width: 400px;
     max-height: 600px;
     max-width: 1000px;
-    overflow: auto;
+    overflow-x: hidden;
 }
 
 @media (orientation: portrait) {
@@ -384,10 +392,9 @@ a {
 
 .miniprofilepicture,
 .gifticon {
-    border: 5px solid #f09e0500;
-    box-shadow: 0 0 20px rgba(166, 5, 240, 0.7);
-    animation: pulse 2s infinite; /* Adjust the animation duration as needed */
-    max-width: 50px; /* Increase the max-width to make the images larger */
+    box-sizing: border-box;
+    width: 50px;
+    max-width: 100%; /* Increase the max-width to make the images larger */
     height: auto; /* Ensure responsive images */
 }
 .thumbnail-img {
@@ -537,13 +544,13 @@ audio .mask-custom {
 audio {
     position: relative;
     transition: 10s;
-    width: 200px; /* Nueva altura cuando se hace hover */
+    width: 220px; /* Nueva altura cuando se hace hover */
     height: 43px;
-    left: -15px;
+    left: -20px;
   }
   audio:hover {
     transition: 2s;
-    width: 250px; /* Nueva altura cuando se hace hover */
+    width: 220px; /* Nueva altura cuando se hace hover */
 }
 audio::-webkit-media-controls-play-button {}
 
@@ -713,9 +720,10 @@ input:checked+.toggle .toggle__handler .crater {
 
 
 .playButton {
-    padding: 0;
+    top: -8px;
     width: 40px;
-    height: 35px;
+    height: 40px;
+ 
     color: #f1f1f1;
     border: 1px solid #3c20f4;
     border-radius: 50%;
@@ -792,14 +800,14 @@ input:checked+.toggle .toggle__handler .crater {
 
 .cyberpunk-checkbox {
     appearance: none;
-    width: 20px;
-    height: 20px;
-    border: 2px solid #30cfd0;
+    width: 22px;
+    height: 22px;
+    border: 1px solid #30cfd0;
     border-radius: 5px;
     background-color: transparent;
     display: inline-block;
     position: relative;
-    margin-right: 10px;
+    margin-right: 5px;
     cursor: pointer;
 }
 
@@ -811,8 +819,8 @@ input:checked+.toggle .toggle__handler .crater {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0);
-    width: 10px;
-    height: 10px;
+    width: 15px;
+    height: 15px;
     border-radius: 3px;
     transition: all 0.3s ease-in-out;
 }
@@ -827,25 +835,4 @@ input:checked+.toggle .toggle__handler .crater {
     user-select: none;
     display: flex;
     align-items: center;
-}
-
-#wordleContainer {
-    width: 500px;
-    height: 500px;
-    display: grid;
-    gap: 5px;
-}
-
-.row {
-    display: flex;
-    justify-content: space-between;
-}
-
-.cell {
-    width: 70px;
-    height: 70px;
-    border: 1px solid black;
-    text-align: center;
-    line-height: 50px;
-    font-size: 20px;
 }
