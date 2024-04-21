@@ -2,7 +2,7 @@
   "author": "melser",
   "name": "TikLiveApp",
   "productName": "TikLiveApp",
-  "version": "2.6.2",
+  "version": "2.6.3",
   "description": "tiktok live voz speech, mineflayer, minecraft, interactive live, soundalerts, web apis, speech and more",
   "main": "index.js",
   "scripts": {
