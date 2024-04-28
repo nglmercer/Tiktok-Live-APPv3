@@ -45,10 +45,22 @@ function initSocket(httpServer) {
       // Escuchar eventos de conexión en el nuevo espacio de nombres
       overlayNamespace.on('connection', (socket) => {console.info('New connection to overlay from origin', socket.handshake.headers['origin'] || socket.handshake.headers['referer']);});
       // Redirect wrapper control events once
-      tiktokConnectionWrapper.once('connected', state => {
-        socket.emit('tiktokConnected', state); overlayNamespace.emit('tiktokConnected', state); });
-    
-    tiktokConnectionWrapper.once('disconnected', reason => {
+      tiktokConnectionWrapper.on('connected', state => {
+        socket.emit('tiktokConnected', state); 
+        overlayNamespace.emit('tiktokConnected', state);
+        enviarEstado(state);
+    });
+    let currentState = null; // Variable para almacenar el estado actual
+
+    function enviarEstado(state) {
+        currentState = state; // Guarda el estado actual
+    }
+    socket.on('solicitarEstado', () => {
+        if (currentState !== null) {
+            socket.emit('estadoActual', currentState); // Envía el estado actual al frontend
+        }
+    });
+    tiktokConnectionWrapper.on('disconnected', reason => {
         socket.emit('tiktokDisconnected', reason); overlayNamespace.emit('tiktokDisconnected', reason); });
     
     // Notify client when stream ends

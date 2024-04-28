@@ -8,7 +8,10 @@ const socketHandler = require('./socketHandler');
 const updateHandler = require('./updateHandler');
 
 const store = new Store(); 
-
+require('electron-reload')(__dirname, {
+  electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+  hardResetMethod: 'exit'
+});
 // Evento emitido cuando Electron ha terminado de inicializarse
 app.on('ready', () => {
   const express = require('express');
@@ -29,15 +32,18 @@ app.on('ready', () => {
     frame: true,
     transparent: true,
     alwaysOnTop: false,
+    
     titleBarStyle: 'hidden',
     titleBarOverlay: {
       color: 'gray',
       symbolColor: '#00000081',
       height: 20
     },
-    webPreferences: {
-      nodeIntegration: true,
-    },
+		webPreferences: {
+			preload: path.join(__dirname, "preload.js"),
+			nodeIntegration: true,
+			webSecurity: false,
+		},
     maximizable: true
   });
   mainWindow.loadURL(`http://localhost:${port}`);

@@ -9,6 +9,38 @@ if (location.protocol === 'file:') {
     backendUrl = "http://localhost:8081"; // Reemplaza 'example.com' con la URL real de tu servidor
 }
 
+const log = new Proxy({
+    hidden: [],
+    list: {},
+    all: false,
+}, {
+    get: (obj, props) => {
+        if (props === "get") {
+            setTimeout(() => {
+                console.warn(Object.keys(obj.list)); 
+                return Object.keys(obj.list);
+            }, 100);
+        }
+        if (obj.hidden.includes(props) || obj.all) {
+            return () => false;
+        }
+        obj.list[props] = "";
+        return (...args) => {
+            console.log(`[${props}] =>`, ...args); 
+            return true;
+        };
+    },
+    set: (obj, props, value) => {
+        if (props === "hidden") { 
+            obj.hidden.push(...value);
+        }
+        if (props === "all") { 
+            obj.all = value; 
+        }
+        return true;
+    }
+});
+
 // Asegúrate de que la URL tenga la ruta para Socket.IO
 backendUrl += "";
 
@@ -22,21 +54,6 @@ let previousLikeCount = 0;
 
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
-document.addEventListener('DOMContentLoaded', (event) => {
-    document.body.className = 'theme-dark';
-    window.settings.theme = 'dark'; // Guardar la configuración del tema
-    const toggleButton = document.getElementById('dn');
-    toggleButton.addEventListener('change', () => {
-        if (toggleButton.checked) {
-            // Si el botón de alternancia está marcado, aplicar el tema oscuro
-            document.body.className = 'theme-dark';
-        } else {
-            // Si el botón de alternancia no está marcado, aplicar el tema claro
-            document.body.className = 'theme-light';
-        }
-    });
-
-});
 
 $(document).ready(() => {
     $('#connectButton').click(connect);
@@ -73,8 +90,8 @@ function connect() {
                 timeout: 5000
             }
         }).then(state => {
-            console.log(`Connected to roomId ${state.roomId} upgraded ${state.upgradedToWebsocket}`, state);
-            console.log(`Available Gifts:`, state.availableGifts);
+            log.console(`Connected to roomId ${state.roomId} upgraded ${state.upgradedToWebsocket}`, state);
+            log.console(`Available Gifts:`, state.availableGifts);
             
             // Función para cargar los datos desde el localStorage
             availableGiftsimage(state);
@@ -101,6 +118,14 @@ function connect() {
                     </div>
                 `;
                 $('#stateText').html(userProfileContainer);
+            } else {
+                const userProfileContainer = `
+                <div class="user-profile-container">
+                    <div class="user-profile-image">Conectado</div>
+                    <div class="user-profile-link">${userProfileLink}</div>
+                </div>
+            `;
+            $('#stateText').html(userProfileContainer);
             }
         }).catch(errorMessage => {
             // Manejar el error en caso de que falle la conexión
@@ -118,59 +143,44 @@ let globalSimplifiedStates = [];
 
 function availableGiftsimage(state) {
     const giftImages = {};
-
     if (!state || !state.availableGifts) {
-        // Intentar obtener los datos del localStorage
         const savedStateJson = localStorage.getItem('simplifiedState');
         const savedState = JSON.parse(savedStateJson);
-
-        // Verificar si se encontraron datos en el localStorage
         if (savedState && savedState.availableGifts) {
-            // Utilizar los datos del localStorage
             state = savedState;
         } else {
-            // No se encontraron datos en el localStorage, salir de la función
             console.error('No se encontraron datos de availableGifts en el localStorage.');
             return giftImages;
         }
     }
-
-    // Obtener el contenedor donde se agregarán los cuadros
+    
     const container = document.getElementById('giftContainer');
-
-    // Limpiar el contenedor antes de agregar nuevos elementos
     container.innerHTML = '';
-
     state.availableGifts.sort((a, b) => a.diamond_count - b.diamond_count);
-
-    // Iterar sobre los regalos disponibles
-    state.availableGifts.forEach(gift => {
+    
+    state.availableGifts.map(gift => {
         const giftName = gift.name;
         const imageUrl = gift.image.url_list[1];
-
-        // Agregar la imagen al objeto de imágenes de regalo
         giftImages[giftName] = imageUrl;
-
-        // Crear un nuevo elemento div para el cuadro
+        
         const giftBox = document.createElement('div');
-        giftBox.classList.add('gift-box'); // Agregar una clase para el estilo
-
-        // Crear una imagen para el regalo
+        giftBox.classList.add('gift-box');
+        
         const giftImage = document.createElement('img');
-        giftImage.src = imageUrl; // Aquí obtienes la URL de la imagen del segundo elemento de url_list
-        giftImage.alt = giftName; // Suponiendo que `name` es el nombre del regalo
-        giftBox.appendChild(giftImage); // Agregar la imagen al cuadro
-
-        // Crear un elemento de texto para el nombre del regalo
+        giftImage.src = imageUrl;
+        giftImage.alt = giftName;
+        giftBox.appendChild(giftImage);
+        
         const giftNameText = document.createElement('p');
-        giftNameText.textContent = `${giftName} ${gift.diamond_count}🌟`;
-        giftBox.appendChild(giftNameText); // Agregar el nombre al cuadro
-
-        // Agregar el cuadro de regalo al contenedor
+        const foundGift = state.availableGifts.find(gift => gift.name.toLowerCase() === giftName.toLowerCase());
+        if (foundGift) {
+            giftNameText.textContent = `${foundGift.name} ${foundGift.diamond_count}🌟`;
+        }
+        giftBox.appendChild(giftNameText);
+        
         container.appendChild(giftBox);
     });
-
-    // Convertir el estado a un objeto simplificado
+    
     const simplifiedState = {
         availableGifts: state.availableGifts.map(gift => ({
             name: gift.name,
@@ -179,16 +189,14 @@ function availableGiftsimage(state) {
             imageUrl: gift.image.url_list[1]
         }))
     };
-
-    // Convertir el estado simplificado a JSON
+    
     const simplifiedStateJson = JSON.stringify(state);
     globalSimplifiedStates.push(simplifiedState);
-
-    // Guardar el estado simplificado en el localStorage
+    
     localStorage.setItem('simplifiedState', simplifiedStateJson);
-
     return giftImages;
 }
+
 
 class Groups {
     static start() {
@@ -233,7 +241,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const simplifiedStateJson = localStorage.getItem('simplifiedState');
     if (simplifiedStateJson) {
         const state = JSON.parse(simplifiedStateJson);
-        console.log(" recibe state localstorage",state);
+        log.console(" recibe state localstorage",state);
+        availableGiftsimage(state);
     }
 });
 
@@ -265,11 +274,14 @@ function isPendingStreak(data) {
  */
 let lastMessage = "";
 let lastNickname = "";
+
 function addChatItem(color, data, text, summarize) {
     let container = location && location.href ? (location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer')) : $('.chatcontainer');
     if (container.find('div').length > 500) {
         container.find('div').slice(0, 200).remove();
     }
+    const userpointsInput = document.getElementById('users-points');
+
     const inputValue = userpointsInput.value;
     const parsedValue = parseInt(inputValue);
     if (!userPoints[data.nickname]) {
@@ -305,7 +317,7 @@ function addChatItem(color, data, text, summarize) {
     let lowerCaseText = text && text.toLowerCase() && text.replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
     let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
     if (sendsoundCheckbox.checked) {
-        playSoundByText(text);
+       
     }
     
     const customFilterWords = [
@@ -340,17 +352,17 @@ function addChatItem(color, data, text, summarize) {
     for (let word of customFilterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 0) {
-                //console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                //log.console('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
             if (userPoints[data.nickname] >= 1) {
                 userPoints[data.nickname]--;
-                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
                 return;
             }
             if (userPoints[data.nickname] >= 30) {
                 //userPoints[data.nickname]--;
-                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
             }
         }
     }
@@ -358,17 +370,17 @@ function addChatItem(color, data, text, summarize) {
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 2) {
-                //console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                //log.console('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
             if (userPoints[data.nickname] >= 2) {
                 userPoints[data.nickname]--;
-                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
                 return;
             }
             if (userPoints[data.nickname] >= 30) {
                 userPoints[data.nickname]--;
-                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
             }
         }
     }
@@ -412,7 +424,7 @@ function addChatItem(color, data, text, summarize) {
         const intersection = new Set([...messageSet].filter(x => lastMessageSet.has(x)));
         const uniqueCharsDiff = Math.abs(messageSet.size - lastMessageSet.size);
         if (uniqueCharsDiff <= 2 && intersection.size >= message.length - 2) {
-            console.log('Mensajes similares encontrados.',message);
+            log.console('Mensajes similares encontrados.',message);
         }
     }
     
@@ -423,7 +435,7 @@ function addChatItem(color, data, text, summarize) {
     const matches = lowerCaseText.match(regex);
     
     if (matches && matches.length > 0) {
-        console.log(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
+        log.console(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
         return;
     }
     let nameuser = data.uniqueId; 
@@ -431,9 +443,8 @@ function addChatItem(color, data, text, summarize) {
     let lowerCaseUser = nameuser.toLowerCase();
     let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
     if (filterUsers.includes(lowerCaseUser)) {
-        console.log("usuario de WhiteList", lowerCaseUser);
+        log.console("usuario de WhiteList", lowerCaseUser);
         enviarCommandID('chat', message);
-    /* */    playSoundByText(message);
         leerMensajes(message);
         enviarMensaje(message);
         return;
@@ -470,12 +481,12 @@ function addChatItem(color, data, text, summarize) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 0) {
                 userPoints[data.nickname]--;
-                //console.log('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
+                //log.console('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
                 return;
             } 
             if (userPoints[data.nickname] >= 1) {
                 userPoints[data.nickname]--;
-                //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
                 return;
             }
         }
@@ -483,7 +494,7 @@ function addChatItem(color, data, text, summarize) {
 
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            console.log(message + 'filterwords__dirname=');
+            log.console(message + 'filterwords__dirname=');
         return;  
         }
     }
@@ -493,16 +504,16 @@ function addChatItem(color, data, text, summarize) {
     let userpointsCheckbox = document.getElementById('userpointsCheckbox');
 
     if (userpointsCheckbox.checked) {
-        //console.log(userpointsCheckbox)
+        //log.console(userpointsCheckbox)
         if (userPoints[data.nickname] <= 0) {
-            //console.log('Usuario con 0 puntos,userpointsCheckbox:', data.nickname, userPoints[data.nickname]);
+            //log.console('Usuario con 0 puntos,userpointsCheckbox:', data.nickname, userPoints[data.nickname]);
             return;
         }
     }
 
     if (text.length <= 7) {
         if (userPoints[data.nickname] <= 0) {
-            //console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+            //log.console('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             return;
         }
     }
@@ -512,7 +523,7 @@ function addChatItem(color, data, text, summarize) {
     if (sendDataCheckbox.checked) {
         if (startsWithSpecialChar) {
             if (userPoints[data.nickname] <= 4) {
-                console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+                log.console('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             }
         }
         enviarMensaje(message);
@@ -527,11 +538,11 @@ function addChatItem(color, data, text, summarize) {
             // Si no es un número válido, utilizar el valor por defecto de 5
             userPoints[data.nickname] += 2;
           }
-        console.log(`el usuario ${data.nickname}tiene mas puntos`,userPoints[data.nickname]);
+        log.console(`el usuario ${data.nickname}tiene mas puntos`,userPoints[data.nickname]);
     }
     if (sendsoundCheckbox.checked) {
         if (nickname !== lastNickname) {
-            playSoundByText(message);
+            
         }
         userPoints[data.nickname]--;
         lastNickname = nickname
@@ -539,7 +550,7 @@ function addChatItem(color, data, text, summarize) {
 
     if (sendDataCheckbox.checked) {
         if (userPoints[data.nickname] <= 3) {
-            //console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+            //log.console('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             return;
         }
         if (nickname !== lastNickname) {
@@ -587,7 +598,7 @@ connection.on('like', (data) => {
     while (sendDataCheckbox.checked && userStats[data.uniqueId].likes >= userStats[data.uniqueId].milestone && userStats[data.uniqueId].milestone <= 500) {
         const milestoneLikes = `${userStats[data.uniqueId].milestone}LIKES`;
 
-        console.log('Milestone Likes:', milestoneLikes);
+        log.console('Milestone Likes:', milestoneLikes);
         enviarCommandID( 'likes', `${userStats[data.uniqueId].milestone}LIKES`);
 
         // Send data or data.uniqueId and $ likes
@@ -683,8 +694,6 @@ function addGiftItem(data) {
     if (sendsoundCheckbox.checked) {
         for (let i = 0; i < data.repeatCount; i++) {
 
-            playSound(data.giftName);
-
         }
     }
     container.stop();
@@ -728,6 +737,8 @@ let lastTenMessages = [];
 let userPoints = {};
 
 connection.on('chat', (data) => {
+    const userpointsInput = document.getElementById('users-points');
+
     const inputValue = userpointsInput.value;
     const parsedValue = parseInt(inputValue);
     if (!userPoints[data.nickname]) {
@@ -738,7 +749,7 @@ connection.on('chat', (data) => {
             // Si no es un número válido, utilizar el valor por defecto de 5
             userPoints[data.nickname] = 10;
         }
-        //console.log("puntos asignados",data.nickname,userPoints[data.nickname]);
+        //log.console("puntos asignados",data.nickname,userPoints[data.nickname]);
     }
     let message = data.comment; 
     let nameuser = data.uniqueId; 
@@ -753,7 +764,7 @@ connection.on('chat', (data) => {
     addOverlayEvent('chat', data);
 
     if (filterUsers.includes(lowerCaseUser)) {
-        console.log("WhiteList", lowerCaseUser);
+        log.console("WhiteList", lowerCaseUser);
         addChatItem('', data, message);
         sendToServer('chat', data);
         handleEvent2('chat', data);
@@ -766,7 +777,7 @@ connection.on('chat', (data) => {
         }
         if (userPoints[data.nickname] >= 1) {
             userPoints[data.nickname] -= 1;
-            //console.log('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
+            //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
         } 
     }
 
@@ -791,6 +802,7 @@ connection.on('chat', (data) => {
     data.ultimoTiempo = tiempoActual;
     return data.nickname;
 });
+
 // New gift received
 connection.on('gift', (data) => {
     if (!userPoints[data.nickname]) {
@@ -798,7 +810,7 @@ connection.on('gift', (data) => {
     } else if (userPoints[data.nickname] >= 1) {
         userPoints[data.nickname] += 10;
         userPoints[data.nickname] + 10;
-        //console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
+        //log.console('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
     }
     if (sendDataCheckbox.checked) {
     enviarCommandID( 'gift', data)/* */;
@@ -813,10 +825,53 @@ connection.on('gift', (data) => {
         userPoints[data.nickname] + data.diamondCount;
         updateRoomStats();
     }
-
+    userGiftname = data.giftName;
     if (window.settings.showGifts === "0") return;
     addGiftItem(data);
+    const audioGiftdata = loadData();
+    const eventData2 = audioGiftdata.find(data1 => data1.eventName === userGiftname);
+    if (eventData2) {
+        const audioPath = eventData2.audioPath; // Obtener el audioPath del objeto encontrado
+        const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
+        audioElement.play(); // Reproducir el audio
+      } 
+
 })
+document.addEventListener('DOMContentLoaded', function() {
+})    
+
+$(document).ready(() => {
+    const EventNameInput = document.getElementById("test-event");
+    const TestButton = document.getElementById("testButton");
+
+    if (TestButton) {
+        TestButton.onclick = function() {
+            TESTsound(EventNameInput.value.trim());
+        };
+        // Simular clic en el botón TestButton al cargar el documento
+        $(TestButton).click();
+    }
+});
+
+function TESTsound(eventName) {
+    const audioData1 = loadData();
+    audioData1.forEach((data) => {
+        log.console(data.audioPath, data.audioName, data.eventName, data.volume, data.enable);
+    });
+    const eventData1 = audioData1.find(data1 => data1.eventName === eventName);
+    if (eventData1) {
+        const audioPath = eventData1.audioPath; // Obtener el audioPath del objeto encontrado
+        const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
+        audioElement.play(); // Reproducir el audio
+      } 
+
+}
+
+function loadData1() {
+    const storedData = localStorage.getItem("audioData");
+    return storedData ? JSON.parse(storedData) : [];
+}
+
 
 // share, follow
 let seguidores = new Set();
@@ -836,7 +891,7 @@ connection.on('social', (data) => {
  /* */               handleEvent2('follow', data);
                 sendToServer('follow', data);
                 addOverlayEvent('follow', data);
-                console.log(`${data.nickname} es un gato mas`);
+                log.console(`${data.nickname} es un gato mas`);
                 seguidores.add(data.nickname);
                 // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
                 setTimeout(() => {
@@ -907,14 +962,14 @@ const user2 = document.getElementById('user-2');
 const battleStatus = document.getElementById('battle-status');
 
 connection.on('linkMicBattle', (data) => {
-console.log(`New Battle: ${data.battleUsers[0].uniqueId} VS ${data.battleUsers[1].uniqueId}`,data);
+log.console(`New Battle: ${data.battleUsers[0].uniqueId} VS ${data.battleUsers[1].uniqueId}`,data);
 /*user1.querySelector('.username').textContent = data.battleUsers[0].uniqueId;
 user2.querySelector('.username').textContent = data.battleUsers[1].uniqueId;
 battleStatus.textContent = 'Battle in Progress'
 });
 
 connection.on('linkMicArmies', (data) => {
-console.log('linkMicArmies', data);
+log.console('linkMicArmies', data);
 user1.querySelector('.points').textContent = data.battleArmies[0].points;
 user2.querySelector('.points').textContent = data.battleArmies[1].points;
 if (data.battleStatus === 1) {
@@ -926,23 +981,23 @@ if (data.battleStatus === 1) {
 
   
 connection.on('liveIntro', (msg) => {
-    console.log('User Details:', msg.description);
-    console.log('Nickname:', msg.nickname);
-    console.log('Unique ID:', msg.uniqueId);
+    log.console('User Details:', msg.description);
+    log.console('Nickname:', msg.nickname);
+    log.console('Unique ID:', msg.uniqueId);
 });
 
 connection.on('emote', (data) => {
-    console.log(`${data.uniqueId} emote!`);
-    console.log('emote received', data);
+    log.console(`${data.uniqueId} emote!`);
+    log.console('emote received', data);
 })
 connection.on('envelope', data => {
-    console.log('Unique ID:', data.uniqueId);
-    console.log('Coins:', data.coins);
+    log.console('Unique ID:', data.uniqueId);
+    log.console('Coins:', data.coins);
     fetchAudio(`${data.uniqueId} envio cofre de ${data.coins} monedas para ${data.canOpen} personas`);
 });
 
 connection.on('subscribe', (data) => {
-    console.log(`${data.uniqueId} subscribe!`);
+    log.console(`${data.uniqueId} subscribe!`);
 })
 let comandosConNombres = null;
 
@@ -1018,7 +1073,7 @@ async function enviarCommandID(eventType, data) {
     // Obtener la lista de comandos si aún no la tenemos
     comandosConNombres = comandosConNombres || await obtenerPaginaDeComandos();
 
-    console.log('Lista de comandos recibida:', comandosConNombres);
+    log.console('Lista de comandos recibida:', comandosConNombres);
 
     // Buscar el comando correspondiente al commandName
     const comandoEncontrado = comandosConNombres.find(comando => {
@@ -1047,7 +1102,7 @@ async function enviarCommandID(eventType, data) {
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                console.log('Comando enviado:', comandoEncontrado.commandName);
+                log.console('Comando enviado:', comandoEncontrado.commandName);
                 ultimoEnvio = Date.now();
             })
             .catch(error => {
@@ -1064,7 +1119,7 @@ async function enviarCommandID(eventType, data) {
 // Ejemplo de uso:
 obtenerPaginaDeComandos(comandos => {
     // Aquí puedes hacer lo que quieras con la lista de comandos y nombres
-    console.log('Lista de comandos y nombres:', comandos);
+    log.console('Lista de comandos y nombres:', comandos);
 });
 
 var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;
@@ -1301,20 +1356,26 @@ var VOICE_LIST = {
 };
 const VOICE_LIST_ALT = Object.keys(VOICE_LIST).map(k => VOICE_LIST[k]);
 var voiceSelect = document.createElement('select');
+
 Object.keys(VOICE_LIST).forEach(function(key) {
     var option = document.createElement('option');
     option.text = key;
     option.value = VOICE_LIST[key];
     voiceSelect.appendChild(option);
 });
+
 document.addEventListener('DOMContentLoaded', (event) => {
     var voiceSelectContainer = document.getElementById('voiceSelectContainer');
     voiceSelectContainer.appendChild(voiceSelect);
+
+    // Inicializar Select2
+    $(voiceSelect).select2(); 
+    $(voiceSelect).on('change', function() {
+        const selectedValue = $(this).val();
+        fetchAudio(selectedValue);
+    });
 });
 
-voiceSelect.addEventListener('change', function() {
-    fetchAudio(voiceSelect.value);
-});
 let isReading = false;
 let cache = [];
 let lastText = "";
@@ -1476,67 +1537,11 @@ function kickstartPlayer() {
     };
 }
 // Crear una base de datos IndexedDB
-let openRequest = indexedDB.open("audioDB", 1);
 
-openRequest.onupgradeneeded = function() {
-    let db = openRequest.result;
-    if (!db.objectStoreNames.contains('audios')) {
-        db.createObjectStore('audios');
-    }
-}
-
-openRequest.onerror = function() {
-    console.error("Error", openRequest.error);
-};
-
-openRequest.onsuccess = function() {
-    let db = openRequest.result;
-    db.onversionchange = function() {
-        db.close();
-        alert("La base de datos está obsoleta, por favor, recargue la página.");
-    };
-};
-
-// Guardar un audio en la base de datos
-function saveAudio(audioName, audioData) {
-    let db = openRequest.result;
-    let transaction = db.transaction("audios", "readwrite");
-    let audios = transaction.objectStore("audios");
-    let request = audios.put(audioData, audioName);
-
-    request.onsuccess = function() {
-        console.log("Audio guardado con éxito.");
-    };
-
-    request.onerror = function() {
-        console.log("Error al guardar el audio.", request.error);
-    };
-}
-
-// Obtener un audio de la base de datos
-function getAudio(audioName) {
-    let db = openRequest.result;
-    let transaction = db.transaction("audios", "readonly");
-    let audios = transaction.objectStore("audios");
-    let request = audios.get(audioName);
-
-    request.onsuccess = function() {
-        if (request.result) {
-            console.log("Audio encontrado.");
-            playAudio(request.result);
-        } else {
-            console.log("No se encontró el audio.");
-        }
-    };
-
-    request.onerror = function() {
-        console.log("Error al obtener el audio.", request.error);
-    };
-}
 
 // Reproducir un audio
-function playAudio(audioData) {
-    let audio = new Audio(audioData);
+function playAudio(audioData1) {
+    let audio = new Audio(audioData1);
     audio.play();
 }
 
@@ -1551,214 +1556,6 @@ function isValidUrl(string) {
     return true;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('soundForm').addEventListener('submit', function(event) {
-        event.preventDefault(); // Evita que el formulario se envíe y la página se recargue
-        let soundFiles = document.getElementById('soundFiles').files;
-        for (let i = 0; i < soundFiles.length; i++) {
-            let soundFile = soundFiles[i];
-            let reader = new FileReader();
-            reader.onload = function(e) {
-                let soundData = e.target.result;
-                let soundName = soundFile.name;
-                localStorage.setItem(soundName, soundData);
-                addSoundToList(soundName, document.getElementById('soundList'));
-            };
-            reader.readAsDataURL(soundFile);
-        }
-    });
-    let soundList = document.getElementById('soundList');
-
-    // Función para cargar los sonidos desde el localStorage y agregarlos al menú desplegable
-    function loadSoundsFromLocalStorage() {
-        const sounds = [];
-        // Load existing sounds from localStorage and add them to the array if they are multimedia files
-        for (let i = 0; i < localStorage.length; i++) {
-            const itemName = localStorage.key(i);
-            const itemData = localStorage.getItem(itemName);
-            // Verificar si los datos almacenados corresponden a un archivo de audio (u otro tipo multimedia)
-            if (isMultimedia(itemData)) {
-                sounds.push(itemName);
-            }
-        }
-    
-        // Sort the sounds alphabetically
-        sounds.sort();
-    
-        // Add each sound to the dropdown menu
-        sounds.forEach(soundName => {
-            addSoundToList(soundName);
-        });
-    }
-    
-    function isMultimedia(data) {
-        // Verificar si los datos comienzan con el prefijo 'data:audio/' o 'data:video/' o 'data:image/'
-        return data.startsWith('data:audio/') || data.startsWith('data:video/') || data.startsWith('data:image/');
-    }
-    
-    
-    loadSoundsFromLocalStorage();
-
-    // Función para agregar un sonido a la lista
-    function addSoundToList(giftName) {
-
-        const listItem = document.createElement('div');
-        listItem.dataset.giftName = giftName; // Almacenar el nombre del sonido como un atributo de datos
-    
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'X';
-        deleteButton.className = 'deleteButton';
-        deleteButton.addEventListener('click', handleDelete);
-    
-        const renameButton = document.createElement('button');
-        renameButton.textContent = 'ReAsignar';
-        renameButton.className = 'renameButton';
-        renameButton.addEventListener('click', handleRename);
-    
-        const playButton = document.createElement('button'); // Crear el botón de reproducción
-        playButton.textContent = '';
-        playButton.className = 'playButton';
-        playButton.addEventListener('click', () => {
-            // Agregar un controlador de eventos al botón
-            playSound(giftName);
-        });
-    
-        const soundNameSpan = document.createElement('span');
-        soundNameSpan.textContent = giftName;
-    
-        // Agregar miniatura del sonido si existe
-        const thumbnailSrc = localStorage.getItem(giftName + '_thumbnail');
-        if (thumbnailSrc) {
-            const thumbnailImg = document.createElement('img');
-            thumbnailImg.src = thumbnailSrc;
-            thumbnailImg.alt = 'Thumbnail';
-            listItem.appendChild(thumbnailImg); // Agregar la miniatura del sonido
-        }
-    
-        listItem.appendChild(playButton); // Agregar el botón de reproducción al elemento de la lista
-        listItem.appendChild(renameButton);
-        listItem.appendChild(deleteButton);
-        listItem.appendChild(soundNameSpan); // Agregar el span con el nombre del sonido
-        soundList.appendChild(listItem);
-    }
-    
-
-    // Función para manejar la eliminación de un sonido
-    function handleDelete(event) {
-        let giftName = event.target.parentElement.dataset.giftName; // Obtener el nombre del sonido del atributo de datos
-        if (confirm('¿Estás seguro de que quieres eliminar este sonido?')) {
-            localStorage.removeItem(giftName);
-            event.target.parentElement.remove();
-        }
-    }
-    function handleRename(event) {
-        const listItem = event.target.parentElement;
-        const giftName = listItem.dataset.giftName; // Obtener el nombre del regalo del atributo de datos
-    
-        // Obtener el elemento que llama a la modal (el botón "ReAsignar")
-        const triggerElement = event.target;
-    
-        // Llamar a la función para abrir la modal de renombrar
-        openRenameModal(giftName, (newName) => {
-            if (newName && newName !== giftName) {
-                // Si se proporciona un nuevo nombre y es diferente al nombre actual
-                const audioSrc = localStorage.getItem(giftName);
-                localStorage.removeItem(giftName);
-                localStorage.setItem(newName, audioSrc);
-                listItem.dataset.giftName = newName; // Actualizar el nombre del regalo en el atributo de datos
-                listItem.querySelector('span').textContent = newName; // Actualizar el texto visible del nombre del regalo
-            }
-        }, triggerElement); // Pasar el elemento que llama a la modal como tercer argumento
-    }
-    
-    
-});    
-let isModalOpen = false; // Variable global para controlar si la modal está abierta
-let currentModalBackdrop; // Variable global para almacenar la modal actualmente abierta
-
-function openRenameModal(currentName, onSave, triggerElement) {
-    if (isModalOpen) {
-        closeModal();
-    }
-    
-    const modalInput = document.createElement('input');
-    modalInput.type = 'text';
-    modalInput.value = currentName;
-
-    const modalDialog = document.createElement('div');
-    modalDialog.classList.add('modal-dialog');
-    modalDialog.appendChild(modalInput);
-
-    const modalButton = document.createElement('button');
-    modalButton.textContent = 'Aceptar';
-    modalButton.addEventListener('click', () => {
-        const newName = modalInput.value.trim();
-        onSave(newName);
-        modalInput.value = newName;
-        closeModal();
-    });
-    modalDialog.appendChild(modalButton);
-
-    // Crear un select en lugar de una lista de botones de sugerencia
-    const selectInput = document.createElement('select');
-    selectInput.classList.add('select2'); // Agregar la clase de Select2 para inicializarlo
-    modalDialog.appendChild(selectInput);
-
-    $(selectInput).select2({
-        data: globalSimplifiedStates.flatMap(state => state.availableGifts.map(gift => ({
-            placeholder: "Select a giftname",
-            allowClear: true,
-            id: gift.name,
-            text: gift.name,
-            imageUrl: gift.imageUrl
-        }))),
-        templateResult: formatGiftOption, // Función para formatear cada opción en el dropdown
-        escapeMarkup: function(markup) {
-            return markup;
-        }
-    });
-    
-    // Manejar el evento de selección de una opción
-        $(selectInput).on('select2:select', function(e) {
-            
-            const selectedGift = e.params.data;
-            if (currentName.endsWith('mp3')) {
-                modalInput.value = selectedGift.text + ' ' + currentName;
-            } else {
-                modalInput.value = selectedGift.text;
-            }
-        });
-
-
-    // Obtener las coordenadas del elemento que llama a la modal
-    const triggerRect = triggerElement.getBoundingClientRect();
-
-    // Establecer las coordenadas de la modal para que se superponga al elemento
-    const bottomPosition = window.innerHeight - triggerRect.bottom;
-
-    // Calcular la posición de la modal
-    let topPosition;
-    if (bottomPosition > window.innerHeight / 2) {
-        topPosition = triggerRect.top + window.scrollY + 500;
-    } else {
-        topPosition = triggerRect.top + window.scrollY;
-    }
-    
-    // Establecer las coordenadas de la modal
-    modalDialog.style.position = 'absolute';
-    modalDialog.style.top = `${topPosition}px`;
-    modalDialog.style.left = `${triggerRect.left + window.scrollX + 10}px`;
-
-    const modalBackdrop = document.createElement('div');
-    modalBackdrop.classList.add('modal-backdrop');
-    modalBackdrop.appendChild(modalDialog);
-    document.body.appendChild(modalBackdrop);
-
-    currentModalBackdrop = modalBackdrop;
-    isModalOpen = true;
-    modalInput.focus();
-}
-
 // Función para formatear cada opción en el dropdown de Select2
 function formatGiftOption(gift) {
     if (!gift.id) {
@@ -1767,123 +1564,9 @@ function formatGiftOption(gift) {
 
     return $('<span><img src="' + gift.imageUrl + '" class="thumbnail-img" /> ' + gift.text + '</span>');
 }
-function closeModal() {
-    if (currentModalBackdrop) {
-        document.body.removeChild(currentModalBackdrop); // Eliminar el elemento de la modal del DOM
-        currentModalBackdrop = null; // Restablecer la variable global de la modal actual
-        isModalOpen = false; // Establecer el estado de la modal como cerrada
-    }
-}
 
-function playSound(giftName) {
-    // Convertir el nombre del regalo a minúsculas
-    let lowerCaseGiftName = giftName.toLowerCase();
-    let audioSrc = localStorage.getItem(giftName);
-    let audio = new Audio(audioSrc);
-    // Buscar en el almacenamiento local un sonido que contenga el nombre del regalo en su nombre
-    for (let i = 0; i < localStorage.length; i++) {
-        let key = localStorage.key(i);
 
-        // Convertir la clave a minúsculas antes de hacer la comparación
-        if (key.toLowerCase().includes(lowerCaseGiftName)) {
-            let audioSrc = localStorage.getItem(key);
 
-            // Agregar el audio a la cola de audioqueue
-            audioqueue.enqueue(audioSrc);
-
-            // Si el audio no está reproduciéndose, iniciar el reproductor
-            if (!isPlaying) {
-                kickstartPlayer();
-            }
-        }
-    }
-}
-
-let lastAudioSrc = null; // Variable para almacenar el último audio añadido a la cola
-
-function playSoundByText(text) {
-    // Convertir el texto a minúsculas
-    let lowerCaseText = text.toLowerCase();
-
-    // Verificar si el texto tiene una longitud mínima y máxima
-    let minLength = 1; // Define tu longitud mínima aquí
-    let maxLength = 20; // Define tu longitud máxima aquí
-    if (lowerCaseText.length < minLength || lowerCaseText.length > maxLength) {
-        return;
-    }
-    // Buscar en el almacenamiento local un sonido que contenga el texto en su nombre
-    for (let i = 0; i < localStorage.length; i++) {
-        let key = localStorage.key(i);
-
-        // Convertir la clave a minúsculas antes de hacer la comparación
-        if (key.toLowerCase().includes(lowerCaseText)) {
-            let audioSrc = localStorage.getItem(key);
-
-            // Si el audio es el mismo que el último añadido a la cola, no lo añade
-            if (audioSrc === lastAudioSrc) {
-                console.log('El audio es el mismo que el último añadido a la cola');
-                return;
-            }
-
-            console.log('audio al texto:', text);
-
-            // Agregar el audio a la cola de audioqueue
-            audioqueue.enqueue(audioSrc);
-            lastAudioSrc = audioSrc; // Actualizar el último audio añadido a la cola
-
-            // Si el audio no está reproduciéndose, iniciar el reproductor
-            if (!isPlaying) {
-                kickstartPlayer();
-            }
-
-            // Salir de la función después de encontrar el primer audio que coincide
-            return;
-        }
-    }
-}
-
-function exportSettings() {
-    // Convertir las configuraciones y sonidos a una cadena JSON
-    let settings = JSON.stringify(localStorage);
-
-    // Crear un elemento 'a' invisible
-    let element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(settings));
-    element.setAttribute('download', 'settings.json');
-
-    // Simular un click en el elemento 'a' para descargar el archivo
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-}
-
-function importSettings() {
-    // Show the loading indicator
-    document.getElementById('loadingIndicator').style.display = 'inline';
-
-    // Read the file uploaded by the user
-    let file = document.getElementById('importButton').files[0];
-    if (file) {
-        let reader = new FileReader();
-        reader.onload = function(e) {
-            // Parse the file content to a JavaScript object
-            let settings = JSON.parse(e.target.result);
-
-            // Store the settings and sounds in localStorage
-            for (let key in settings) {
-                localStorage.setItem(key, settings[key]);
-            }
-
-            // Hide the loading indicator
-            document.getElementById('loadingIndicator').style.display = 'none';
-        };
-        reader.readAsText(file);
-    } else {
-        // Hide the loading indicator
-        document.getElementById('loadingIndicator').style.display = 'none';
-    }
-}
 function testHandleEvent() {
     var eventType = document.getElementById('eventType').value;
 
@@ -1891,19 +1574,18 @@ function testHandleEvent() {
         var dataInput = document.getElementById('data').value;
         let data = { giftName: dataInput };
         handleEvent(eventType, data);
+        handleSound(eventType, data)
     } else {
         var data = document.getElementById('data').value;
         handleEvent2(eventType, data);
+        handleSound(eventType, data)
     }
 }
 const sentData = new Set(); // Conjunto para almacenar los datos enviados
 
-let keywords = {}; // Inicializar como un objeto vacío en lugar de null
 let commandList = {};
 let lastCommand = null;
 let currentPlayerIndex = 0;
-const keywordsInput = localStorage.getItem('keywords');
-keywords = jsyaml.load(keywordsInput);
 let playerName = localStorage.getItem('playerName');
 
 
@@ -1913,7 +1595,7 @@ const maxRepeatCount = 50; // Valor máximo para repeatCount
 function handleEvent(eventType, data, msg, likes) {
     let MinecraftLivetoggle = document.getElementById("MinecraftLive")
 
-    //console.log(MinecraftLivetoggle.checked);
+    //log.console(MinecraftLivetoggle.checked);
     if (!MinecraftLivetoggle.checked) {
         return;
     }
@@ -1924,7 +1606,7 @@ function handleEvent(eventType, data, msg, likes) {
     const giftName = data.giftName.toLowerCase(); // Normaliza el nombre del regalo
 
     let foundGift = commandList.gift.default.find(gift => gift.name.toLowerCase() === giftName);
-    console.log(data.gifName,giftName);
+    log.console(data.gifName,giftName);
     if (!foundGift) {
         // Si no se encontró un regalo específico, usar el regalo predeterminado
         foundGift = commandList.gift.default.find(gift => gift.name.toLowerCase() === 'default');
@@ -1936,10 +1618,10 @@ function handleEvent(eventType, data, msg, likes) {
         eventCommands.forEach(command => {
             const replacedCommand = replaceVariables(command, data, likes);
             sendReplacedCommand(replacedCommand);
-            console.log(replacedCommand);
+            log.console(replacedCommand);
         });
     } else {
-        console.log("No se encontró un regalo correspondiente para:", data.giftName);
+        log.console("No se encontró un regalo correspondiente para:", data.giftName);
     }
 }
 
@@ -1953,7 +1635,7 @@ const escapeMinecraftCommand = (command) => {
   
   // Función para reemplazar variables en los comandos
   const replaceVariables = (command, data, likes) => {
-    console.log(command);
+    log.console(command);
     // Reemplazar variables en el comando (unchanged)
     let replacedCommand = command
       .replace(/uniqueId/g, data.uniqueId || '')
@@ -1972,7 +1654,7 @@ const escapeMinecraftCommand = (command) => {
     // Remove all backslashes (proceed with caution!)
     replacedCommand = replacedCommand.replace(/\\/g, '');
   
-    //console.log(replacedCommand);
+    //log.console(replacedCommand);
     return replacedCommand;
   };
   
@@ -1980,7 +1662,7 @@ const escapeMinecraftCommand = (command) => {
 function handleEvent2(eventType, data, msg, likes) {
     let MinecraftLivetoggle = document.getElementById("MinecraftLive")
 
-    //console.log(MinecraftLivetoggle.checked);
+    //log.console(MinecraftLivetoggle.checked);
     if (!MinecraftLivetoggle.checked) {
         return;
     }
@@ -2001,7 +1683,7 @@ function handleEvent2(eventType, data, msg, likes) {
             defaultCommand.forEach(command => {
                 const replacedCommand = replaceVariables(command, data, likes);
                 sendReplacedCommand(replacedCommand);
-                console.log(replacedCommand);
+                log.console(replacedCommand);
             });
         } else {
             console.error(`No se encontraron comandos predeterminados para el evento "${eventType}"`);
@@ -2035,7 +1717,7 @@ function sendReplacedCommand(replacedCommand) {
     })
     .then(response => response.json())
     .then(data => {
-      //console.log(data); // Maneja la respuesta del servidor si es necesario
+      //log.console(data); // Maneja la respuesta del servidor si es necesario
     })
     .catch(error => {
       console.error('Error:', error);
@@ -2052,7 +1734,7 @@ async function sendToServer(eventType, data, color, msg, message) {
       })
       .then(response => response.json())
       .then(data => {
-        //console.log(data); // Maneja la respuesta del servidor si es necesario
+        //log.console(data); // Maneja la respuesta del servidor si es necesario
       })
       .catch(error => {
         console.error('Error:', error);
@@ -2060,6 +1742,7 @@ async function sendToServer(eventType, data, color, msg, message) {
 }
 
 window.onload = async function() {
+    loadRowsOnPageLoad(tableBody);
     try {
         audio = document.getElementById("audio");
         skip = document.getElementById("skip-button");

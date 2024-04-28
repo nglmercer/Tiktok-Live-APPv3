@@ -22,26 +22,24 @@ meta
 </head>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="connection.js"></script>
 <script src="app.js"></script>
+<script src="localstorage.js"></script>
 <script src="tmi.min.js"></script>
 <script src="TTSmain.js"></script>
 <script src="minejs.js"></script>
-<style>
-    .error {
-        color: red;
-        font-weight: bold;
-    }
-</style>
+<script src="Settings.js"></script>
 <link rel="stylesheet" href="styles.css">
 <link href="select2.css" rel="stylesheet" />
+<link href="output.css" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
-
-
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> 
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
-<body>
+<body class="font-sans font-bold text-white text-xl mt-20 w-full h-full bg-gray-900">
+
     <div class="tabs-menu">
         <div id="stateText"></div>
         <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
@@ -51,7 +49,6 @@ meta
         <button class="tablinks" onclick="openTab(event, 'Tab3')">Sonidos</button>
         <button class="tablinks" onclick="openTab(event, 'Tab4')">Overlay y otros</button>
         <button class="tablinks" onclick="openTab(event, 'Tab5')">Tiktok Regalos</button>
-        <button class="tablinks" onclick="openTab(event, 'Tab6')">proximament.</button>
         <label class="cyberpunk-checkbox-label">
             <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
             mixitupAlerts</label>
@@ -70,25 +67,19 @@ meta
         </div>
 
     </div>
-    <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 90%; position: absolute; background: transparent;"></div>
-    <div class="toggleWrapper">
-        <input type="checkbox" class="dn" id="dn" checked>
-        <label for="dn" class="toggle">
-          <span class="toggle__handler">
-          </span>
-      </label>
     
     <div id="durationDisplay"></div>
 
     </div>
-    <script src="renderer.js"></script>
         <!-- Contenido de las pestañas -->
-        <div id="Tab1" class="tabcontent">
+        <div id="Tab1" class=" tabcontent ">
             <!-- 
                 <h1>Connection status: <strong id='status'></strong></h1>
         -->
+        
+        <div class="containerbox">
             <div class="inputFields">
-                <div class="splitchattable">
+                <div class="splitchattable grid grid-cols-2">
                     <div class="chatcontainer">
                         <h3 class="containerheader">Chats</h3>
                     </div>
@@ -97,109 +88,49 @@ meta
                     </div>
                 </div>
             </div>
+            
+        </div>
+        <div id="voiceSelectContainer" class="relative m-3 content-center"></div>
             <div>
-                <div id="voiceSelectContainer"></div>
 
-                <label for="filter-words">filtrar chat //:</label>
-                <input type="text" id="filter-words">
             </div>
-            <label for="filter-users">WitheList:</label>
-            <input type="text" id="filter-users">
+            <div class="containerbox">
+            <div>filtrar chat //:</div>
+            <textarea id="filter-words"></textarea>
+            <div>WitheList:</div>
+            <textarea id="filter-users"></textarea>
 
             <div>puntos del canal +1 -10
-                <input type="text" id="users-points" value="2">
+                <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-600 w-20">
                 <label class="cyberpunk-checkbox-label">
                 <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
                 si el usuario no tiene puntos no lee</label>
             </div>
+            </div>
             <label class="cyberpunk-checkbox-label">
             <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff" checked>
             overlay on/off</label>
-            <script>
-                function setupLocalStorage(inputElement, storageKey, callback) {
-                    const storedValue = localStorage.getItem(storageKey);
-                    if (storedValue) {
-                        inputElement.value = storedValue;
-                    }
-
-                    inputElement.addEventListener('change', () => {
-                        const currentValue = inputElement.value;
-                        if (currentValue) {
-                            localStorage.setItem(storageKey, currentValue);
-                            if (typeof callback === 'function') {
-                                callback(currentValue);
-                            }
-                        }
-                        console.log('Valor actualizado:', currentValue);
-
-                    });
-                }
-
-                // Ejemplo de uso
-                const filterWordsInput = document.getElementById('filter-words');
-                setupLocalStorage(filterWordsInput, 'lastFilterWords');
-
-                const filterUsersInput = document.getElementById('filter-users');
-                setupLocalStorage(filterUsersInput, 'lastfilterUsers');
-                const userpointsInput = document.getElementById('users-points');
-                setupLocalStorage(userpointsInput, 'userpoints');
-            </script>
-
         </div>
         
         <div id="Tab2" class="tabcontent">
-            <label class="cyberpunk-checkbox-label">
-                <input type="checkbox" class="cyberpunk-checkbox" id="MinecraftLive" checked>
-                MinecraftLive</label>
-            <form id="createBotForm">
-                <label for="keyBOT">Nombre del Bot:</label>
-                <input type="text" id="keyBOT" name="keyBOT" value="" required>
-                <br>
-                <label for="keySERVER">IP del Server:</label>
-                <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
-                <br>
-                <button type="submit">Conectar Bot</button>
-                <button id="disconnectButton">Desconectar Bot</button>
-            </form>
-
-            <script>
-                // Obtener el formulario y los inputs
-                const form = document.getElementById('createBotForm');
-                const keyBOTInput = document.getElementById('keyBOT');
-                const keySERVERInput = document.getElementById('keySERVER');
-
-                // Cargar datos guardados del formulario si existen
-                if (localStorage.getItem('botFormData')) {
-                    const formData = JSON.parse(localStorage.getItem('botFormData'));
-                    keyBOTInput.value = formData.keyBOT;
-                    keySERVERInput.value = formData.keySERVER;
-                }
-
-                // Escuchar el evento de envío del formulario
-                form.addEventListener('submit', function(event) {
-                    event.preventDefault(); // Evitar que se envíe el formulario
-
-                    // Obtener el valor del campo "keySERVER"
-                    const keySERVER = keySERVERInput.value;
-
-                    // Extraer el número de puerto utilizando split(':')
-                    const serverParts = keySERVER.split(':');
-                    const serverAddress = serverParts[0];
-                    const serverPort = serverParts[1] || ''; // Si no hay puerto, asignar una cadena vacía
-
-                    // Guardar los datos en el localStorage
-                    const formData = {
-                        keyBOT: keyBOTInput.value,
-                        keySERVER: keySERVER,
-                        serverPort: serverPort
-                    };
-                    localStorage.setItem('botFormData', JSON.stringify(formData));
-
-                    // Enviar el número de puerto como parámetro adicional
-                    console.log('Dirección del servidor:', serverAddress);
-                    console.log('Puerto del servidor:', serverPort);
-                });
-            </script>
+            <div class="containerbox">
+                <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
+                    <span>Leer Tutorial Minecraft</span>
+                  </a>
+                <label class="cyberpunk-checkbox-label flex items-center">
+                    <input type="checkbox" class="cyberpunk-checkbox" id="MinecraftLive" checked>
+                    <span class="ml-2">MinecraftLive</span> </label>
+                    <form id="createBotForm" class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+                    <label for="keyBOT" class="justify-self-start">Nombre del Bot:</label>
+                    <input type="text" id="keyBOT" name="keyBOT" value="" required>
+                    <label for="keySERVER" class="justify-self-start">IP del Server:</label>
+                    <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
+                    <div class="grid grid-cols-2 gap-2 w-80 ">
+                      <button type="submit">Conectar Bot</button>
+                      <button id="disconnectButton">Desconectar Bot</button>
+                    </div>
+                  </form>
+            </div>
             <div id="resultMessage"></div>
 
             <script>
@@ -288,70 +219,58 @@ meta
                 }
 
             </script>
-            <div class="leer-tutorial">
-                <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
-                  <span>Leer Tutorial Minecraft</span>
-                </a>
-              </div>
-            <label onclick="savePlayerName()">Tu nombre de Minecraft:</label>
+            <div class="containerbox">
+            <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+            <label>Tu nombre de Minecraft:</label>
             <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
-            <br>
-            <label onclick="saveInitcommand()">Comando Inicial de BOT:</label>
+                
+            <label>Comando Inicial de BOT:</label>
             <input type="text" id="InitcommandInput" placeholder="login">
-            <br>
-              
-            <div> <label for="eventType"> Test comando:</label>
+            <label for="eventType" class="text-red-600 font-bold text-4xl"> Test comando:</label><div> 
                 <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
-                <label for="data"> -</label>
+                <label for="data"></label>
                 <input type="text" id="data" placeholder="Default">
                 <button onclick="testHandleEvent()">Test comando</button> </div>
+            </div>
+            </div>
+            <div class="containerbox"> 
 
-
-            <script>
-                // Cargar el comando inicial guardado
-                const initCommandInput = document.getElementById('InitcommandInput');
-                setupLocalStorage(document.getElementById('InitcommandInput'), 'Initcommand');
-                setupLocalStorage(document.getElementById('playerNameInput'), 'playerName');
-
-                // Cargar el nombre del jugador guardado
-                const playerNameInput = document.getElementById('playerNameInput');
-            </script>
-            <div>
                 <button onclick="saveAllChanges1()">Guardar Cambios</button>
-
                 <div>
-                    <div id="chat">chat</div>
-                    <textarea id="chatcommands" ></textarea>
+                    <div id="chat" class="flex justify-center text-cyan-600 text-4xl">chat</div>
+                    <textarea id="chatcommands" class="mx-8"></textarea>
                   </div>
                   <div>
-                    <div id="follow">follow</div>
-                    <textarea id="followcommands" ></textarea>
+                    <div id="follow" class="flex justify-center text-cyan-600 text-4xl">follow</div>
+                    <textarea id="followcommands" class="mx-8"></textarea>
                   </div>
                   <div>
-                    <div id="likes">likes</div>
-                    <textarea id="likescommands" ></textarea>
+                    <div id="likes" class="flex justify-center text-cyan-600 text-4xl">likes</div>
+                    <textarea id="likescommands" class="mx-8"></textarea>
                   </div>
                   <div>
-                    <div id="share">share</div>
-                    <textarea id="sharecommands" ></textarea>
+                    <div id="share" class="flex justify-center text-cyan-600 text-4xl">share</div>
+                    <textarea id="sharecommands" class="mx-8"></textarea>
                   </div>
                   <div>
-                    <div id="welcome">welcome</div>
-                    <textarea id="welcomecommands" ></textarea>
+                    <div id="welcome" class="flex justify-center text-cyan-600 text-4xl">welcome</div>
+                    <textarea id="welcomecommands" class="mx-8"></textarea>
                   </div>
                   <div>
-                    <div id="envelope">envelope</div>
-                    <textarea id="envelopecommands" ></textarea>
+                    <div id="envelope" class="flex justify-center text-cyan-600 text-4xl">envelope</div>
+                    <textarea id="envelopecommands" class="mx-8"></textarea>
                   </div>
                   <div>
-                    <div id="subscribe">subscribe</div>
-                    <textarea id="subscribecommands" ></textarea>
+                    <div id="subscribe" class="flex justify-center text-cyan-600 text-4xl">subscribe</div>
+                    <textarea id="subscribecommands" class="mx-8"></textarea>
                   </div>
-                  gift
-                  <div id="eventsContainer">gift</div>
+        </div>
+            <div class="containerbox">
+                <div class="flex justify-center text-cyan-600 text-4xl">gift</div>
+                  <div id="eventsContainer"></div>
                   <button onclick="addEvent()">Añadir evento</button>
                   <button onclick="cargarDatos()">Cargar datos</button>
-              
+                  </div>
                   <script>
                         const eventsContainer = document.getElementById('eventsContainer');
                         let events = JSON.parse(localStorage.getItem('events')) || {};
@@ -492,13 +411,14 @@ meta
                                     const eventNamecommands = eventData.commands;
                         
                                     const newEventHTML = `
-                                        <div>${eventNameinput}</div>
+                                        <div class="containerbox-child">${eventNameinput}
 
                                         <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
                                         <input type="text" id="${eventIndex}input" value="${eventNameinput}" onclick="handleRenameModal(${eventIndex})" onchange="sendguardarcomando(${eventIndex})">
                                         <div>
                                             <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${eventNamecommands}</textarea>
                                         </div>
+                                    </div>
                                     `;
                         
                                     const newEventDiv = document.createElement('div');
@@ -565,43 +485,66 @@ meta
         </div>
     </div>
     <div id="Tab3" class="tabcontent">
-
-        <label class="container">
-            <input id="sendsoundCheckbox" type="checkbox" checked>
+        <div class="containerbox">
+        <label class="cyberpunk-checkbox-label">
+            <input class="cyberpunk-checkbox"  id="sendsoundCheckbox" type="checkbox" checked>
 
             <div class="checkmark">Sonidos</div>
-        <div id="selectedSound">
     </label>
-    <form id="soundForm">
-        <input type="file" id="soundFiles" accept=".mp3,.wav,.ogg,.webm" multiple>
-        <button type="submit">Añadir sonido</button>
-    </form>
-        <div id="dropdownButton">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Audio Table</h1>
+        <button id="addButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Add New Event
+        </button> <button id="testButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-sm">Test</button>
+        <input type="text" id="test-event" class="py-1 px-2 rounded-sm">    
+        <table class="table-auto w-full mt-4 border">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Volume</th>
+              <th>Enable</th>
+              <th>Event Name</th>
+              <th>Sound Effect</th>
+              <th>Delete</th>
+            </tr>
+          </thead>
+          <tbody id="audioTableBody">
+            <!-- Table rows will be added here -->
+          </tbody>
+        </table>
+      </div>
+      <!-- Modal for selecting audio -->
+      <div class="modal fade" id="audioModal" tabindex="-1" role="dialog" aria-labelledby="audioModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header bg-gray-900 text-white">
+              <h5 class="modal-title" id="audioModalLabel">Select Audio from MyInstants</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">×</span>
+              </button>
             </div>
+            <div class="modal-body bg-gray-900 text-white">
+              <!-- Search bar -->
+              <input type="text" id="searchBox" class="form-control mb-4" placeholder="Search for audio...">
+              <button id="searchButton" class="btn btn-primary">Search</button>
+              <!-- Audio list will be displayed here -->
+              <div id="audioList"></div>
             </div>
-            <ul id="soundList" style="display: block;"></ul>
-            <!-- Muestra la lista de sonidos por defecto 
-        <input checked="checked" id="sendsoundCheckbox" type="checkbox" checked> -->
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
         </div>
-        <div id="modal" style="display: none;">
-            <div id="modalContent">
-                <h2>Reproductor de Audio</h2>
-                <audio id="audioPlayer" controls></audio>
-                <input type="text" id="soundNameInput" placeholder="Nombre del sonido">
-                <button id="playButton">Reproducir</button>
-            </div>
-        </div>
-
+      </div>
+    </div>
 
     <div id="Tab4" class="tabcontent">
-
-
+        <div class="containerbox">
         <div style="padding-top: 10px;">
             <div class="inputFields">
                 <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GOOO" type="button"></button>
             </div>
             <div id="chatbox"></div>
-            <div>
                 <form id="overlayForm">
                     OverlayLink:
                     <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required>
@@ -614,43 +557,39 @@ meta
             function openTab(evt, tabName) {
                 const tabContents = document.querySelectorAll('.tabcontent');
                 const tabLinks = document.querySelectorAll('.tablinks');
-              
+            
                 tabContents.forEach((tabContent) => {
-                  tabContent.hidden = true;
+                    tabContent.hidden = true;
                 });
-              
+            
                 tabLinks.forEach((tabLink) => {
-                  tabLink.classList.remove('active');
+                    tabLink.classList.remove('active');
                 });
-              
+            
                 document.getElementById(tabName).hidden = false;
                 evt.currentTarget.classList.add('active');
-              }
-              
-              // Llama a openTab para mostrar la pestaña por defecto
-              openTab({
-                currentTarget: document.querySelector('.tablinks'),
-              }, 'Tab1');
+            
+                // Guardar el nombre de la pestaña en localStorage
+                localStorage.setItem('lastTab', tabName);
+            }
+            
+            // Obtener el nombre de la última pestaña abierta desde localStorage
+            const lastTab = localStorage.getItem('lastTab');
+            
+            // Llama a openTab para mostrar la última pestaña abierta, si existe
+            if (lastTab) {
+                openTab({
+                    currentTarget: document.querySelector(`[onclick="openTab(event, '${lastTab}')"`),
+                }, lastTab);
+            } else {
+                // Si no hay una última pestaña, muestra la pestaña por defecto (Tab1)
+                openTab({
+                    currentTarget: document.querySelector('.tablinks'),
+                }, 'Tab1');
+            }
         </script>
         <script>
-            const uniqueIdInput = document.getElementById('uniqueIdInput');
-            const connectButton = document.getElementById('connectButton');
 
-            // Load the last entered value from localStorage
-            const uniqueId = localStorage.getItem('uniqueId');
-            if (uniqueId) {
-                uniqueIdInput.value = uniqueId;
-            }
-
-            if (connectButton) {
-                connectButton.addEventListener('click', () => {
-                    const currentValue = uniqueIdInput.value;
-                    if (currentValue) {
-                        // Store the current value in localStorage
-                        localStorage.setItem('uniqueId', currentValue);
-                    }
-                });
-            }
         </script>
 
     </div>
@@ -660,40 +599,7 @@ meta
         </div>
         
     </div>
-    <div id="Tab6" class="tabcontent">
-
-    </div>
-    <div id="Tab7" class="tabcontent">
-        
-    </div>
-    <script>
-        // Función para guardar el estado de los checkboxes en el almacenamiento local
-        function guardarEstadoCheckboxes() {
-            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                localStorage.setItem(checkbox.id, checkbox.checked);
-            });
-        }
-
-        // Función para aplicar el estado guardado de los checkboxes al cargar la página
-        function aplicarEstadoCheckboxes() {
-            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                const estadoGuardado = localStorage.getItem(checkbox.id);
-                if (estadoGuardado !== null) {
-                    checkbox.checked = estadoGuardado === 'true';
-                }
-                console.log(estadoGuardado);
-            });
-        }
-
-        // Ejecutar la función para aplicar el estado guardado al cargar la página
-        window.addEventListener('load', aplicarEstadoCheckboxes);
-
-        // Llamar a la función para guardar el estado de los checkboxes antes de salir de la página
-        window.addEventListener('beforeunload', guardarEstadoCheckboxes);
-
-    </script>
 </body>
+<script src="script.js"></script>
 
 </html>

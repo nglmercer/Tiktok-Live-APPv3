@@ -1,20 +1,16 @@
-const { contextBridge, ipcRenderer } = require('electron')
-const path = require('node:path')
+// See the Electron documentation for details on how to use preload scripts:
+// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
+const { contextBridge, ipcRenderer } = require("electron");
 
-contextBridge.exposeInMainWorld('electron', {
-  startDrag: (fileName) => {
-    ipcRenderer.send('ondragstart', path.join(process.cwd(), fileName))
-  }
-})
+console.log("👋 Preload.js loaded successfully");
 
-contextBridge.exposeInMainWorld('electronAPI', {
-  addDivToOverlay: () => {
-    const div = document.createElement('div');
-    // Customize the div's appearance and behavior
-    div.style.width = '100px';
-    div.style.height = '50px';
-    div.style.backgroundColor = 'red';
-    div.textContent = 'This is a div in the overlay';
-    document.body.appendChild(div);
-  },
+contextBridge.exposeInMainWorld("electronAPI", {
+  read: () => ipcRenderer.send("read"),
+  getFakeFile: () => ipcRenderer.invoke("fakeFile"),
+  getFileFromPath: (path) => ipcRenderer.invoke("getFileFromPath", path),
+});
+
+contextBridge.exposeInMainWorld("ipcRenderer", {
+  send: (event, data) => ipcRenderer.send(event, data),
+  invoke: (event, data) => ipcRenderer.invoke(event, data)
 });

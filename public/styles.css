@@ -2,13 +2,14 @@ body {
     font-family: Arial, Helvetica, sans-serif;
     margin-top: 20px;
     font-weight: bold;
-    font-size: 1.7em;
-    transition: background-color 2s ease;
+    font-size: 1.5em;
     cursor: auto;
     width: 99%;
     height: 99%;
     overflow: hidden;
-    background: none;
+    background: #1c1d1c;
+    color: white !important;
+    word-wrap: break-word;
 }
 ::-webkit-scrollbar {
     width: 10px;
@@ -19,13 +20,23 @@ body {
     width: 10px;
     background-image: linear-gradient(to bottom, rgb(255, 0, 200), #00f);
   }
-  
-#createBotForm {
-    color: rgb(89, 0, 255); rgb(0, 191, 255)
-  }
-.diamond-icon::before {
-    content: "●"; /* Agregar el icono */
-    color: yellow; /* Cambiar el color del icono a amarillo */
+
+.containerbox {
+    border: 1px solid rgba(88, 88, 255, 0.123);
+    background-color: #212121;
+    margin: 1rem;
+    min-width: 90%;
+    min-height: 90%;
+}
+.containerbox-child {
+    border: 1px solid rgba(88, 88, 255, 0.123);
+    background-color: #1a1919;
+    min-width: 90%;
+    min-height: 90%;
+    margin-right: 10%;
+}
+.containerbox:hover {
+    border: 1px solid rgb(51, 51, 139);
 }
 
 .title-bar {
@@ -50,34 +61,24 @@ body {
   }
 
 
-.button.close {
-    position: fixed;
-    top: -1px;
-    right: 0px;
-    z-index: 999;
-    height: 20px;
-    width: 40px;
-    background-color: red;
-}
-.button.close:hover {
-    background-color: rgb(193, 48, 48);
-}
 .custom-file-upload:hover {
-    background-color: rgb(134, 134, 134);
+    background-color: rgba(134, 134, 134, 0.671);
 }
   
 .tabs-menu {
     margin-top: 20px;
     float: inline-start;
+    margin-right: 1.6rem;
     padding-right: 1.6rem;
-    width: 170px;
+    width: 180px;
     max-height: 100dvh; /* ajusta la altura máxima del contenedor */
     overflow-x: hidden;
 }
 .tabs-menu button {
     box-sizing: content-box;
     background-color: inherit;
-    width: inherit;
+    width: 11rem;
+    border-radius: 6px 6px 6px 6px;
     font-size: 18px;
     color: rgb(204, 204, 204);
 }
@@ -113,18 +114,27 @@ span {
     font-size: 1.5rem;
 
 }
+.containerbox {
+    box-sizing: content-box;
+    padding: 20px;
+  }
+.containerbox.\.1 {
+    padding: 20px;
+    width: 200px;
+    align-items: end;
+    margin: 20px;
+}
 .tabcontent {
-    flex-direction: row;
-    align-items: flex-start; /* ajusta la altura de los elementos */
+    flex-direction: column;
     overflow-x: hidden; 
     padding: 20px;
-    max-height: 100dvh; /* ajusta la altura máxima del contenedor */
+    max-height: 90dvh; /* ajusta la altura máxima del contenedor */
   }
 
 button {
     box-sizing: content-box;
     min-height: 35px;
-    border: 1px solid #5e4dcd;
+    border: 1px solid #5e4dcd71;
     border-radius: 6px 6px 6px 6px;
     background-color: #5e4dcd;
     font-size: 15px;
@@ -132,30 +142,22 @@ button {
     transition: background-color .3s ease-in-out;
 }
 textarea {
-    float: inherit;
     field-sizing: content;
-    max-height: 800px;
-    min-width: 800px;
-    max-width: 1600px;
-    border: 1px solid #5e4dcd7d;
-    border-radius: 6px 6px 6px 6px;
-    background-color: #292b2bd1;
+    max-height: 1600px;
+    width: 90%;
+    min-width: 50%;
+    background-color: #000000d1;
     font-family: Arial, Helvetica, sans-serif;
-    font-weight: bolder;
-    font-size: 4em;
-    cursor: auto;
+    font-size: 0.6em;
     color: white;
     font-weight: bolder;
-    font-size: 15px;
-    transition: background-color .3s ease-in-out;
 }
 button:hover {
     background-color: #5e5dcd;
 }
 
 input[type="button"] {
-    box-sizing: content-box;
-    width: 10.4rem;
+    width: 11rem;
     height: 30px;
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
@@ -168,12 +170,13 @@ input[type="button"] {
     box-sizing: content-box;
 }
 input[type="checkbox"] {
-display: grid;  
+    margin: 5px;
 }
 input[type="text"] {
     color: #f84cfe;
     font-size: 15px;
     font-weight: bolder;
+    min-width: 11rem;;
     border: 1px solid #5e4dcd;
     border-radius: 6px 6px 6px 6px;
     background-color: #5e4dcd00;
@@ -182,38 +185,6 @@ input[type="text"] {
 #uniqueIdInput{
     height: 30px;
     width: calc(160px + 1%);
-}
-/* Estilo para los botones cuando se pasa el cursor por encima */
-
-input[type="button"]:hover {
-    background-color: #5e5dcd;
-    border: 1px solid lightgrey;
-    /* cambiar el color de fondo */
-}
-
-
-/* Estilo para los botones cuando se presionan */
-
-input[type="button"]:active {
-    background-color: #1d1d1d;
-    /* cambiar el color de fondo */
-    box-shadow: 0 5px #66666600;
-    /* añadir una sombra */
-}
-
-h1 {
-    font-size: 2em;
-    margin-top: 0;
-    margin-bottom: 0;
-}
-
-a {
-    color: #58a6ff;
-}
-
-.subTitle {
-    font-size: 1.5em;
-    font-weight: bold;
 }
 
 .usernamelink {
@@ -232,12 +203,6 @@ a {
     word-wrap: break-word;
 }
 
-.splitchattable,
-.splitstatetable {
-    display: flex;
-}
-
-
 /* Estilos para el contenedor principal */
 .user-profile-container {
     display: flex;
@@ -251,11 +216,6 @@ a {
     height: 140px; /* Altura deseada de la imagen */
 }
 
-/* Estilos para el enlace de perfil */
-.user-profile-link {
-    /* Agrega estilos según sea necesario */
-}
-
 
 #stateText {
     text-wrap: wrap;
@@ -263,10 +223,6 @@ a {
     padding: 0.2rem;
 }
 
-/* Estilos para el enlace de perfil */
-.user-profile-link {
-    /* Agrega estilos según sea necesario */
-}
 .gift-container {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -280,7 +236,7 @@ a {
 }
 
 .gift-box img {
-    max-width: 90%; /* Ajusta el tamaño según sea necesario */
+    max-width: 99%; /* Ajusta el tamaño según sea necesario */
 }
 
 .containerheader {
@@ -291,67 +247,13 @@ a {
 
     /* Añadido */
 }
-/* Estilos CSS para la modal */
-.modal {
-    overflow: auto; /* Añadir desplazamiento si la modal es demasiado grande */
-    background-color: rgba(0,0,0,0.4); /* Fondo oscuro semitransparente */
-}
 
-/* Contenido de la modal */
-.modal-content {
-    background-color: #fefefe;
-    margin: 15% auto; /* Centrar vertical y horizontalmente */
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 600px; /* Ancho máximo de la modal */
-    border-radius: 10px;
-}
-.modal-dialog {
-    background-color: #000000a6;
-    border: 1px solid black; /* Borde negro */
-    z-index: 9999; /* Índice z alto para estar encima de otros elementos */
-    padding: 10px; /* Espaciado interior */
-}
-/* Estilos para el botón de cerrar */
 
-.event[data-type="gift"][data-name="default"] > div,
-.event[data-type="gift"][data-name="default"] > .eventInput {
-    display: none;
-}
-
-#battle-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: #f5f5f5;
-    padding: 10px;
-    border-radius: 5px;
-  }
-  
-  .user {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .username {
-    font-weight: bold;
-  }
-  
-  .points {
-    font-size: 24px;
-    margin-top: 5px;
-  }
-  
-  #battle-status {
-    font-size: 20px;
-    font-weight: bold;
-  }
 .chatcontainer {
     margin: 10px 0; /* Add some spacing between gift items */
     padding: 10px; 
     min-width: 400px;
+    min-height: 400px;
     max-height: 600px;
     max-width: 1000px;
     overflow-x: hidden;
@@ -361,17 +263,32 @@ a {
     margin: 10px 0; /* Add some spacing between gift items */
     padding: 10px; 
     min-width: 400px;
+    min-height: 400px;
     max-height: 600px;
     max-width: 1000px;
     overflow-x: hidden;
 }
 
 @media (orientation: portrait) {
+    .tabcontent {
+        flex-direction: row;
+        overflow-x: hidden; 
+        padding: 0px;
+        max-height: 90dvh; /* ajusta la altura máxima del contenedor */
+      }
     body {
         background-color: black;
     }
+    .tabs-menu {
+        margin-top: 10px;
+        float: inline-start;
+        padding-right: 1rem;
+        width: 120px;
+        max-height: 100dvh; /* ajusta la altura máxima del contenedor */
+        overflow-x: hidden;
+    }
     .splitchattable {
-        flex-direction: row;
+        flex-direction: column;
         min-width: 400px;
         gap: 1;
         max-height: 800px;
@@ -387,6 +304,15 @@ a {
         min-width: 50px;
         max-width: 1000px;
         max-height: 400px;
+    }
+    .gift-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+        gap: 1px;
+        overflow: hidden;   
+    }
+    p {
+        font-size: 10px;
     }
 }
 
@@ -412,87 +338,9 @@ a {
     font-weight: bold;
 }
 
-#dropdownMenu div {
-    display: flex;
-    /* Invierte el orden de los elementos */
-    padding-top: 5px;
-    border-bottom: 1px solid #ddd;
-    margin: 1px;
-}
-
-#dropdownMenu div:last-child {
-    gap: 1;
-    padding-top: 5px;
-}
-
-#dropdownMenu span {
-    flex: 1;
-    overflow: hidden;
-    white-space: nowrap;
-    padding-top: 5px;
-    text-overflow: ellipsis;
-    text-align: left;
-    /* Alinea el texto a la derecha */
-}
-
-#dropdownMenu button {
-    border: none;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    transition-duration: .3s;
-    overflow: hidden;
-}
-
-#dropdownMenu button:hover {}
 
 button:hover {
     opacity: 0.8;
-}
-
-.dark-theme body {
-    background: #000000;
-    color: #f1f1f1;
-}
-
-body.theme-dark {
-    background: #000000;
-    color: #eceaea;
-}
-
-body.theme-light {
-    background: rgba(0, 0, 0, 0);
-    color: rgb(2, 2, 2);
-}
-
-.theme-light-hover {
-    background: rgba(5, 0, 78, 0.75);
-}
-
-audio .mask-custom {
-    background: rgba(24, 24, 16, 0.2);
-    border-radius: 2em;
-    backdrop-filter: blur(15px);
-    border: 2px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 10px 10px 10px rgba(46, 54, 68, 0.03);
-}
-
-.themeButtons button {
-    min-height: 50px;
-    font-size: 15px;
-    color: #f1f1f1;
-    border: 1px solid #0b0a0c;
-    border-radius: 6px 6px 6px 6px;
-    background-color: #321cc6af;
-    cursor: auto;
-    transition: background-color .3s ease-in-out;
-}
-
-.themeButtons button:hover {
-    background-color: #1356a3;
-}
-
-#soundList li {
 }
 
 .deleteButton {
@@ -500,45 +348,6 @@ audio .mask-custom {
     width: 30px;
     /* Esto establecerá el ancho del botón en 50px */
     height: 30px;
-}
-
-#voiceSelectContainer {
-    position: relative;
-}
-
-#voiceSelectContainer select {
-    color: #0074f8;
-    min-height: 30px;
-    border: 1px solid #5e4dcd;
-    border-radius: 6px 6px 6px 6px;
-    background-color: transparent;
-    font-weight: bolder;
-    font-size: 15px;
-    cursor: cell;
-    transition: background-color .3s ease-in-out;
-}
-
-#voiceSelectContainer select:focus {
-    /* Cambia el color de fondo y el color del texto cuando el select está enfocado */
-    background-color: #5e4dcd;
-}
-
-#voiceSelectContainer select option {
-    /* Cambia el color de fondo y el color del texto de las opciones */
-    background-color: transparent;
-    color: #000000;
-    font-weight: bolder;
-}
-
-#selectedOptionsContainer {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    width: 100%;
-    background-color: transparent;
-    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-    z-index: 1;
 }
 
 audio {
@@ -552,158 +361,13 @@ audio {
     transition: 2s;
     width: 220px; /* Nueva altura cuando se hace hover */
 }
-audio::-webkit-media-controls-play-button {}
 
-audio::-webkit-media-controls-panel {
-    background: #4568dc;
-    /* fallback for old browsers */
-    background: -webkit-linear-gradient(to right, #4568dc, #b06ab3);
-    /* Chrome 10-25, Safari 5.1-6 */
-    background: linear-gradient(to right, #4568dc, #b06ab3);
-    color: #f1f1f1;
-    border: 1px solid #5e4dcd;
-    background-color: #1d1adda4;
-    box-shadow: 0px 0px 20px -17px;
-    backdrop-filter: blur(100%);
-    /* Blur effect */
-}
-
-#overlay-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0);
-    z-index: 1000;
-    pointer-events: none;
-    display: none;
-    /* Añade esta línea para ocultar el overlay por defecto */
-}
-
-.toggleWrapper {
-    top: 8%;
-    right: 2%;
-    position: absolute;
-    font-size: 17px;
-    width: 3.5em;
-    height: 2em;
-}
-
-.toggleWrapper input {
-    position: relative;
-  
-}
-
-.toggle {
-    position: absolute;
-    cursor: pointer;
-    inset: 0;
-    background: #d4acfb;
-    border-radius: 50px;
-    transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
-}
-
-
-.toggle__handler {
-    display: inline-block;
-    position: relative;
-    z-index: 1;
-    top: 3px;
-    left: 3px;
-    width: 24px;
-    height: 24px;
-    background-color: #ffec8c;
-    border-radius: 10px;
-    transition: all 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-input:checked+.toggle {
-    background-color: #030238;
-}
-
-input:checked+.toggle:before {
-    transform: translateX(1.6em);
-    width: 2em;
-    height: 2em;
-    bottom: 0;
-}
-
-input:checked+.toggle .toggle__handler {
-    position: absolute;
-    content: "";
-    height: 2em;
-    width: 2em;
-    background-color: white;
-    border-radius: 50px;
-    box-shadow: 0 0px 20px rgba(0,0,0,0.4);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    transform: translate3d(30px, -4px, 0) rotate(0);
-}
-
-input:checked+.toggle .toggle__handler .crater {
-    opacity: 1;
-}
-
-
-
-#filter-words {
-    width: 80%;
-}
-
-.event-div {
-    position: absolute;
-    padding: 10px;
-    border-radius: 5px;
-    max-width: 100%;
-    overflow: auto; 
-}
 
 .profile-picture {
     width: 40%;
     height: 40%;
     max-width: 80px;
     max-height: 80px;
-    border-radius: 50%;
-    /* Añade más estilos aquí */
-}
-
-.event-div .profile-picture {
-    width: 40%;
-    height: 40%;
-    max-width: 80px;
-    max-height: 80px;
-    border-radius: 50%;
-    /* Añade más estilos aquí */
-}
-
-.event-div .gift-image {
-    width: 40%;
-    height: 40%;
-    max-width: 500px;
-    max-height: 500px;
-    border-radius: 50%;
-    /* Añade más estilos aquí */
-}
-
-.event-div .event-text {
-    width: 10%;
-    height: 10%;
-    font-size: 2em;
-    max-width: 80px;
-    max-height: 80px;
-    border-radius: 50%;
-    flex-wrap: wrap;
-    /* Añade más estilos aquí */
-}
-
-.event-div .gift-name {
-    font-weight: bold;
-    color: red;
-    width: 40%;
-    height: 40%;
-    max-width: 500px;
-    max-height: 500px;
     border-radius: 50%;
     /* Añade más estilos aquí */
 }
@@ -718,85 +382,12 @@ input:checked+.toggle .toggle__handler .crater {
 }
 
 
-
-.playButton {
-    top: -8px;
-    width: 40px;
-    height: 40px;
- 
-    color: #f1f1f1;
-    border: 1px solid #3c20f4;
-    border-radius: 50%;
-    background-color: rgba(34, 0, 255, 0.649);
-    position: relative;
-}
-
-.playButton:before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 0;
-    height: 0;
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    border-left: 15px solid #f1f1f1;
-}
-
-.playButton:hover {
-    background-color: #2200ff;
-}
-
-.playButton:focus {
-    outline: none;
-}
-
-.renameButton:focus {
-    outline: none;
-}
-
-
-.container {
-    right: 100px;
-    cursor: auto;
-    user-select: none;
-}
-
-.checkmark {
-    cursor: pointer;
-    align-items: center;
-    display: grid;
-    height: 1.6em;
-    width: 4em;
-    border-radius: 10%;
-    background: #ffeded38;
-}
-
-.container input:checked~.checkmark {
-    background: linear-gradient(144deg, #af40ff, #5b42f3 50%, #00ddeb);
-    opacity: 0.9;
-    transition: all 0.2s ease;
-}
-
 .checkmark:after {
     content: "";
     position: absolute;
     display: none;
 }
 
-.container input:checked~.checkmark:after {
-    display: block;
-}
-
-.container .checkmark:after {
-    left: 0.61em;
-    top: 0.43em;
-    width: 0.25em;
-    height: 0.5em;
-    border-width: 0 0.15em 0.15em 0;
-    transform: rotate(45deg);
-}
 
 .cyberpunk-checkbox {
     appearance: none;
