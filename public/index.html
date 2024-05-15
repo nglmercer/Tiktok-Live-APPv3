@@ -303,28 +303,41 @@ meta
                         
                             // Mostrar el nuevo evento en el contenedor
                             const newEventHTML = `
-                                <div>${newEvent.name}</div>
-                                <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
-                                <input type="text" id="${eventIndex}input" value="${newEvent.name}" onclick="sendguardarcomando(${eventIndex})">
-                                <div>
-                                <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${newEvent.commands}</textarea>
-                            </div>
+                                <div class="containerbox-child">
+                                    <div id="${eventIndex}select">
+                                        <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
+                                        <select id="${eventIndex}-select2" class="text-black"></select>
+                                    </div>
+                                    <div>
+                                        <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${newEvent.commands}</textarea>
+                                    </div>
+                                </div>
                             `;
                         
                             const newEventDiv = document.createElement('div');
                             newEventDiv.classList.add('event');
                             newEventDiv.innerHTML = newEventHTML;
-                            
+                        
                             // Insertar el nuevo evento al principio del contenedor
                             eventsContainer.insertBefore(newEventDiv, eventsContainer.firstChild);
+                        
+                            // Inicializar select2 en el nuevo elemento select
+                            initializeSelect2(`${eventIndex}-select2`, newEvent);
                         }
                         
                     
                         // Función para enviar los datos al actualizar
                         function sendguardarcomando(eventIndex) {
-                            const eventName = document.getElementById(`${eventIndex}input`).value.trim();
-                            const eventCommands = document.getElementById(`${eventIndex}command`).value.trim();
-                            guardarcomando(eventIndex, eventName, eventCommands);
+                            const selectElement = document.getElementById(`${eventIndex}-select2`);
+                            const commandElement = document.getElementById(`${eventIndex}command`);
+                            
+                            // Asegúrate de que los elementos existan antes de intentar acceder a sus propiedades
+                            if (selectElement && commandElement) {
+                                const selectedValue = selectElement.value;
+                                guardarcomando(eventIndex, selectedValue, commandElement.value);
+                            } else {
+                                console.error('Elementos no encontrados para el índice:', eventIndex);
+                            }
                         }
                     
                         // Función para enviar los datos al eliminar
@@ -333,59 +346,61 @@ meta
                         }
                     
                         function guardarcomando(eventIndex, eventNameinput, eventNamecommands) {
-                    
+                            log.guardarcomando(eventIndex, eventNameinput, eventNamecommands);
                             const eventType = 'gift'; // Tipo de evento específico
                             const defaultEventName = 'default'; // Nombre del evento predeterminado
-                    
+                        
                             if (!events[eventType]) {
                                 events[eventType] = {}; // Inicializar el tipo de evento si no existe
                             }
-                    
+                        
                             if (!events[eventType][defaultEventName]) {
                                 events[eventType][defaultEventName] = []; // Inicializar el evento predeterminado si no existe
                             }
-                    
-                            // Verificar si ya existe un evento con el mismo nombre
+                        
+                            // Verificar si ya existe un evento con el mismo índice
                             const existingEventIndex = events[eventType][defaultEventName].findIndex(event => event.index === eventIndex);
-                    
+                        
                             if (existingEventIndex !== -1) {
                                 // Actualizar los valores del evento
                                 events[eventType][defaultEventName][existingEventIndex].name = eventNameinput;
                                 events[eventType][defaultEventName][existingEventIndex].commands = eventNamecommands;
-                    
+                        
                                 // Guardar los eventos actualizados en el localStorage
                                 localStorage.setItem('events', JSON.stringify(events));
-                    
+                        
                                 console.log('Los cambios se guardaron exitosamente en el almacenamiento local.');
-                    
+                        
                                 // Recargar los datos para reflejar los cambios en el contenedor
                                 cargarDatos();
                             } else {
                                 console.error('No se pudo encontrar el evento en el almacenamiento local.');
                             }
                         }
-                    
                         function deleteEvent(eventIndex) {
                             let events = JSON.parse(localStorage.getItem('events')); // Obtener los eventos del almacenamiento local
-                    
+                        
                             const eventType = 'gift'; // Tipo de evento específico
                             const defaultEventName = 'default'; // Nombre del evento predeterminado
-                    
+                        
                             // Verificar si existen eventos y si el índice del evento a eliminar es válido
                             if (events && events[eventType] && events[eventType][defaultEventName]) {
+                                console.log(events[eventType][defaultEventName]); // Add this line for debugging
                                 const eventToDeleteIndex = events[eventType][defaultEventName].findIndex(event => event.index === eventIndex);
-                    
+                                console.log(eventToDeleteIndex, eventIndex, defaultEventName);
                                 if (eventToDeleteIndex !== -1) {
                                     // Eliminar el evento del arreglo de eventos
                                     events[eventType][defaultEventName].splice(eventToDeleteIndex, 1);
-                    
+                        
                                     // Guardar los eventos actualizados en el almacenamiento local
                                     localStorage.setItem('events', JSON.stringify(events));
-                    
+                        
                                     // Remover el elemento del contenedor de eventos
-                                    const eventDiv = document.getElementById(`${eventIndex}input`).parentNode;
-                                    eventDiv.remove();
-                    
+                                    const eventDiv = document.getElementById(`${eventIndex}input`);
+                                    if (eventDiv && eventDiv.parentNode) {
+                                        eventDiv.parentNode.remove();
+                                    }
+                
                                     // Volver a cargar los datos para reflejar los cambios en el contenedor
                                     cargarDatos();
                                 } else {
@@ -395,30 +410,59 @@ meta
                                 console.error('No se pudieron encontrar eventos válidos.');
                             }
                         }
-                    
+                        let globalSimplifiedStates2 = [];
+                        availableGiftsImage2();
+                        function availableGiftsImage2(state) {
+
+                            const savedStateJson = localStorage.getItem('simplifiedState');
+                            const savedState = JSON.parse(savedStateJson);
+                            if (savedState && savedState.availableGifts) {
+                                state = savedState || [];
+                                state.availableGifts.sort((a, b) => a.diamond_count - b.diamond_count);
+                            } else {
+                                state = savedState || [];
+                                console.error('No se encontraron datos de availableGifts en el localStorage.');
+                            }
+
+                        const simplifiedStateJson = JSON.stringify(state);
+                        localStorage.setItem('simplifiedState', simplifiedStateJson);
+                        console.log(state,"script")
+                        if (!state) {
+                            return state || [];
+                        }
+                        const simplifiedState = {
+                            availableGifts: state.availableGifts.map(gift => ({
+                                name: gift.name,
+                                diamondcost:  gift.diamond_count,
+                                giftId: gift.id,
+                                imageUrl: gift.image.url_list[1]
+                            }))
+                        };
+                        setTimeout(() => {
+                            globalSimplifiedStates2.push(simplifiedState);
+
+                        }, 1000);
+                        }
                         function cargarDatos() {
                             let events = JSON.parse(localStorage.getItem('events'));
-                            //console.log(JSON.stringify(events));
-                            // Limpiar el contenedor de eventos
                             eventsContainer.innerHTML = '';
                         
-                            // Verificar si hay eventos guardados
                             if (events && events.gift && Array.isArray(events.gift.default)) {
-                                // Recorrer todos los eventos guardados y agregarlos al contenedor en orden inverso
                                 events.gift.default.slice().reverse().forEach((eventData) => {
-                                    const eventIndex = eventData.index; // Índice del evento
-                                    const eventNameinput = eventData.name;
+                                    const eventIndex = eventData.index;
+                                    const eventNamegift = eventData.name;
                                     const eventNamecommands = eventData.commands;
                         
                                     const newEventHTML = `
-                                        <div class="containerbox-child">${eventNameinput}
-
-                                        <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
-                                        <input type="text" id="${eventIndex}input" value="${eventNameinput}" onclick="handleRenameModal(${eventIndex})" onchange="sendguardarcomando(${eventIndex})">
-                                        <div>
-                                            <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${eventNamecommands}</textarea>
+                                        <div class="containerbox-child">
+                                            <div id="${eventIndex}select">
+                                                <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
+                                                <select id="${eventIndex}-select2" class="text-black" style="width: 100%"></select>
+                                            </div>
+                                            <div>
+                                                <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${eventNamecommands}</textarea>
+                                            </div>
                                         </div>
-                                    </div>
                                     `;
                         
                                     const newEventDiv = document.createElement('div');
@@ -427,31 +471,40 @@ meta
                         
                                     // Insertar el nuevo evento al principio del contenedor
                                     eventsContainer.insertBefore(newEventDiv, eventsContainer.firstChild);
+                        
+                                    // Inicializar select2 en el elemento select dentro de este evento
+                                    initializeSelect2(`${eventIndex}-select2`, eventIndex, { name: eventNamegift });
                                 });
                             }
                         }
+                        function initializeSelect2(selectId, eventIndex, event) {
+                            const selectElement = document.getElementById(selectId);
+                            $(selectElement).select2({
+                                data: [
+                                    { id: event.name, text: event.name },
+                                    ...globalSimplifiedStates2.flatMap(state => state.availableGifts.map(gift => ({
+                                        id: gift.name,
+                                        text: gift.name,
+                                        imageUrl: gift.imageUrl
+                                    })))
+                                ],
+                                templateResult: formatGiftOption,
+                                escapeMarkup: markup => markup
+                            });
                         
-
-                        function handleRenameModal(eventIndex) {
-                            let inputField = document.getElementById(`${eventIndex}input`);
-                            let listItem = inputField.parentElement;
-                            let giftName = inputField.value; // Obtener el valor actual del input en lugar del texto del div
-                        
-                            openRenameModal(giftName, (newName) => {
-                                if (newName && newName !== giftName) {
-                                    // Aquí puedes realizar las operaciones necesarias con el nuevo nombre
-                                    inputField.value = newName; // Actualizar el valor del input
-                                    sendguardarcomando(eventIndex); // Llamar a la función para guardar los datos
-                                }
-                            }, inputField); // Pasar inputField como argumento adicional a openRenameModal
+                            $(selectElement).on('select2:select', function (e) {
+                                const selectedId = e.params.data.id;
+                                const selectedText = e.params.data.text;
+                                console.log('Selected ID:', selectedId, 'Selected Text:', selectedText);
+                                // Pasar el `eventIndex` correctamente a la función cuando ocurre el evento select2
+                                sendguardarcomando(eventIndex);
+                                console.log("e.params SELECT2:", e.params);
+                            });
                         }
-                        
-
-                        cargarDatos(); // Cargar los datos al cargar la página
-
-                    
-                    
-                    
+                        setTimeout(() => {
+                            cargarDatos(); // Cargar los datos al cargar la página
+                            console.log('Cargando datos...');
+                        }, 1000);
                     // Función para guardar todos los cambios
                     function saveAllChanges1() {
                     

@@ -1,429 +1,425 @@
 body {
-    font-family: Arial, Helvetica, sans-serif;
-    margin-top: 20px;
-    font-weight: bold;
-    font-size: 1.5em;
-    cursor: auto;
-    width: 99%;
-    height: 99%;
-    overflow: hidden;
-    background: #1c1d1c;
-    color: white !important;
-    word-wrap: break-word;
+  font-family: Arial, Helvetica, sans-serif;
+  margin-top: 20px;
+  font-weight: bold;
+  font-size: 1.5em;
+  cursor: auto;
+  width: 99%;
+  height: 99%;
+  overflow: hidden;
+  background: #1c1d1c;
+  color: white !important;
+  word-wrap: break-word;
 }
 ::-webkit-scrollbar {
-    width: 10px;
-  }
-  
-  /* Personalizar el pulgar */
-  ::-webkit-scrollbar-thumb {
-    width: 10px;
-    background-image: linear-gradient(to bottom, rgb(255, 0, 200), #00f);
-  }
+  width: 10px;
+}
+
+/* Personalizar el pulgar */
+::-webkit-scrollbar-thumb {
+  width: 10px;
+  background-image: linear-gradient(to bottom, rgb(255, 0, 200), #00f);
+}
 
 .containerbox {
-    border: 1px solid rgba(88, 88, 255, 0.123);
-    background-color: #212121;
-    margin: 1rem;
-    min-width: 90%;
-    min-height: 90%;
+  border: 1px solid rgba(88, 88, 255, 0.123);
+  background-color: #212121;
+  margin: 1rem;
+  min-width: 90%;
+  min-height: 90%;
 }
 .containerbox-child {
-    border: 1px solid rgba(88, 88, 255, 0.123);
-    background-color: #1a1919;
-    min-width: 90%;
-    min-height: 90%;
-    margin-right: 10%;
+  border: 1px solid rgba(88, 88, 255, 0.123);
+  background-color: #1a1919;
+  min-width: 90%;
+  min-height: 90%;
+  margin-right: 10%;
 }
 .containerbox:hover {
-    border: 1px solid rgb(51, 51, 139);
+  border: 1px solid rgb(51, 51, 139);
 }
 
 .title-bar {
-    background: #fcfcfcec;
-    position: fixed; 
-    -webkit-user-select: none;
-    -webkit-app-region: drag;
-    height: 30px;
-    left: 0px;
-    top: 1px;
-    width: 100%;
+  background: #fcfcfcec;
+  position: fixed;
+  -webkit-user-select: none;
+  -webkit-app-region: drag;
+  height: 30px;
+  left: 0px;
+  top: 1px;
+  width: 100%;
 }
 .title-bar h1 {
-    color: #030238;
-    font-family: Arial, sans-serif;
-    font-size: 24px;
-    font-weight: bold;
-    margin: 0;
-  }
-  .title-bar h2 {
-    font-size: 10px;
-  }
-
+  color: #030238;
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+.title-bar h2 {
+  font-size: 10px;
+}
 
 .custom-file-upload:hover {
-    background-color: rgba(134, 134, 134, 0.671);
+  background-color: rgba(134, 134, 134, 0.671);
 }
-  
+
 .tabs-menu {
-    margin-top: 20px;
-    float: inline-start;
-    margin-right: 1.6rem;
-    padding-right: 1.6rem;
-    width: 180px;
-    max-height: 100dvh; /* ajusta la altura máxima del contenedor */
-    overflow-x: hidden;
+  margin-top: 20px;
+  float: inline-start;
+  margin-right: 1.6rem;
+  padding-right: 1.6rem;
+  width: 180px;
+  max-height: 100dvh; /* ajusta la altura máxima del contenedor */
+  overflow-x: hidden;
 }
 .tabs-menu button {
-    box-sizing: content-box;
-    background-color: inherit;
-    width: 11rem;
-    border-radius: 6px 6px 6px 6px;
-    font-size: 18px;
-    color: rgb(204, 204, 204);
+  box-sizing: content-box;
+  background-color: inherit;
+  width: 11rem;
+  border-radius: 6px 6px 6px 6px;
+  font-size: 18px;
+  color: rgb(204, 204, 204);
 }
 :root {
-    --primary-color: rgb(204, 204, 204);
-    --secondary-color: rgb(139, 139, 139);
-    --accent-color: rgb(154, 0, 108);
-    --button-padding: 14px 16px;
-    --button-font-size: 18px;
-  }
+  --primary-color: rgb(204, 204, 204);
+  --secondary-color: rgb(139, 139, 139);
+  --accent-color: rgb(154, 0, 108);
+  --button-padding: 14px 16px;
+  --button-font-size: 18px;
+}
 .tabs-menu button:after {
-    content: "";
-    pointer-events: none;
-    width: 0%;
-    height: 2px;
-    transition: width 0.3s ease;
-  }
-  
-  .tabs-menu button:hover {
-    background-color: var(--primary-color)!important;
-  }
-  
-  .tabs-menu button.active {
-    background-color: var(--secondary-color);
-    color: var(--accent-color);
-  }
-  ul#soundList {
-    font-size: 1.5rem;
-    margin: 0.2rem;
-    padding: 0.2rem;
+  content: "";
+  pointer-events: none;
+  width: 0%;
+  height: 2px;
+  transition: width 0.3s ease;
+}
+
+.tabs-menu button:hover {
+  background-color: var(--primary-color) !important;
+}
+
+.tabs-menu button.active {
+  background-color: var(--secondary-color);
+  color: var(--accent-color);
+}
+ul#soundList {
+  font-size: 1.5rem;
+  margin: 0.2rem;
+  padding: 0.2rem;
 }
 span {
-    font-size: 1.5rem;
-
+  font-size: 1.5rem;
 }
 .containerbox {
-    box-sizing: content-box;
-    padding: 20px;
-  }
+  box-sizing: content-box;
+  padding: 20px;
+}
 .containerbox.\.1 {
-    padding: 20px;
-    width: 200px;
-    align-items: end;
-    margin: 20px;
+  padding: 20px;
+  width: 200px;
+  align-items: end;
+  margin: 20px;
 }
 .tabcontent {
-    flex-direction: column;
-    overflow-x: hidden; 
-    padding: 20px;
-    max-height: 90dvh; /* ajusta la altura máxima del contenedor */
-  }
+  flex-direction: column;
+  overflow-x: hidden;
+  padding: 20px;
+  max-height: 90dvh; /* ajusta la altura máxima del contenedor */
+}
 
 button {
-    box-sizing: content-box;
-    min-height: 35px;
-    border: 1px solid #5e4dcd71;
-    border-radius: 6px 6px 6px 6px;
-    background-color: #5e4dcd;
-    font-size: 15px;
-    cursor: auto;
-    transition: background-color .3s ease-in-out;
+  box-sizing: content-box;
+  min-height: 35px;
+  border: 1px solid #5e4dcd71;
+  border-radius: 6px 6px 6px 6px;
+  background-color: #5e4dcd;
+  font-size: 15px;
+  cursor: auto;
+  transition: background-color 0.3s ease-in-out;
 }
 textarea {
-    field-sizing: content;
-    max-height: 1600px;
-    width: 90%;
-    min-width: 50%;
-    background-color: #000000d1;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 0.6em;
-    color: white;
-    font-weight: bolder;
+  field-sizing: content;
+  max-height: 1600px;
+  width: 90%;
+  min-width: 50%;
+  background-color: #000000d1;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.6em;
+  color: white;
+  font-weight: bolder;
 }
 button:hover {
-    background-color: #5e5dcd;
+  background-color: #5e5dcd;
 }
 
 input[type="button"] {
-    width: 11rem;
-    height: 30px;
-    border: 1px solid #5e4dcd;
-    border-radius: 6px 6px 6px 6px;
-    background-color: #5e4dcd;
-    color: #fff;
-    cursor: auto;
-    font-weight: bolder;
-    font-size: 15px;
-    transition: background-color .3s ease-in-out;
-    box-sizing: content-box;
+  width: 11rem;
+  height: 30px;
+  border: 1px solid #5e4dcd;
+  border-radius: 6px 6px 6px 6px;
+  background-color: #5e4dcd;
+  color: #fff;
+  cursor: auto;
+  font-weight: bolder;
+  font-size: 15px;
+  transition: background-color 0.3s ease-in-out;
+  box-sizing: content-box;
 }
 input[type="checkbox"] {
-    margin: 5px;
+  margin: 5px;
 }
 input[type="text"] {
-    color: #f84cfe;
-    font-size: 15px;
-    font-weight: bolder;
-    min-width: 11rem;;
-    border: 1px solid #5e4dcd;
-    border-radius: 6px 6px 6px 6px;
-    background-color: #5e4dcd00;
-    box-sizing: content-box;
+  color: #f84cfe;
+  font-size: 15px;
+  font-weight: bolder;
+  min-width: 11rem;
+  border: 1px solid #5e4dcd;
+  border-radius: 6px 6px 6px 6px;
+  background-color: #5e4dcd00;
+  box-sizing: content-box;
 }
-#uniqueIdInput{
-    height: 30px;
-    width: calc(160px + 1%);
+#uniqueIdInput {
+  height: 30px;
+  width: calc(160px + 1%);
 }
 
 .usernamelink {
-    color: #05adf0;
-    text-decoration: none;
+  color: #05adf0;
+  text-decoration: none;
 }
 
 #roomUserText,
 #roomStats {
-    font-size: 24px;
-    word-wrap: break-word;
+  font-size: 24px;
+  word-wrap: break-word;
 }
 
 #roomStats b {
-    font-size: 24px;
-    word-wrap: break-word;
+  font-size: 24px;
+  word-wrap: break-word;
 }
 
 /* Estilos para el contenedor principal */
 .user-profile-container {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Estilos para la imagen de perfil */
 .user-profile-image img {
-    box-sizing: border-box;
-    width: 100%;
-    height: 140px; /* Altura deseada de la imagen */
+  box-sizing: border-box;
+  width: 100%;
+  height: 140px; /* Altura deseada de la imagen */
 }
 
-
 #stateText {
-    text-wrap: wrap;
-    text-align: center;
-    padding: 0.2rem;
+  text-wrap: wrap;
+  text-align: center;
+  padding: 0.2rem;
 }
 
 .gift-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-    gap: 5px;
-    overflow: hidden;   
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 5px;
+  overflow: hidden;
 }
 
 .gift-box {
-    margin: 10px;
-    text-align: center;
+  margin: 10px;
+  text-align: center;
 }
 
 .gift-box img {
-    max-width: 99%; /* Ajusta el tamaño según sea necesario */
+  max-width: 99%; /* Ajusta el tamaño según sea necesario */
 }
 
 .containerheader {
-    display: block;
-    gap: 1;
-    min-width: 400px;
-    overflow: auto;
+  display: block;
+  gap: 1;
+  min-width: 400px;
+  overflow: auto;
 
-    /* Añadido */
+  /* Añadido */
 }
 
-
 .chatcontainer {
-    margin: 10px 0; /* Add some spacing between gift items */
-    padding: 10px; 
-    min-width: 400px;
-    min-height: 400px;
-    max-height: 600px;
-    max-width: 1000px;
-    overflow-x: hidden;
+  margin: 10px 0; /* Add some spacing between gift items */
+  padding: 10px;
+  min-width: 400px;
+  min-height: 400px;
+  max-height: 600px;
+  max-width: 1000px;
+  overflow-x: hidden;
 }
 
 .giftcontainer {
-    margin: 10px 0; /* Add some spacing between gift items */
-    padding: 10px; 
-    min-width: 400px;
-    min-height: 400px;
-    max-height: 600px;
-    max-width: 1000px;
-    overflow-x: hidden;
+  margin: 10px 0; /* Add some spacing between gift items */
+  padding: 10px;
+  min-width: 400px;
+  min-height: 400px;
+  max-height: 600px;
+  max-width: 1000px;
+  overflow-x: hidden;
 }
 
 @media (orientation: portrait) {
-    .tabcontent {
-        flex-direction: row;
-        overflow-x: hidden; 
-        padding: 0px;
-        max-height: 90dvh; /* ajusta la altura máxima del contenedor */
-      }
-    body {
-        background-color: black;
-    }
-    .tabs-menu {
-        margin-top: 10px;
-        float: inline-start;
-        padding-right: 1rem;
-        width: 120px;
-        max-height: 100dvh; /* ajusta la altura máxima del contenedor */
-        overflow-x: hidden;
-    }
-    .splitchattable {
-        flex-direction: column;
-        min-width: 400px;
-        gap: 1;
-        max-height: 800px;
-        max-width: 800px
-    }
-    .chatcontainer {
-        min-width: 400px;
-        padding-right: 60px;
-        max-height: 800px;
-        max-width: 800px
-    }
-    .giftcontainer {
-        min-width: 50px;
-        max-width: 1000px;
-        max-height: 400px;
-    }
-    .gift-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
-        gap: 1px;
-        overflow: hidden;   
-    }
-    p {
-        font-size: 10px;
-    }
+  .tabcontent {
+    flex-direction: row;
+    overflow-x: hidden;
+    padding: 0px;
+    max-height: 90dvh; /* ajusta la altura máxima del contenedor */
+  }
+  body {
+    background-color: black;
+  }
+  .tabs-menu {
+    margin-top: 10px;
+    float: inline-start;
+    padding-right: 1rem;
+    width: 120px;
+    max-height: 100dvh; /* ajusta la altura máxima del contenedor */
+    overflow-x: hidden;
+  }
+  .splitchattable {
+    flex-direction: column;
+    min-width: 400px;
+    gap: 1;
+    max-height: 800px;
+    max-width: 800px;
+  }
+  .chatcontainer {
+    min-width: 400px;
+    padding-right: 60px;
+    max-height: 800px;
+    max-width: 800px;
+  }
+  .giftcontainer {
+    min-width: 50px;
+    max-width: 1000px;
+    max-height: 400px;
+  }
+  .gift-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+    gap: 1px;
+    overflow: hidden;
+  }
+  p {
+    font-size: 10px;
+  }
 }
 
 .miniprofilepicture,
 .gifticon {
-    box-sizing: border-box;
-    width: 50px;
-    max-width: 100%; /* Increase the max-width to make the images larger */
-    height: auto; /* Ensure responsive images */
+  box-sizing: border-box;
+  width: 50px;
+  max-width: 100%; /* Increase the max-width to make the images larger */
+  height: auto; /* Ensure responsive images */
 }
 .thumbnail-img {
-    width: 20px; /* Ajustar el tamaño de acuerdo a tus necesidades */
-    height: 20px; /* Ajustar el tamaño de acuerdo a tus necesidades */
+  width: 20px; /* Ajustar el tamaño de acuerdo a tus necesidades */
+  height: 20px; /* Ajustar el tamaño de acuerdo a tus necesidades */
 }
 
 .username {
-    color: blue;
-    font-weight: bold;
+  color: blue;
+  font-weight: bold;
 }
 
 .message {
-    color: rgb(147, 5, 163);
-    font-weight: bold;
+  color: rgb(147, 5, 163);
+  font-weight: bold;
 }
 
-
 button:hover {
-    opacity: 0.8;
+  opacity: 0.8;
 }
 
 .deleteButton {
-    background-color: red;
-    width: 30px;
-    /* Esto establecerá el ancho del botón en 50px */
-    height: 30px;
+  background-color: red;
+  width: 30px;
+  /* Esto establecerá el ancho del botón en 50px */
+  height: 30px;
 }
 
 audio {
-    position: relative;
-    transition: 10s;
-    width: 220px; /* Nueva altura cuando se hace hover */
-    height: 43px;
-    left: -20px;
-  }
-  audio:hover {
-    transition: 2s;
-    width: 220px; /* Nueva altura cuando se hace hover */
+  position: relative;
+  transition: 10s;
+  width: 220px; /* Nueva altura cuando se hace hover */
+  height: 43px;
+  left: -20px;
+}
+audio:hover {
+  transition: 2s;
+  width: 220px; /* Nueva altura cuando se hace hover */
 }
 
-
 .profile-picture {
-    width: 40%;
-    height: 40%;
-    max-width: 80px;
-    max-height: 80px;
-    border-radius: 50%;
-    /* Añade más estilos aquí */
+  width: 40%;
+  height: 40%;
+  max-width: 80px;
+  max-height: 80px;
+  border-radius: 50%;
+  /* Añade más estilos aquí */
 }
 
 .gift-image {
-    border-radius: 50%;
-    width: 40%;
-    height: 40%;
-    max-width: 500px;
-    max-height: 500px;
-    /* Añade más estilos aquí */
+  border-radius: 50%;
+  width: 40%;
+  height: 40%;
+  max-width: 500px;
+  max-height: 500px;
+  /* Añade más estilos aquí */
 }
-
 
 .checkmark:after {
-    content: "";
-    position: absolute;
-    display: none;
+  content: "";
+  position: absolute;
+  display: none;
 }
 
-
 .cyberpunk-checkbox {
-    appearance: none;
-    width: 22px;
-    height: 22px;
-    border: 1px solid #30cfd0;
-    border-radius: 5px;
-    background-color: transparent;
-    display: inline-block;
-    position: relative;
-    margin-right: 5px;
-    cursor: pointer;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border: 1px solid #30cfd0;
+  border-radius: 5px;
+  background-color: transparent;
+  display: inline-block;
+  position: relative;
+  margin-right: 5px;
+  cursor: pointer;
 }
 
 .cyberpunk-checkbox:before {
-    content: "";
-    background-color: #30cfd0;
-    display: block;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    width: 15px;
-    height: 15px;
-    border-radius: 3px;
-    transition: all 0.3s ease-in-out;
+  content: "";
+  background-color: #30cfd0;
+  display: block;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+  transition: all 0.3s ease-in-out;
 }
 
 .cyberpunk-checkbox:checked:before {
-    transform: translate(-50%, -50%) scale(1);
+  transform: translate(-50%, -50%) scale(1);
+}
+select {
+  word-wrap: normal;
+  color: #000;
 }
 
 .cyberpunk-checkbox-label {
-    font-size: 18px;
-    cursor: pointer;
-    user-select: none;
-    display: flex;
-    align-items: center;
+  font-size: 18px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
 }

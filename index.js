@@ -8,10 +8,10 @@ const socketHandler = require('./socketHandler');
 const updateHandler = require('./updateHandler');
 
 const store = new Store(); 
-require('electron-reload')(__dirname, {
-  electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
-  hardResetMethod: 'exit'
-});
+// require('electron-reload')(__dirname, {
+//   electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
+//   hardResetMethod: 'exit'
+// });
 // Evento emitido cuando Electron ha terminado de inicializarse
 app.on('ready', () => {
   const express = require('express');
@@ -80,7 +80,7 @@ app.on('ready', () => {
   const httpServer = createServer(app1);
   const io = socketHandler.initSocket(httpServer);
   
-  app1.use(express.static(path.join(__dirname, 'public')));
+  app1.use(express.static('public'));
   httpServer.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
       console.log(`Port ${port} is already in use`);
