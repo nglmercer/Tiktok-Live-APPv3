@@ -269,7 +269,7 @@ function generateUsernameLink(data) {
 function isPendingStreak(data) {
     return data.giftType === 1 && !data.repeatEnd;
 }
-/**
+/**addChatItem
  * Add a new message to the chat container
  */
 let lastMessage = "";
@@ -281,7 +281,10 @@ function addChatItem(color, data, text, summarize) {
         container.find('div').slice(0, 200).remove();
     }
     const userpointsInput = document.getElementById('users-points');
-
+    const userlevel = document.getElementById('users-level');
+    let userlevelCheckbox = document.getElementById('userlevelCheckbox');
+    const levelValue = userlevel.value;
+    const parsedLevelValue = parseInt(levelValue);
     const inputValue = userpointsInput.value;
     const parsedValue = parseInt(inputValue);
     if (!userPoints[data.nickname]) {
@@ -292,6 +295,11 @@ function addChatItem(color, data, text, summarize) {
         // Si no es un número válido, utilizar el valor por defecto de 5
         userPoints[data.nickname] = 10;
       }
+    }
+
+    if (userlevelCheckbox.checked) {
+        userPoints[data.nickname] += 1 * parsedLevelValue;
+        log.levelCheckbox("añadir puntos por nivel", data.nickname, parsedLevelValue, userPoints[data.nickname]);
     }
     // Modificación para eliminar o reemplazar los caracteres especiales
     container.find('.temporary').remove();;
@@ -316,9 +324,7 @@ function addChatItem(color, data, text, summarize) {
     filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
     let lowerCaseText = text && text.toLowerCase() && text.replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
     let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
-    if (sendsoundCheckbox.checked) {
-       
-    }
+//    if (sendsoundCheckbox.checked) {}
     
     const customFilterWords = [
         "opahsaron", "tedesku", "unanimalh", "doketesam", "unmachetedesfigurolacara",
@@ -424,7 +430,7 @@ function addChatItem(color, data, text, summarize) {
         const intersection = new Set([...messageSet].filter(x => lastMessageSet.has(x)));
         const uniqueCharsDiff = Math.abs(messageSet.size - lastMessageSet.size);
         if (uniqueCharsDiff <= 2 && intersection.size >= message.length - 2) {
-            log.console('Mensajes similares encontrados.',message);
+            log.lastMessage('Mensajes similares encontrados.',message);
         }
     }
     
@@ -435,7 +441,7 @@ function addChatItem(color, data, text, summarize) {
     const matches = lowerCaseText.match(regex);
     
     if (matches && matches.length > 0) {
-        log.console(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
+        log.matches(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
         return;
     }
     let nameuser = data.uniqueId; 
@@ -443,7 +449,7 @@ function addChatItem(color, data, text, summarize) {
     let lowerCaseUser = nameuser.toLowerCase();
     let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
     if (filterUsers.includes(lowerCaseUser)) {
-        log.console("usuario de WhiteList", lowerCaseUser);
+        log.filterUsers("usuario de WhiteList", lowerCaseUser);
         enviarCommandID('chat', message);
         leerMensajes(message);
         enviarMensaje(message);
@@ -494,7 +500,7 @@ function addChatItem(color, data, text, summarize) {
 
     for (let word of filterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
-            log.console(message + 'filterwords__dirname=');
+            log.filterWords(message + 'filterwords__dirname=');
         return;  
         }
     }
@@ -502,6 +508,7 @@ function addChatItem(color, data, text, summarize) {
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
     
     let userpointsCheckbox = document.getElementById('userpointsCheckbox');
+    let messagelenght3 = document.getElementById('messagelenght3');
 
     if (userpointsCheckbox.checked) {
         //log.console(userpointsCheckbox)
@@ -510,26 +517,41 @@ function addChatItem(color, data, text, summarize) {
             return;
         }
     }
-
-    if (text.length <= 7) {
+/*     if (data.comment) {
+        log.comment("usuario y commentario", data);
+    } */
+    if (text.length <= 7 && messagelenght3.checked) {
         if (userPoints[data.nickname] <= 0) {
             //log.console('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             return;
         }
     }
-    if (text.length <= 3) {
+    if (text.length <= 3 && messagelenght3.checked) {
             return;
     }
     if (sendDataCheckbox.checked) {
         if (startsWithSpecialChar) {
             if (userPoints[data.nickname] <= 4) {
-                log.console('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+                log.sendDataCheckbox('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             }
         }
         enviarMensaje(message);
     }
 
-    leerMensajes(message);
+    let prefixusermessage = document.getElementById('prefixusermessage').value;
+    let readUserMessage = document.getElementById('readUserMessage');
+    if (color === "#CDA434"){
+        log.followchatdata(`${message}`);
+        leerMensajes(message);
+        return;
+    }
+    
+    if (readUserMessage.checked) {
+        messagewithuser = nameuser + prefixusermessage + message;
+        leerMensajes(messagewithuser);
+    } else {
+        leerMensajes(message);
+    }
     if (nickname !== lastNickname) {
         if (!isNaN(parsedValue)) {
             // Si es un número válido, sumarlo al puntaje del usuario
@@ -538,7 +560,7 @@ function addChatItem(color, data, text, summarize) {
             // Si no es un número válido, utilizar el valor por defecto de 5
             userPoints[data.nickname] += 2;
           }
-        log.console(`el usuario ${data.nickname}tiene mas puntos`,userPoints[data.nickname]);
+        log.nicknamePoints(`el usuario ${data.nickname}tiene mas puntos`,userPoints[data.nickname]);
     }
     if (sendsoundCheckbox.checked) {
         if (nickname !== lastNickname) {
@@ -821,7 +843,14 @@ connection.on('gift', (data) => {
 
     if (!isPendingStreak(data) && data.diamondCount > 0) {
         diamondsCount += (data.diamondCount * data.repeatCount);
-
+        let readGiftEvent = document.getElementById('readGiftEvent');
+        let prefixGiftEvent = document.getElementById('prefixGiftEvent').value; 
+        if (readGiftEvent.checked && data.giftName) {
+            readGiftText = `${data.uniqueId} ${prefixGiftEvent} ${data.repeatCount} ${data.giftName}`
+            log.readGiftEvent(data.uniqueId + prefixGiftEvent + data.giftName);
+            leerMensajes(readGiftText);
+            
+        }
         userPoints[data.nickname] + data.diamondCount;
         updateRoomStats();
     }
@@ -881,17 +910,18 @@ connection.on('social', (data) => {
     let color;
     let message;
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
-
+    let prefixuserfollow = document.getElementById('prefixuserfollow').value || "te sige";
     if (data.displayType.includes('follow')) {
         color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
-        message = `${data.nickname} te sige`;
+        message = `${data.nickname} ${prefixuserfollow}`;
+
         if (sendDataCheckbox.checked) {
             if (!seguidores.has(data.nickname)) {
                 enviarCommandID( 'follow', data);
- /* */               handleEvent2('follow', data);
+ /* */          handleEvent2('follow', data);
                 sendToServer('follow', data);
                 addOverlayEvent('follow', data);
-                log.console(`${data.nickname} es un gato mas`);
+                log.followsocial(`${data.nickname} ${prefixuserfollow}`);
                 seguidores.add(data.nickname);
                 // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
                 setTimeout(() => {
@@ -981,19 +1011,23 @@ if (data.battleStatus === 1) {
 
   
 connection.on('liveIntro', (msg) => {
-    log.console('User Details:', msg.description);
-    log.console('Nickname:', msg.nickname);
-    log.console('Unique ID:', msg.uniqueId);
+    log.liveIntro('User Details:', msg.description);
+    log.liveIntro('Nickname:', msg.nickname);
+    log.liveIntro('Unique ID:', msg.uniqueId);
+    log.liveIntro(msg)
 });
 
 connection.on('emote', (data) => {
-    log.console(`${data.uniqueId} emote!`);
-    log.console('emote received', data);
+    log.emote(`${data.uniqueId} emote!`);
+    log.emote('emote received', data);
 })
 connection.on('envelope', data => {
-    log.console('Unique ID:', data.uniqueId);
-    log.console('Coins:', data.coins);
+    log.envelope('Unique ID:', data.uniqueId);
+    log.envelope('Coins:', data.coins);
+    message = data.coins
+    addChatItem('',data,message)
     fetchAudio(`${data.uniqueId} envio cofre de ${data.coins} monedas para ${data.canOpen} personas`);
+    log.envelope('envelope:', data);
 });
 
 connection.on('subscribe', (data) => {
@@ -1119,7 +1153,7 @@ async function enviarCommandID(eventType, data) {
 // Ejemplo de uso:
 obtenerPaginaDeComandos(comandos => {
     // Aquí puedes hacer lo que quieras con la lista de comandos y nombres
-    log.console('Lista de comandos y nombres:', comandos);
+    log.command('Lista de comandos y nombres 1131MixitUp:', comandos);
 });
 
 var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;

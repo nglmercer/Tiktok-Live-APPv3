@@ -1,6 +1,7 @@
 function guardarEstadoCheckboxes() {
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
+        console.log(checkbox)
         localStorage.setItem(checkbox.id, checkbox.checked);
     });
 }
@@ -9,11 +10,13 @@ function guardarEstadoCheckboxes() {
 function aplicarEstadoCheckboxes() {
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
+        console.log(checkbox)
         const estadoGuardado = localStorage.getItem(checkbox.id);
         if (estadoGuardado !== null) {
             checkbox.checked = estadoGuardado === 'true';
+        } else {
+            checkbox.checked = estadoGuardado === 'false';
         }
-        console.log(estadoGuardado);
     });
 }
 function setupLocalStorage(inputElement, storageKey, callback) {

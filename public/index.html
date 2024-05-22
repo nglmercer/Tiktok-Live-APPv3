@@ -99,17 +99,44 @@ meta
             <textarea id="filter-words"></textarea>
             <div>WitheList:</div>
             <textarea id="filter-users"></textarea>
-
-            <div>puntos del canal +1 -10
+            <div>
+            <label class="cyberpunk-checkbox-label">
+                prefijo follow
+                <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
+                <input type="text" id="prefixuserfollow" value="te sige">
+            </label>
+            <label class="cyberpunk-checkbox-label">
+                leer regalos
+                <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
+                prefijo:
+                <input type="text" id="prefixGiftEvent" value="regalo">
+            </label>
+            <label class="cyberpunk-checkbox-label">
+                leer usuario y mensaje
+                <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
+                prefijo:
+                <input type="text" id="prefixusermessage" value="dice">
+            </label>
+                puntos del canal +1 -10
                 <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-600 w-20">
-                <label class="cyberpunk-checkbox-label">
+                <label class="cyberpunk-checkbox-label">si el usuario no tiene puntos no lee
                 <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
-                si el usuario no tiene puntos no lee</label>
+                </label>
+                <label class="cyberpunk-checkbox-label">solo mensajes =>3
+                <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
+                </label>
+    
+                <label class="cyberpunk-checkbox-label">añadir puntos por nivel    
+                <input type="checkbox" class="cyberpunk-checkbox" id="userlevelCheckbox" checked>
+                             <input type="number" id="users-level" value="2" max="50" min="0" class="bg-slate-600 w-20">
+            </label>
             </div>
             </div>
             <label class="cyberpunk-checkbox-label">
-            <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff" checked>
+            <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff">
             overlay on/off</label>
+                        <label class="cyberpunk-checkbox-label">
+
         </div>
         
         <div id="Tab2" class="tabcontent">
