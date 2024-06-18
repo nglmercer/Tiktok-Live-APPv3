@@ -10,7 +10,7 @@ function guardarEstadoCheckboxes() {
 function aplicarEstadoCheckboxes() {
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
-        console.log(checkbox)
+        // console.log(checkbox)
         const estadoGuardado = localStorage.getItem(checkbox.id);
         if (estadoGuardado !== null) {
             checkbox.checked = estadoGuardado === 'true';
@@ -188,9 +188,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Cargar el nombre del jugador guardado
     const playerNameInput = document.getElementById('playerNameInput');
-    // Ejecutar la función para aplicar el estado guardado al cargar la página
-    window.addEventListener('load', aplicarEstadoCheckboxes);
     
-    // Llamar a la función para guardar el estado de los checkboxes antes de salir de la página
+    // Llamar a la función para guardar el estado de los checkboxes antes de salir de la página y luego aplicarlo al cargar la página
     window.addEventListener('beforeunload', guardarEstadoCheckboxes);
+    window.addEventListener('load', aplicarEstadoCheckboxes);
+
 });

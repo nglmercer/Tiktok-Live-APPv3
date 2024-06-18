@@ -86,8 +86,8 @@ function connect() {
             requestOptions: {
                 timeout: 5000
             },
-            websocketOptions: {
-                timeout: 5000
+            websocketHeaders: {
+                'User-Agent': '5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36'
             }
         }).then(state => {
             log.console(`Connected to roomId ${state.roomId} upgraded ${state.upgradedToWebsocket}`, state);
@@ -138,8 +138,8 @@ function connect() {
         alert('No username entered');
     }
 }
-
 let globalSimplifiedStates = [];
+window.globalSimplifiedStates = globalSimplifiedStates;
 
 function availableGiftsimage(state) {
     const giftImages = {};
@@ -184,7 +184,7 @@ function availableGiftsimage(state) {
     const simplifiedState = {
         availableGifts: state.availableGifts.map(gift => ({
             name: gift.name,
-            diamondcost:  gift.diamond_count,
+            diamondcost: gift.diamond_count,
             giftId: gift.id,
             imageUrl: gift.image.url_list[1]
         }))
@@ -196,7 +196,6 @@ function availableGiftsimage(state) {
     localStorage.setItem('simplifiedState', simplifiedStateJson);
     return giftImages;
 }
-
 
 class Groups {
     static start() {
@@ -241,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const simplifiedStateJson = localStorage.getItem('simplifiedState');
     if (simplifiedStateJson) {
         const state = JSON.parse(simplifiedStateJson);
-        log.console(" recibe state localstorage",state);
+        console.log("Recibe state localstorage", state);
         availableGiftsimage(state);
     }
 });
@@ -636,17 +635,17 @@ connection.on('like', (data) => {
     }
 });
 
-let overlaypage = false;
-document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('overlayForm').addEventListener('submit', function(event) {
-        event.preventDefault();
-        const url = document.getElementById('urlInput').value;
-        const width = "100%";
-        const height = "100%";
-        addOverlayEvent('Newiframe', { url, width, height });        
-    });
+// let overlaypage = false;
+// document.addEventListener('DOMContentLoaded', function() {
+//     document.getElementById('overlayForm').addEventListener('submit', function(event) {
+//         event.preventDefault();
+//         const url = document.getElementById('urlInput').value;
+//         const width = "100%";
+//         const height = "100%";
+//         addOverlayEvent('Newiframe', { url, width, height });        
+//     });
     
-});
+// });
 
 
 function addOverlayEvent(eventType, data) {
@@ -1148,13 +1147,6 @@ async function enviarCommandID(eventType, data) {
     }
 }
 
-
-
-// Ejemplo de uso:
-obtenerPaginaDeComandos(comandos => {
-    // Aquí puedes hacer lo que quieras con la lista de comandos y nombres
-    log.command('Lista de comandos y nombres 1131MixitUp:', comandos);
-});
 
 var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;
 

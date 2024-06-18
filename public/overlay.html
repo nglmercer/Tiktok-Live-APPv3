@@ -1,132 +1,146 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
-  <!-----<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">----->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overlay Live</title>
-  <link rel="stylesheet" href="https://unpkg.com/xp.css" />
-  <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="overlay.js"></script>
-  <script src="connection.js"></script>
-  <link rel="stylesheet" href="overlay.css">
-
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400&family=Roboto&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@500&family=Roboto&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@600&family=Roboto&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@700&family=Roboto&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@800&family=Roboto&display=swap');
-
-    body {
-        font-family: Arial, Helvetica, sans-serif;
-        background-color: transparent;
-        justify-items: center;
-        justify-content: center;
-        align-items: center;
-    }
-    .overlay-event {
-        position: absolute;
-    }
-    .chat {
-    }
-    .gift {
-    }
-    .social {
-    }
-    .unknown {
-    }
-    @-webkit-keyframes fadein {
-        from { opacity: 0; }
-        to   { opacity: 1; }
-    }
-
-    @-webkit-keyframes fadeout {
-        from { opacity: 1; }
-        to   { opacity: 0; }
-    }
-    @keyframes wiggle { 50% { transform: rotate(-4deg) scale(1.1); } }
-    @-webkit-keyframes wiggle { 50% { -webkit-transform: rotate(-4deg) scale(1.1); } }
-    .wiggle {
-        animation: wiggle 0.5s infinite;
-        -webkit-animation: wiggle 0.5s infinite;
-    }
-
-    .animated-letter { display: inline-block; }
-    .animated-letter:nth-child(1) { animation-delay: 0.0s; }
-    .animated-letter:nth-child(2) { animation-delay: 0.1s; }
-    .animated-letter:nth-child(3) { animation-delay: 0.2s; }
-    .animated-letter:nth-child(4) { animation-delay: 0.3s; }
-    .animated-letter:nth-child(5) { animation-delay: 0.4s; }
-    .animated-letter:nth-child(6) { animation-delay: 0.5s; }
-    .animated-letter:nth-child(7) { animation-delay: 0.6s; }
-    .animated-letter:nth-child(8) { animation-delay: 0.7s; }
-    .animated-letter:nth-child(9) { animation-delay: 0.8s; }
-    .animated-letter:nth-child(10) { animation-delay: 0.9s; }
-    .animated-letter:nth-child(11) { animation-delay: 1.0s; }
-    .animated-letter:nth-child(12) { animation-delay: 1.1s; }
-    .animated-letter:nth-child(13) { animation-delay: 1.2s; }
-    .animated-letter:nth-child(14) { animation-delay: 1.3s; }
-    .animated-letter:nth-child(15) { animation-delay: 1.4s; }
-    .animated-letter:nth-child(16) { animation-delay: 1.5s; }
-    .animated-letter:nth-child(17) { animation-delay: 1.6s; }
-    .animated-letter:nth-child(18) { animation-delay: 1.7s; }
-    .animated-letter:nth-child(19) { animation-delay: 1.8s; }
-    .animated-letter:nth-child(20) { animation-delay: 1.9s; }
-    .animated-letter:nth-child(21) { animation-delay: 2.0s; }
-    .animated-letter:nth-child(22) { animation-delay: 2.1s; }
-    .animated-letter:nth-child(23) { animation-delay: 2.2s; }
-    .animated-letter:nth-child(24) { animation-delay: 2.3s; }
-    .animated-letter:nth-child(25) { animation-delay: 2.4s; }
-    .animated-letter:nth-child(26) { animation-delay: 2.5s; }
-    .animated-letter:nth-child(27) { animation-delay: 2.6s; }
-    .animated-letter:nth-child(28) { animation-delay: 2.7s; }
-    .animated-letter:nth-child(29) { animation-delay: 2.8s; }
-    .animated-letter:nth-child(30) { animation-delay: 2.9s; }
-    .animated-letter:nth-child(1) { -webkit-animation-delay: 0.0s; }
-    .animated-letter:nth-child(2) { -webkit-animation-delay: 0.1s; }
-    .animated-letter:nth-child(3) { -webkit-animation-delay: 0.2s; }
-    .animated-letter:nth-child(4) { -webkit-animation-delay: 0.3s; }
-    .animated-letter:nth-child(5) { -webkit-animation-delay: 0.4s; }
-    .animated-letter:nth-child(6) { -webkit-animation-delay: 0.5s; }
-    .animated-letter:nth-child(7) { -webkit-animation-delay: 0.6s; }
-    .animated-letter:nth-child(8) { -webkit-animation-delay: 0.7s; }
-    .animated-letter:nth-child(9) { -webkit-animation-delay: 0.8s; }
-    .animated-letter:nth-child(10) { -webkit-animation-delay: 0.9s; }
-    .animated-letter:nth-child(11) { -webkit-animation-delay: 1.0s; }
-    .animated-letter:nth-child(12) { -webkit-animation-delay: 1.1s; }
-    .animated-letter:nth-child(13) { -webkit-animation-delay: 1.2s; }
-    .animated-letter:nth-child(14) { -webkit-animation-delay: 1.3s; }
-    .animated-letter:nth-child(15) { -webkit-animation-delay: 1.4s; }
-    .animated-letter:nth-child(16) { -webkit-animation-delay: 1.5s; }
-    .animated-letter:nth-child(17) { -webkit-animation-delay: 1.6s; }
-    .animated-letter:nth-child(18) { -webkit-animation-delay: 1.7s; }
-    .animated-letter:nth-child(19) { -webkit-animation-delay: 1.8s; }
-    .animated-letter:nth-child(20) { -webkit-animation-delay: 1.9s; }
-    .animated-letter:nth-child(21) { -webkit-animation-delay: 2.0s; }
-    .animated-letter:nth-child(22) { -webkit-animation-delay: 2.1s; }
-    .animated-letter:nth-child(23) { -webkit-animation-delay: 2.2s; }
-    .animated-letter:nth-child(24) { -webkit-animation-delay: 2.3s; }
-    .animated-letter:nth-child(25) { -webkit-animation-delay: 2.4s; }
-    .animated-letter:nth-child(26) { -webkit-animation-delay: 2.5s; }
-    .animated-letter:nth-child(27) { -webkit-animation-delay: 2.6s; }
-    .animated-letter:nth-child(28) { -webkit-animation-delay: 2.7s; }
-    .animated-letter:nth-child(29) { -webkit-animation-delay: 2.8s; }
-    .animated-letter:nth-child(30) { -webkit-animation-delay: 2.9s; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: rgba(0, 0, 255, 0);
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .overlay {
+            position: absolute;
+        }
+    </style>
 </head>
 <body>
-<div id="overlayEventContainer"></div>
-    <div id="iframeContainer"></div>
-    <iframe id="iframeContainerDefault" src="http://localhost:8111/overlay/" style="position: absolute; pointer-events: none; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
+    <div id="container"></div>
+    <script>
+        const container = document.getElementById('container');
 
+        // Función para generar una posición aleatoria
+        function randomPosition() {
+            const x = Math.floor(Math.random() * (window.innerWidth - 200));
+            const y = Math.floor(Math.random() * (window.innerHeight - 200));
+            return { x, y };
+        }
 
-    <div id="overlayEventContainer" style="border: transparent; width: 100%; pointer-events: none; height: 100%; position: absolute; background: transparent;"></div>
+        // Función para barajar un array
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
 
+        // Crear una matriz de posiciones predefinida
+        let positions = [];
+        for (let x = 8; x <= 88; x += 4) {
+            for (let y = 8; y <= 88; y += 4) {
+                positions.push({ x, y });
+            }
+        }
+
+        // Barajar el array de posiciones
+        positions = shuffleArray(positions);
+
+        // Función que devuelve una posición aleatoria o una posición proporcionada
+        function getPosition(existingPosition = null) {
+            if (existingPosition) {
+                return existingPosition;
+            }
+            return randomPosition();
+        }
+
+        // Función para crear y añadir un video
+        function addVideo(data, position) {
+            const video = document.createElement('video');
+            video.style.width = 'auto';
+            video.style.height = '400px';
+            video.autoplay = true;
+
+            const source = document.createElement('source');
+            source.src = data.src;
+            source.type = 'video/mp4';
+
+            video.appendChild(source);
+            setPosition(video, position);
+            container.appendChild(video);
+
+            video.addEventListener('ended', () => {
+                container.removeChild(video);
+            });
+        }
+
+        // Función para crear y añadir una imagen
+        function addImage(data, position) {
+            const img = document.createElement('img');
+            img.src = data.src;
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '400px';
+
+            setPosition(img, position);
+            container.appendChild(img);
+
+            setTimeout(() => {
+                container.removeChild(img);
+            }, 5000);
+        }
+
+        // Función para establecer la posición de un elemento
+        function setPosition(element, position) {
+            const { x, y } = position;
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+            element.classList.add('overlay');
+        }
+
+        // Función para manejar mensajes recibidos
+        function handleMessage(event) {
+            const { eventType, data } = event;
+            console.log('Received message from parent window:', event);
+            console.log('eventType:', eventType);
+            console.log('data:', data);
+
+            if (eventType === 'play') {
+                let position = getPosition(data.position);
+
+                if (data.src.endsWith('.mp4') || data.fileType.startsWith('video/')) {
+                    addVideo(data, position);
+                } else if (data.src.endsWith('.png') || data.fileType.startsWith('image/')) {
+                    addImage(data, position);
+                } else {
+                    const div = document.createElement('div');
+                    div.textContent = 'Unsupported file type';
+                    setPosition(div, position);
+                    container.appendChild(div);
+
+                    setTimeout(() => {
+                        container.removeChild(div);
+                    }, 5000);
+                }
+                console.log('Additional data:', data.additionalData);
+            }
+        }
+
+        window.api.onShowMessage((event, message) => {
+            console.log(message);
+        });
+
+        window.api.onOverlayEvent((event, eventdata) => {
+            const { eventType, data } = eventdata;
+            handleMessage(eventdata);
+            console.log(eventdata);
+            console.log('Overlay event received:', eventType);
+            console.log('data:', data);
+        });
+
+        window.addEventListener('message', handleMessage);
+    </script>
 </body>
-
 </html>

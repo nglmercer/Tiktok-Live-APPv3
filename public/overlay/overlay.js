@@ -243,8 +243,8 @@ connection.on('social', (data) => {
     }
 }
 
-    let lastPositionX = null;
-    let lastPositionY = null;
+    // let lastPositionX = null;
+    // let lastPositionY = null;
 // Función para barajar un array utilizando el algoritmo de Fisher-Yates
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {

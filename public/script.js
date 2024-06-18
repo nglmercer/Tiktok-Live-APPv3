@@ -8,21 +8,21 @@ class SocketClient {
   }
 
   // Método para suscribirse a eventos
-  on(eventName, eventHandler) {
-      if (!this.eventHandlers[eventName]) {
-          this.eventHandlers[eventName] = [];
+  on(event, eventHandler) {
+      if (!this.eventHandlers[event]) {
+          this.eventHandlers[event] = [];
       }
-      this.eventHandlers[eventName].push(eventHandler);
+      this.eventHandlers[event].push(eventHandler);
   }
-  emit(eventName, eventData) {
-    this.socket.emit(eventName, eventData);
+  emit(event, eventData) {
+    this.socket.emit(event, eventData);
   }
   // Método para manejar todos los eventos entrantes
   handleIncomingEvents() {
-    for (const eventName in this.eventHandlers) {
-      if (this.eventHandlers.hasOwnProperty(eventName)) {
-        this.socket.on(eventName, eventData => {
-          const handlers = this.eventHandlers[eventName];
+    for (const event in this.eventHandlers) {
+      if (this.eventHandlers.hasOwnProperty(event)) {
+        this.socket.on(event, eventData => {
+          const handlers = this.eventHandlers[event];
           handlers.forEach(handler => handler(eventData));
         });
       }
@@ -70,7 +70,7 @@ function handleSound(eventType, data) {
               return; // Si son iguales, salir de la función
           }
           if (userComment) {
-            const eventData = audioData.find(data1 => data1.eventName === userComment); // Buscar el objeto en audioData con el eventName especificado
+            const eventData = audioData.find(data1 => data1.event === userComment); // Buscar el objeto en audioData con el event especificado
             if (eventData) {
               const audioPath = eventData.audioPath; // Obtener el audioPath del objeto encontrado
               const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
@@ -90,7 +90,7 @@ function handleSound(eventType, data) {
             if (data.giftType === 1 && !data.repeatEnd) {
                 console.log(`${data.uniqueId} envio ${data.giftPictureUrl} x${data.repeatCount}`);
                 if (userGiftname) {
-                  const eventData = audioData.find(data1 => data1.eventName === userGiftname); // Buscar el objeto en audioData con el eventName especificado
+                  const eventData = audioData.find(data1 => data1.event === userGiftname); // Buscar el objeto en audioData con el event especificado
                   if (eventData) {
                     const audioPath = eventData.audioPath; // Obtener el audioPath del objeto encontrado
                     const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
@@ -100,7 +100,7 @@ function handleSound(eventType, data) {
             } else if (data.repeatEnd) {
                 console.log(`${data.uniqueId} envio ${data.giftPictureUrl} x${data.repeatCount}`);
                 if (userGiftname) {
-                  const eventData = audioData.find(data1 => data1.eventName === userGiftname); // Buscar el objeto en audioData con el eventName especificado
+                  const eventData = audioData.find(data1 => data1.event === userGiftname); // Buscar el objeto en audioData con el event especificado
                   if (eventData) {
                     const audioPath = eventData.audioPath; // Obtener el audioPath del objeto encontrado
                     const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
@@ -120,7 +120,7 @@ function handleSound(eventType, data) {
                 eventType = 'follow';
                 console.log(`${data.uniqueId} te sigue`);
                 if (eventType) {
-                  const eventData = audioData.find(data1 => data1.eventName === eventType); // Buscar el objeto en audioData con el eventName especificado
+                  const eventData = audioData.find(data1 => data1.event === eventType); // Buscar el objeto en audioData con el event especificado
                   if (eventData) {
                     const audioPath = eventData.audioPath; // Obtener el audioPath del objeto encontrado
                     const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
@@ -135,35 +135,8 @@ function handleSound(eventType, data) {
             console.log(`Evento desconocido: ${eventType}`);
     }
   }
-let globalSimplifiedStates1 = [];
-availableGiftsImage1();
-function availableGiftsImage1(state) {
+let globalSimplifiedStates1 = window.globalSimplifiedStates;
 
-      const savedStateJson = localStorage.getItem('simplifiedState');
-      const savedState = JSON.parse(savedStateJson);
-      if (savedState && savedState.availableGifts) {
-        state = savedState;
-      } else {
-        console.error('No se encontraron datos de availableGifts en el localStorage.');
-      }
-
-
-    state.availableGifts.sort((a, b) => a.diamond_count - b.diamond_count);
-    const simplifiedState = {
-      availableGifts: state.availableGifts.map(gift => ({
-          name: gift.name,
-          diamondcost:  gift.diamond_count,
-          giftId: gift.id,
-          imageUrl: gift.image.url_list[1]
-      }))
-  };
-
-  const simplifiedStateJson = JSON.stringify(state);
-  globalSimplifiedStates1.push(simplifiedState);
-  localStorage.setItem('simplifiedState', simplifiedStateJson);
-  console.log(state,"script")
-
-}
 var EventsDefault = {
   share: 'Share',
   follow: 'Follow',
@@ -185,32 +158,9 @@ function formatGiftOption(gift) {
 }
 const tableBody = document.getElementById("audioTableBody");
 
-
-function addRowWithPlayButton(audioPath, audioName, eventName, volume) {
-  const newRow = tableBody.insertRow();
-  const playCell = newRow.insertCell();
-  const playButton = document.createElement("button");
-  playButton.textContent = "Play";
-  playButton.classList.add("play-button"); // Add class for event listener
-  playButton.dataset.path = audioPath; // Store audio path in data attribute
-  playCell.appendChild(playButton);
-
-  // Create audio element for playback
-  const audioElement = new Audio(audioPath);
-  audioElement.classList.add("audio-element"); // Add class for styling
-
-  // Event listener for playing audio when the button is clicked
-  playButton.addEventListener("click", () => {
-    console.log("Playing audio from:", audioPath); // Log the audio path
-    audioElement.play(); // Play the audio
-  });
-
-  // Call addRow to complete the row, passing volume as an argument
-  addRow(audioPath, audioName, eventName, volume);
-}
 let indexCheckbox = 0; // Variable para llevar la cuenta del índice de los checkboxes
 // Función para agregar una fila a la tabla
-function addRow(audioPath, audioName, eventName, volume, enable) {
+function addRow(audioPath, audioName, event, volume, enable) {
   const newRow = tableBody.insertRow(); // Insertar una nueva fila
   const playCell = newRow.insertCell(); // Celda para el botón de reproducción
   const volumeCell = newRow.insertCell(); // Celda para el control de volumen
@@ -244,7 +194,7 @@ function addRow(audioPath, audioName, eventName, volume, enable) {
   volumeSlider.addEventListener("input", () => {
     audioElement.volume = volumeSlider.value;
     volume = volumeSlider.value;
-    updateVolume(audioPath, audioName, eventName, volume, true);
+    updateVolume(audioPath, audioName, event, volume, true);
   });
   volumeCell.appendChild(volumeSlider);
 
@@ -271,7 +221,7 @@ function addRow(audioPath, audioName, eventName, volume, enable) {
   // Utilizar Myimg si gift.imageUrl no está definido
   $(selectInput1).select2({
     data: [
-      { id: eventName, text: eventName ,imageUrl: dataImg ?? Myimg}, // Primer elemento como opción predeterminada
+      { id: event, text: event ,imageUrl: dataImg ?? Myimg}, // Primer elemento como opción predeterminada
       ...globalSimplifiedStates1.flatMap(state => state.availableGifts.map(gift => ({
           id: gift.name,
           text: gift.name,
@@ -282,13 +232,13 @@ function addRow(audioPath, audioName, eventName, volume, enable) {
     escapeMarkup: markup => markup
   });
     $(selectInput1).on('select2:select', function (e) {
-      eventName1 = e.params.data.id;
-      eventName = e.params.data.text;
-      updateEventName(audioPath, audioName, eventName, volume, null);
+      const selectedId = e.params.data.id;
+      const selectedText = e.params.data.text;
+      updateevent(audioPath, audioName, selectedId, volume, null);
 
-      console.log(eventName1)
+      console.log(selectedId)
     });
-
+  console.log('selectInput1', selectInput1);
   // Listener de eventos para reproducir audio cuando se hace clic en el botón
   playButton.addEventListener("click", () => {
     console.log("Playing audio from:", audioPath);
@@ -308,8 +258,8 @@ function addRow(audioPath, audioName, eventName, volume, enable) {
   deleteCell.appendChild(deleteButton);
 
   // Guardar los datos si no son duplicados
-  if (!isDuplicateAudio(audioPath, audioName, eventName)) {
-    saveAudioData(audioPath, audioName, eventName, volume, enable);
+  if (!isDuplicateAudio(audioPath, audioName, event)) {
+    saveAudioData(audioPath, audioName, event, volume, enable);
   }
 }
 
@@ -317,17 +267,19 @@ function addRow(audioPath, audioName, eventName, volume, enable) {
 // Función para cargar los datos al cargar la página
 function loadRows() {
   const audioData = loadData();
+  
   audioData.forEach((data) => {
-    addRow(data.audioPath, data.audioName, data.eventName, data.volume, data.enable);
+    addRow(data.audioPath, data.audioName, data.event, data.volume, data.enable);
   });
+  console.log('audioData', audioData);
 }
 
 // Data Structure for Audio Data (Global)
 const audioData = [];
 
 // Función para guardar los datos en el almacenamiento local
-function saveAudioData(audioPath, audioName, eventName, volume, enable) {
-  audioData.push({ audioPath, audioName, eventName, volume, enable });
+function saveAudioData(audioPath, audioName, event, volume, enable) {
+  audioData.push({ audioPath, audioName, event, volume, enable });
   saveData();
 }
 
@@ -341,28 +293,28 @@ function deleteAudioData(audioPath) {
 }
 
 // Función para actualizar el nombre del evento en los datos
-function updateEventName(audioPath, audioName, eventName, volume, enable) {
-  let dataToUpdate = findAudioData(audioPath, audioName, eventName, volume, enable);
+function updateevent(audioPath, audioName, event, volume, enable) {
+  let dataToUpdate = findAudioData(audioPath, audioName, event, volume, enable);
   if (dataToUpdate) {
     dataToUpdate.audioPath = audioPath;
     dataToUpdate.audioName = audioName;
-    dataToUpdate.eventName = eventName;
+    dataToUpdate.event = event;
     saveData();
   }
 }
-function findAudioData(audioPath, audioName, eventName, volume, enable)  {
-  if (eventName && !enable) {
+function findAudioData(audioPath, audioName, event, volume, enable)  {
+  if (event && !enable) {
     console.log("No enable");
-    return audioData.find(data => data.audioPath === audioPath && data.audioName === audioName && data.eventName !== eventName && data.volume === volume);
+    return audioData.find(data => data.audioPath === audioPath && data.audioName === audioName && data.event !== event && data.volume === volume);
   } else if (enable && volume) {
-    console.log("No eventName");
-    return audioData.find(data => data.audioPath === audioPath && data.audioName === audioName && data.eventName === eventName && data.volume !== volume);
+    console.log("No event");
+    return audioData.find(data => data.audioPath === audioPath && data.audioName === audioName && data.event === event && data.volume !== volume);
   }
 }
 
 // Función para actualizar el volumen en los datos
-function updateVolume(audioPath, audioName, eventName, volume, enable) {
-  const dataToUpdate = findAudioData(audioPath, audioName, eventName, volume, enable);
+function updateVolume(audioPath, audioName, event, volume, enable) {
+  const dataToUpdate = findAudioData(audioPath, audioName, event, volume, enable);
   if (dataToUpdate) {
     dataToUpdate.volume = volume;
     saveData();
@@ -382,10 +334,10 @@ function loadData() {
 }
 
 // Función para verificar si los datos de audio son duplicados
-function isDuplicateAudio(audioPath, audioName, eventName, volume) {
+function isDuplicateAudio(audioPath, audioName, event, volume) {
   return audioData.some(data => data.audioPath === audioPath && 
     data.audioName === audioName && 
-    data.eventName === eventName && 
+    data.event === event && 
     data.volume === volume);
 }
 
@@ -395,7 +347,9 @@ function loadRowsOnPageLoad(tableBody) {
 }
 
 // Llamada para cargar los datos al cargar la página
-loadRowsOnPageLoad(tableBody);
+setTimeout(() => {
+  loadRowsOnPageLoad(tableBody);
+}, 100);
 function searchMyInstants(query) {
   $.ajax({
     url: "https://api.cleanvoice.ru/myinstants/?type=many&search=" + encodeURIComponent(query) + "&offset=0&limit=10",
@@ -434,7 +388,9 @@ $("#audioList").on("click", "a", function(event) {
   // Get audio data from clicked item
   const audioId = $(this).data("id"); // Assuming you added data-id attribute in the HTML
   const audioTitle = $(this).parent().text().trim(); // Get the audio title
-
+  // imprimimos info del selector
+  const consolelogselect = $(this)
+  console.log('consolelogselect', consolelogselect);
   // Construct audio path using the ID (assuming MyInstants structure)
   const audioPath = `https://api.cleanvoice.ru/myinstants/?type=file&id=${audioId}`; 
   
@@ -446,7 +402,8 @@ $("#audioList").on("click", "a", function(event) {
 $("#audioList").on("click", ".play-button", function() {
   const audioId = $(this).data("path");
   const audioTitle = $(this).parent().text().trim(); // Get the audio title
-  
+  const consolelogthiselement = $(this).data
+  console.log('consolelogthiselement', consolelogthiselement);
   // Construct the audio path using the ID
   const audioPath = `https://api.cleanvoice.ru/myinstants/?type=file&id=${audioId}`;
   console.log("Audio Path:", audioPath);

@@ -24,6 +24,7 @@ meta
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="connection.js"></script>
 <script src="app.js"></script>
+<script type="module" src="renderer.js"></script>
 <script src="localstorage.js"></script>
 <script src="tmi.min.js"></script>
 <script src="TTSmain.js"></script>
@@ -44,11 +45,12 @@ meta
         <div id="stateText"></div>
         <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
         <input type="button" id="connectButton" value="Conectar">
-        <button class="tablinks" onclick="openTab(event, 'Tab1')">Chat LIVE</button>
-        <button class="tablinks" onclick="openTab(event, 'Tab2')">Minecraft</button>
-        <button class="tablinks" onclick="openTab(event, 'Tab3')">Sonidos</button>
-        <button class="tablinks" onclick="openTab(event, 'Tab4')">Overlay y otros</button>
-        <button class="tablinks" onclick="openTab(event, 'Tab5')">Tiktok Regalos</button>
+        <div class="tab" data-tab="tab1">Chat LIVE</div>
+        <div class="tab" data-tab="tab2">Minecraft</div>
+        <div class="tab" data-tab="tab3">Sonidos</div>
+        <div class="tab" data-tab="tab4">Overlay</div>
+        <div class="tab" data-tab="tab5">Gifnames</div>
+        <div class="indicator"></div>
         <label class="cyberpunk-checkbox-label">
             <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
             mixitupAlerts</label>
@@ -72,7 +74,7 @@ meta
 
     </div>
         <!-- Contenido de las pestañas -->
-        <div id="Tab1" class=" tabcontent ">
+        <div id="tab1" class="tab-content">
             <!-- 
                 <h1>Connection status: <strong id='status'></strong></h1>
         -->
@@ -139,7 +141,7 @@ meta
 
         </div>
         
-        <div id="Tab2" class="tabcontent">
+        <div id="tab2" class="tab-content">
             <div class="containerbox">
                 <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
                     <span>Leer Tutorial Minecraft</span>
@@ -437,39 +439,8 @@ meta
                                 console.error('No se pudieron encontrar eventos válidos.');
                             }
                         }
-                        let globalSimplifiedStates2 = [];
-                        availableGiftsImage2();
-                        function availableGiftsImage2(state) {
-
-                            const savedStateJson = localStorage.getItem('simplifiedState');
-                            const savedState = JSON.parse(savedStateJson);
-                            if (savedState && savedState.availableGifts) {
-                                state = savedState || [];
-                                state.availableGifts.sort((a, b) => a.diamond_count - b.diamond_count);
-                            } else {
-                                state = savedState || [];
-                                console.error('No se encontraron datos de availableGifts en el localStorage.');
-                            }
-
-                        const simplifiedStateJson = JSON.stringify(state);
-                        localStorage.setItem('simplifiedState', simplifiedStateJson);
-                        console.log(state,"script")
-                        if (!state) {
-                            return state || [];
-                        }
-                        const simplifiedState = {
-                            availableGifts: state.availableGifts.map(gift => ({
-                                name: gift.name,
-                                diamondcost:  gift.diamond_count,
-                                giftId: gift.id,
-                                imageUrl: gift.image.url_list[1]
-                            }))
-                        };
-                        setTimeout(() => {
-                            globalSimplifiedStates2.push(simplifiedState);
-
-                        }, 1000);
-                        }
+                        let globalSimplifiedStates2 = window.globalSimplifiedStates;
+                        console.log(globalSimplifiedStates2,"globalSimplifiedStateswindow");
                         function cargarDatos() {
                             let events = JSON.parse(localStorage.getItem('events'));
                             eventsContainer.innerHTML = '';
@@ -564,7 +535,7 @@ meta
 
         </div>
     </div>
-    <div id="Tab3" class="tabcontent">
+    <div id="tab3" class="tab-content">
         <div class="containerbox">
         <label class="cyberpunk-checkbox-label">
             <input class="cyberpunk-checkbox"  id="sendsoundCheckbox" type="checkbox" checked>
@@ -617,68 +588,90 @@ meta
         </div>
       </div>
     </div>
+</div>
+    <div id="tab4" class="tab-content">
+        <div class="containerbox h-96">
+            <h2>arrastre elementos aquí</h2>
+            
+            <div class="file-container " id="drop-area">
+                <ul id="file-list"> </ul></div>
+            </div>
+            
+        <div class="containerbox h-96">
+                <div id="tab5-action"></div>
+                <button id="openaction" >openaction</button>
+                <button id="closeaction" >close</button>
+                <div id="loadrowactionsevents"></div>
 
-    <div id="Tab4" class="tabcontent">
-        <div class="containerbox">
-        <div style="padding-top: 10px;">
+        </div>
+        <div class="containerbox h-96">
+            <div class="modalhtml"></div>
+    
+            <button id="open" >open</button>
+            <button id="close" >close</button>
+            
             <div class="inputFields">
                 <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GOOO" type="button"></button>
             </div>
             <div id="chatbox"></div>
-                <form id="overlayForm">
-                    OverlayLink:
-                    <input type="text" id="urlInput" value="http://localhost:8111/overlay/" name="url" required>
-                    <button type="submit">Crear Overlay </button>
-                </form>
             </div>
-        </div>
-
-        <script>
-            function openTab(evt, tabName) {
-                const tabContents = document.querySelectorAll('.tabcontent');
-                const tabLinks = document.querySelectorAll('.tablinks');
-            
-                tabContents.forEach((tabContent) => {
-                    tabContent.hidden = true;
-                });
-            
-                tabLinks.forEach((tabLink) => {
-                    tabLink.classList.remove('active');
-                });
-            
-                document.getElementById(tabName).hidden = false;
-                evt.currentTarget.classList.add('active');
-            
-                // Guardar el nombre de la pestaña en localStorage
-                localStorage.setItem('lastTab', tabName);
-            }
-            
-            // Obtener el nombre de la última pestaña abierta desde localStorage
-            const lastTab = localStorage.getItem('lastTab');
-            
-            // Llama a openTab para mostrar la última pestaña abierta, si existe
-            if (lastTab) {
-                openTab({
-                    currentTarget: document.querySelector(`[onclick="openTab(event, '${lastTab}')"`),
-                }, lastTab);
-            } else {
-                // Si no hay una última pestaña, muestra la pestaña por defecto (Tab1)
-                openTab({
-                    currentTarget: document.querySelector('.tablinks'),
-                }, 'Tab1');
-            }
-        </script>
-        <script>
-
-        </script>
+    </div>
 
     </div>
-    <div id="Tab5" class="tabcontent">
+    <div id="tab5" class="tab-content">
         <div id="giftContainer" class="gift-container">
             <!-- Aquí se agregarán dinámicamente los cuadros de regalo -->
         </div>
         
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+          const tabs = document.querySelectorAll('.tab');
+          const tabContents = document.querySelectorAll('.tab-content');
+          const indicator = document.querySelector('.indicator');
+      
+          function activateTab(tab) {
+              const tabId = tab.getAttribute('data-tab');
+              const content = document.getElementById(tabId);
+      
+              // Deactivate all tabs and content
+              tabs.forEach(t => t.classList.remove('active'));
+              tabContents.forEach(c => c.classList.remove('active'));
+      
+              // Activate the selected tab and content
+              tab.classList.add('active');
+              content.classList.add('active');
+              //console.log(tab.offsetLeft, tab.offsetWidth, tab.offsetHeight, tab.offsetTop)
+
+              // Update indicator position and width
+              indicator.style.top = `${tab.offsetTop}px`;
+              indicator.style.width = `3px`;
+              indicator.style.height = `${tab.offsetHeight}px`;
+      
+              // Store the last active tab in localStorage
+              localStorage.setItem('activeTab', tabId);
+          }
+      
+          // Add event listeners to tabs
+          tabs.forEach(tab => {
+              tab.addEventListener('click', () => activateTab(tab));
+          });
+      
+          // Check for the last active tab in localStorage
+          const lastActiveTab = localStorage.getItem('activeTab');
+          if (lastActiveTab) {
+              const tab = document.querySelector(`.tab[data-tab="${lastActiveTab}"]`);
+              if (tab) {
+                  activateTab(tab);
+              } else {
+                  activateTab(tabs[0]); // Fallback to the first tab if the stored tab doesn't exist
+              }
+          } else {
+              activateTab(tabs[0]); // Default to the first tab
+          }
+      });
+      
+      </script>
 </body>
 <script src="script.js"></script>
 

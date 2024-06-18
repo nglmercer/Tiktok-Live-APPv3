@@ -1,16 +1,47 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
-const { contextBridge, ipcRenderer } = require("electron");
+const { ipcRenderer, contextBridge } = require("electron");
+const mineflayer = require('mineflayer');
+const { Client, Server: ServerOsc } = require('node-osc');
+const client = new Client('127.0.0.1', 9000);
 
-console.log("👋 Preload.js loaded successfully");
+const api = {
+    addFilePath: (fileParams) => ipcRenderer.invoke('add-file-path', fileParams),
+    getFilesInFolder: () => ipcRenderer.invoke('get-files-in-folder'),
+    startDrag: (fileName) => ipcRenderer.invoke('on-drag-start', fileName),
+    deleteFile: (fileName) => ipcRenderer.invoke('delete-file', fileName),  
+    getFileById: (fileId) => ipcRenderer.invoke('get-file-by-id', fileId),
+    createOverlayWindow: async () => {
+        return await ipcRenderer.invoke('create-overlay-window');
+    },
+    sendOverlayData: async (eventType, data) => {
+        return await ipcRenderer.invoke('send-overlay-data', { eventType, data });
+    },
+    onOverlayEvent: (callback) => ipcRenderer.on('overlay-event', callback),
+    onShowMessage: (callback) => ipcRenderer.on('show-message', callback),
+    sendlibraryData: (callback) => ipcRenderer.invoke('send-library-data', { eventType, data }),
 
-contextBridge.exposeInMainWorld("electronAPI", {
-  read: () => ipcRenderer.send("read"),
-  getFakeFile: () => ipcRenderer.invoke("fakeFile"),
-  getFileFromPath: (path) => ipcRenderer.invoke("getFileFromPath", path),
-});
+    createBot: (options) => ipcRenderer.invoke('create-bot', options),
+    sendChatMessage: (message) => ipcRenderer.invoke('send-chat-message', message),
+    onBotEvent: (callback) => ipcRenderer.on('bot-event', callback),
+    createClientOsc: () => ipcRenderer.invoke('create-client-osc'),
+    sendOscMessage: (message) => ipcRenderer.invoke('send-osc-message', message),
+    // onOscEvent: (callback) => ipcRenderer.on('osc-event', callback),
+}
 
-contextBridge.exposeInMainWorld("ipcRenderer", {
-  send: (event, data) => ipcRenderer.send(event, data),
-  invoke: (event, data) => ipcRenderer.invoke(event, data)
-});
+window.addEventListener('DOMContentLoaded', () => {
+    const replaceText = (selector, text) => {
+        const element = document.getElementById(selector)
+        if (element) element.innerText = text
+    }
+
+    for (const dependency of ['chrome', 'node', 'electron']) {
+        replaceText(`${dependency}-version`, process.versions[dependency])
+    }
+})
+
+window.addOverlayEvent = (eventType, data) => {
+    ipcRenderer.invoke('create-overlay-window', { eventType, data });
+};
+
+contextBridge.exposeInMainWorld("api", api);
