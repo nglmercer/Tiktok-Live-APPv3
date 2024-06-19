@@ -83,23 +83,27 @@ export const databases = {
   }
   
   export function updateDataInIndexedDB(dbConfig, data) {
+    // Asegúrate de que el ID sea un número
+    data.id = Number(data.id);
+    
     openDatabase(dbConfig).then((db) => {
-      const transaction = db.transaction([dbConfig.store], 'readwrite');
-      const objectStore = transaction.objectStore(dbConfig.store);
-      const request = objectStore.put(data);
-      request.onsuccess = () => {
-        console.log(`Data with id ${data.id} updated in IndexedDB`, data);
-              elemento.value++;
+        const transaction = db.transaction([dbConfig.store], 'readwrite');
+        const objectStore = transaction.objectStore(dbConfig.store);
+        const request = objectStore.put(data);
 
-    };
-      request.onerror = (event) => {
-        console.error('Error updating data in IndexedDB', event.target.error);
-      };
+        request.onsuccess = () => {
+            console.log(`Data with id ${data.id} updated in IndexedDB`, data);
+            elemento.value++;
+        };
+
+        request.onerror = (event) => {
+            console.error('Error updating data in IndexedDB', event.target.error);
+        };
     }).catch((error) => {
-      console.error('Error opening IndexedDB', error);
+        console.error('Error opening IndexedDB', error);
     });
-  }
-  
+}
+
   export function loadDataFromIndexedDB(dbConfig, callback) {
     openDatabase(dbConfig).then((db) => {
       const transaction = db.transaction([dbConfig.store], 'readonly');

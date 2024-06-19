@@ -1613,7 +1613,17 @@ let commandList = {};
 let lastCommand = null;
 let currentPlayerIndex = 0;
 let playerName = localStorage.getItem('playerName');
-
+window.señal = ()=>{}
+let elemento = new Proxy({ value: 0, data: {} }, {
+    set: (target, propiedad, value) => {
+        target[propiedad] = value;
+        window.señal(target[propiedad], target['data'])
+        return true;
+    },
+    get: (target, prop) => {
+        return target[prop];
+    }
+});
 
 let commandCounter = 0; // Variable de control de contador
 const maxRepeatCount = 50; // Valor máximo para repeatCount
@@ -1751,6 +1761,9 @@ function sendReplacedCommand(replacedCommand) {
 }
 
 async function sendToServer(eventType, data, color, msg, message) {
+    let objet = {eventType, data};
+    elemento.value = objet;
+    elemento.data = objet;
     fetch('/api/receive1', {
         method: 'POST',
         headers: {

@@ -58,16 +58,23 @@
         }
 
         // Función para crear y añadir un video
-        function addVideo(data, position) {
+        function addVideo(data, position, options) {
+            if (options.check === false) {
+                return;
+            }
             const video = document.createElement('video');
             video.style.width = 'auto';
             video.style.height = '400px';
             video.autoplay = true;
-
+            let duracion = options.duracion * 1000;
+            if (duracion <= 1000) {
+                duracion = 5000
+            }
             const source = document.createElement('source');
             source.src = data.src;
             source.type = 'video/mp4';
-
+            // volume options.rango entre 100 porque es 50 y volumen de 0 a 1
+            video.volume = options.rango / 100;
             video.appendChild(source);
             setPosition(video, position);
             container.appendChild(video);
@@ -75,23 +82,60 @@
             video.addEventListener('ended', () => {
                 container.removeChild(video);
             });
+            setTimeout(() => {
+                container.removeChild(video);
+            }, duracion);
+            console.log('duracion', duracion);
+
         }
 
         // Función para crear y añadir una imagen
-        function addImage(data, position) {
+        function addImage(data, position,options) {
             const img = document.createElement('img');
+            let duracion = options.duracion * 1000;
             img.src = data.src;
             img.style.maxWidth = '100%';
             img.style.maxHeight = '400px';
 
+            if (duracion <= 1000) {
+                duracion = 5000
+            }
             setPosition(img, position);
             container.appendChild(img);
-
             setTimeout(() => {
                 container.removeChild(img);
-            }, 5000);
+            }, duracion);
+            console.log('duracion', duracion);
         }
+        function addAudio(data, position, options) {
+            // Crear el elemento de audio
+            const audio = document.createElement('audio');
+            console.log('options', options);
+            // Configurar las propiedades del audio
+            let duracion = options.duracion * 1000; // Duración en milisegundos
+            audio.src = data.src; // Fuente del audio
+            audio.autoplay = true; // Reproducción automática
+            audio.volume = options.rango / 100; // Volumen (de 0 a 1)
+            audio.style.maxWidth = '100%';   // Estilos opcionales
+            audio.style.maxHeight = '400px';
+            if (duracion <= 1000) {
+                duracion = 5000
+            } // Estilos opcionales
+        
+            // Establecer la posición del audio en el contenedor
+            setPosition(audio, position);
+            
+            // Añadir el elemento de audio al contenedor
+            container.appendChild(audio);
+        
+            // Remover el audio después de la duración especificada
+            setTimeout(() => {
+                container.removeChild(audio);
+            }, duracion);
+            console.log('duracion', duracion);
 
+        }
+        
         // Función para establecer la posición de un elemento
         function setPosition(element, position) {
             const { x, y } = position;
@@ -102,7 +146,7 @@
 
         // Función para manejar mensajes recibidos
         function handleMessage(event) {
-            const { eventType, data } = event;
+            const { eventType, data, options } = event;
             console.log('Received message from parent window:', event);
             console.log('eventType:', eventType);
             console.log('data:', data);
@@ -111,10 +155,13 @@
                 let position = getPosition(data.position);
 
                 if (data.src.endsWith('.mp4') || data.fileType.startsWith('video/')) {
-                    addVideo(data, position);
+                    addVideo(data, position,data.options);
                 } else if (data.src.endsWith('.png') || data.fileType.startsWith('image/')) {
-                    addImage(data, position);
-                } else {
+                    addImage(data, position,data.options);
+                } else if (data.src.endsWith('.mp3') || data.fileType.startsWith('audio/')) {
+                    addAudio(data, position,data.options);
+                }
+                else {
                     const div = document.createElement('div');
                     div.textContent = 'Unsupported file type';
                     setPosition(div, position);
@@ -124,7 +171,6 @@
                         container.removeChild(div);
                     }, 5000);
                 }
-                console.log('Additional data:', data.additionalData);
             }
         }
 
@@ -133,7 +179,7 @@
         });
 
         window.api.onOverlayEvent((event, eventdata) => {
-            const { eventType, data } = eventdata;
+            const { eventType, data, options123 } = eventdata;
             handleMessage(eventdata);
             console.log(eventdata);
             console.log('Overlay event received:', eventType);

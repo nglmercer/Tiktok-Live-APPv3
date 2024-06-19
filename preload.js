@@ -11,6 +11,7 @@ const api = {
     startDrag: (fileName) => ipcRenderer.invoke('on-drag-start', fileName),
     deleteFile: (fileName) => ipcRenderer.invoke('delete-file', fileName),  
     getFileById: (fileId) => ipcRenderer.invoke('get-file-by-id', fileId),
+    getFileByname: (fileIdname) => ipcRenderer.invoke('get-file-by-name', fileIdname),
     createOverlayWindow: async () => {
         return await ipcRenderer.invoke('create-overlay-window');
     },

@@ -119,11 +119,32 @@ const getFileById = (fileId) => {
         isDirectory: fs.existsSync(file.path) ? fs.statSync(file.path).isDirectory() : false,
     };
 };
+const getFileByname = (fileIdname) => {
+    const fileData = store.get('fileData', []);
+    // Asegúrate de que fileId es un número
+    const file = fileData.find(file => file.name === fileIdname);
+    
+    console.log('file', file, "fileid", fileIdname);
+    // console.log('fileData', fileData);
 
+    if (!file) {
+        throw new Error(`File with id ${fileIdname} not found`);
+    }
+
+    return {
+        index: file.index,
+        name: file.name,
+        path: file.path,
+        size: fs.existsSync(file.path) ? fs.statSync(file.path).size : 0,
+        type: file.type,
+        isDirectory: fs.existsSync(file.path) ? fs.statSync(file.path).isDirectory() : false,
+    };
+};
 module.exports = {
     addOrReplaceFile,
     registerFile,
     getFilesInfo,
     deleteFile,
     getFileById,
+    getFileByname,
 };

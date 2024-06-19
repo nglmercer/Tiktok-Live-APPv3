@@ -184,6 +184,7 @@ export default async function tab5Action({
         if (!validateForm()) return;
         const nameFilter = obtenerDatos();
         if (nameFilter.id) {
+            
             await updateDataInIndexedDB(databases.MyDatabaseActionevent, nameFilter);
         } else {
             await saveDataToIndexedDB(databases.MyDatabaseActionevent, nameFilter);
@@ -206,17 +207,74 @@ export default async function tab5Action({
             await saveDataToIndexedDB(databases.MyDatabaseActionevent, nameFilter);
         }
     });
+// Limpiar los elementos select correspondientes
+const selectVideo = form.elements.namedItem('type-video_select');
+const selectImage = form.elements.namedItem('type-imagen_select');
+const selectAudio = form.elements.namedItem('type-audio_select');
 
-    elementModal.querySelectorAll('.inputSelectSources').forEach(elementHTML => {
-        elementHTML.innerHTML = '';
-        files.forEach(file => {
-            const optionElement = document.createElement('option');
-            optionElement.textContent = file.name;
-            optionElement.value = file.index;
-            elementHTML.appendChild(optionElement);
-            cacheAssign[file.path] = file;
-        });
-    });
+if (selectVideo) selectVideo.innerHTML = '';
+if (selectImage) selectImage.innerHTML = '';
+if (selectAudio) selectAudio.innerHTML = '';
+
+// Banderas para comprobar si se añadieron elementos
+let hasVideo = false;
+let hasImage = false;
+let hasAudio = false;
+
+// Iterar sobre los archivos y agregar opciones a los selects correspondientes
+files.forEach(file => {
+    // Creamos el elemento option
+    const optionElement = document.createElement('option');
+    optionElement.textContent = file.name;
+    optionElement.value = file.index;
+
+    // Seleccionamos el select correspondiente según el tipo de archivo
+    let selectElement = null;
+    if (file.type.startsWith('video')) {
+        selectElement = selectVideo;
+        hasVideo = true;
+    } else if (file.type.startsWith('image')) {
+        selectElement = selectImage;
+        hasImage = true;
+    } else if (file.type.startsWith('audio')) {
+        selectElement = selectAudio;
+        hasAudio = true;
+    } else {
+        console.log('No se ha encontrado el tipo de archivo');
+    }
+
+    // Si encontramos el select correspondiente, hacemos el append
+    if (selectElement) {
+        selectElement.appendChild(optionElement);
+    }
+
+    console.log('selectname', selectElement, file);
+    cacheAssign[file.path] = file;
+});
+
+// Añadir una opción "Sin elementos" si no se añadió ninguna opción
+if (!hasVideo && selectVideo) {
+    const optionElement = document.createElement('option');
+    optionElement.textContent = 'Sin elementos';
+    optionElement.value = 'false';
+    selectVideo.appendChild(optionElement);
+}
+
+if (!hasImage && selectImage) {
+    const optionElement = document.createElement('option');
+    optionElement.textContent = 'Sin elementos';
+    optionElement.value = 'false';
+    selectImage.appendChild(optionElement);
+}
+
+if (!hasAudio && selectAudio) {
+    const optionElement = document.createElement('option');
+    optionElement.textContent = 'Sin elementos';
+    optionElement.value = 'false';
+    selectAudio.appendChild(optionElement);
+}
+
+    
 
     const exportFormData = () => {
         const formData = obtenerDatos();

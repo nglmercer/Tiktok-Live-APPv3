@@ -24,8 +24,8 @@ function createWindow() {
     minWidth: 800, // Ancho mínimo de la ventana
     minHeight: 600, // Alto mínimo de la ventana
     frame: true,
- /*    transparent: true,
-    alwaysOnTop: false, */
+    transparent: true,
+    alwaysOnTop: false, 
     // titleBarStyle: 'True',
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
@@ -165,7 +165,14 @@ ipcMain.handle("get-file-by-id", async (event, fileId) => {
       return null;
   }
 });
-
+ipcMain.handle("get-file-by-name", async (event, fileIdname) => {
+  try {
+      return fileHandler.getFileByname(fileIdname);
+  } catch (err) {
+      console.error('Error getting file by name:', err);
+      return null;
+  }
+});
 ipcMain.handle("delete-file", async (_, fileName) => {
   try {
       fileHandler.deleteFile(fileName);
@@ -238,10 +245,10 @@ ipcMain.handle('create-overlay-window', () => {
 });
 
 // Canal IPC para enviar datos a la ventana emergente
-ipcMain.handle('send-overlay-data', (_, { eventType, data }) => {
+ipcMain.handle('send-overlay-data', (_, { eventType, data, options }) => {
   if (overlayWindow) {
-      overlayWindow.webContents.send('overlay-event', { eventType, data });
-      console.log('Overlay event sent', eventType, data);
+      overlayWindow.webContents.send('overlay-event', { eventType, data, options });
+      console.log('Overlay event sent', eventType, data, options);
       return { success: true };
   } else {
       return { success: false, error: 'Overlay window not created yet' };

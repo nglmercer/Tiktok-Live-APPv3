@@ -62,7 +62,7 @@ export default new function() {
                             if (optionValue === value.selected || index === value.selected) {
                                 option.selected = true;
                             }
-                            console.log('option', optionValue);
+                            // console.log('option', optionValue);
                             input.appendChild(option);
                         });
                     } else if (input.type === 'text' || input.type === 'number' || input.type === 'range') {

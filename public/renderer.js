@@ -1,6 +1,7 @@
 import tab5Action from "./tab5-action/tab5-action.js";
 import { databases, saveDataToIndexedDB, deleteDataFromIndexedDB, updateDataInIndexedDB, loadDataFromIndexedDB, getDataFromIndexedDB } from './indexedDB.js';
 import modal from './modal/modal.js';
+import socketdata from './socket/socketdata.js';
 let copyFiles = [];
 async function getFiles() {
     window.api.getFilesInFolder().then(files => {
@@ -16,13 +17,13 @@ async function getFiles() {
 async function getFileById(fileId) {
     return window.api.getFileById(fileId);
 }
-const testgetFileById = async () => {
-    const fileId = '1';
-    const file = await getFileById(fileId);
-    console.log('file', file);
-    return file;
-}
-console.log('testgetFileById', testgetFileById());
+// const testgetFileById = async () => {
+//     const fileId = '1';
+//     const file = await getFileById(fileId);
+//     // console.log('file', file);
+//     return file;
+// }
+// console.log('testgetFileById', testgetFileById());
 getFiles()
 const main = async function() {
     await modal.LoadModal();
@@ -186,11 +187,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const fileItem = target.closest('.file-item');
             const fileIndex = Array.from(fileItem.parentNode.children).indexOf(fileItem);
             const file = existingFiles[fileIndex];
-            console.log('file', file);
+            // console.log('file', file);
             // Additional data to be sent with the event
             const additionalData = { example: 'additional data' };
             try {
-                await window.api.createOverlayWindow();
+                // await window.api.createOverlayWindow();
                 await window.api.sendOverlayData('play', { src: file.path, fileType: file.type, additionalData });
                 console.log('Overlay event sent');
             } catch (error) {
@@ -262,8 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const testButton = document.createElement('button');
         testButton.textContent = 'Probar';
         testButton.addEventListener('click', () => {
-            eventmanager("test", data);
-            eventmanager("Chat", "hola");
+            eventmanager("chat", data);
             console.log('testButton', data);
         });
         container.appendChild(testButton);
@@ -288,41 +288,81 @@ document.addEventListener('DOMContentLoaded', () => {
     //     }, 500);
     // }
     async function eventmanager(eventType, data) {
-        console.log('eventmanager', eventType,"eventype data -------------------", data);
-        /// if event is gift chat or other check data
-        let srcoverlay;
-        if (data["type-imagen"] && data["type-imagen"].check) {
-            srcoverlay = await getfileId(data["type-imagen"].select);
-            console.log('srcoverlay', srcoverlay.name);
-                overlaywindow(srcoverlay);
-                // await window.api.createOverlayWindow();
-                // await window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type });
-            
-        }  
-        if (data["type-video"] && data["type-video"].check) {
-            srcoverlay = await getfileId(data["type-video"].select);
-            console.log('srcoverlay', srcoverlay.name);
-            overlaywindow(srcoverlay);
-            // await window.api.createOverlayWindow();
-            // await window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type });
+        console.log('eventmanager', eventType, "eventype data -------------------", data);
+    
+        let eventsfind = await getDataFromIndexedDB(databases.MyDatabaseActionevent);
+    
+        // Conjunto para almacenar los tipos de archivo que ya se han procesado
+        let processedTypes = new Set();
+        for (const eventname of eventsfind) {
+            for (const [key, value] of Object.entries(eventname)) {
+                let splitkey = key.split('-');
+                if (splitkey[1] === eventType && !value.check) {
+                    console.log(splitkey,"eventsfind---------------------", eventType,"value------------------", value, "key data -------------------", key);
+                    return true;
+                }
+                if (splitkey[1] === eventType) {
+                    console.log('eventname', eventname["type-imagen"],"value", value, "key data -------------------", key);
+                    console.log('eventname', eventname["type-video"],"value", value, "key data -------------------", key);
+                    console.log('eventname', eventname["type-audio"],"value", value, "key data -------------------", key);
+                    // Verificamos si el evento tiene el check y si no ha sido procesado aún
+                    if (eventname["type-imagen"].check && processedTypes.has("image") === false) {
+                        processedTypes.add("image");
+                        // console.log('eventname', eventname["type-imagen"], value, "key data -------------------", key);
+                        const srcoverlay = getfileId(eventname["type-imagen"].select);
+                        if(srcoverlay !== null) {
+                        window.api.createOverlayWindow();
+                        window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-imagen"] });
+                            console.log("srcoverlay encontrado","index",eventname["type-imagen"].select,"src",srcoverlay.path,"fileType",srcoverlay.type)
+                        }
 
-        }  
-        if (data["type-audio"] && data["type-audio"].check) {
-            srcoverlay = await getfileId(data["type-audio"].select);
-            console.log('srcoverlay', srcoverlay);
+                    }
+    
+                    if (eventname["type-video"].check && processedTypes.has("video") === false) {
+                        processedTypes.add("video");
+                        // console.log('eventname', eventname["type-video"], value, "key data -------------------", key);
+                        const srcoverlay = getfileId(eventname["type-video"].select);
+                        if(srcoverlay !== null) {
+                        window.api.createOverlayWindow();
+                        window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-video"] });
+                            console.log("srcoverlay encontrado",srcoverlay,"index",eventname["type-video"].select,"src",srcoverlay.path,"fileType",srcoverlay.type)
+                        }
+                    }
+    
+                    if (eventname["type-audio"].check && processedTypes.has("audio") === false) {
+                        processedTypes.add("audio");                        
+                        // console.log('eventname', eventname["type-audio"], value, "key data -------------------", key);
+                        const srcoverlay = getfileId(eventname["type-audio"].select);
+                        if(srcoverlay !== null ) {
+                        window.api.createOverlayWindow();
+                        window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-audio"] });
+                            console.log("srcoverlay encontrado",srcoverlay,"index",eventname["type-audio"].select,"src")
+                        } 
+                    }
+                }
+            }
         }
     }
-    async function getfileId(id) {
-        let filedata;
-        window.api.getFileById(id).then(file => {
-            console.log('file', file);
-            filedata = file;
-        });
-        return filedata;
+    
+    function getfileId(id) {
+        if (id === undefined || id === null) {
+            return null;
+        } 
+        if (id === false) {
+            return null;
+        }
+        let converidtonumber = Number(id);
+        let findelement = copyFiles.find(file => file.index === converidtonumber)
+        // console.log('findelement', findelement,"else----------------", id, "id data -------------------", copyFiles);
+        if (findelement) {
+            return findelement;
+        } else {
+            return null;
+        }
     }
     async function overlaywindow(file) {
         // try {
-        //     await window.api.createOverlayWindow();
+            await window.api.createOverlayWindow();
         //     await window.api.sendOverlayData('play', { src: file.path, fileType: file.type, additionalData });
         //     console.log('Overlay event sent');
         // } catch (error) {
@@ -330,9 +370,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // }
         console.log('overlaywindow', file);
     }
-    window.señal = (valor) => {
-        console.log('señal recibido', valor);
-        loadDataFromIndexedDB123();
+    window.señal = (valor,data1) => {
+        console.log('señal recibido', valor,"data----------------", data1);
+        const {eventType, data} = valor;
+        eventmanager(eventType, data);
     }
     function loadDataFromIndexedDB123() {
         loadDataFromIndexedDB(databases.eventsDB, createElementWithButtons);
