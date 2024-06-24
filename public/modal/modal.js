@@ -5,7 +5,40 @@ const config = {
     html: "./modalhtml.html",
     separador: "_",
 };
+///ejemplo de const 
+// const main = async function() {
+//     await modal.LoadModal();
+//     const modalInstance = modal.Modales[0];
+//     const contenedor = modalInstance.contenedor;
 
+//     modalInstance.properties.fillForm({
+//         nombre: 'juan',
+//         event1: false,
+//         event2: true,
+//         event3: false,
+//         event4: false,
+//         selection: { options: copyFiles, selected: 0 },
+//         aceptar: () => {
+//             console.log('aceptar');
+//             const datosFormulario = modalInstance.properties.obtenerDatos();
+//             saveDataToIndexedDB(databases.MyDatabaseActionevent, datosFormulario);
+
+//             console.log('Datos del formulario:', datosFormulario);
+//         },
+//         cancelar: () => {
+//             console.log("cancelar botón");
+//         },
+//         borrar: () => {
+//             console.log('borrar');
+//             const datosFormulario = modalInstance.properties.obtenerDatos();
+//             deleteDataFromIndexedDB(databases.MyDatabaseActionevent, datosFormulario);
+//         },
+//     });
+
+//     return modal.Modales;
+// }
+
+// main();
 const urlBase = (url) => import.meta.url.split('/').slice(0, -1).join('/') + "/" + url.replace('//', '');
 const getArchive = async (url) => await fetch(urlBase(url)).then((response) => response.text());
 

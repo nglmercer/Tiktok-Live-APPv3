@@ -23,19 +23,18 @@ function createWindow() {
     height: store.get('windowHeight', 800), // Obtener la altura de la ventana desde Electron Store, si no está definida, usar 1000
     minWidth: 800, // Ancho mínimo de la ventana
     minHeight: 600, // Alto mínimo de la ventana
-    frame: true,
+    frame: false,
     transparent: true,
-    alwaysOnTop: false, 
-    // titleBarStyle: 'True',
+    // alwaysOnTop: false, 
+    // titleBarStyle: 'customButtonsOnHover',
+
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 			nodeIntegration: true,
-			webSecurity: false,
 		},
-    maximizable: true
   });
-
-  mainWindow.loadURL(`http://localhost:${port}`);
+  //load public/index.html mainWindow
+  mainWindow.loadFile('public/index.html');
 }
 app.on('ready', () => {
   const express = require('express');

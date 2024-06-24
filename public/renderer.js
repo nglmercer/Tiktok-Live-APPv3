@@ -1,6 +1,5 @@
 import tab5Action from "./tab5-action/tab5-action.js";
 import { databases, saveDataToIndexedDB, deleteDataFromIndexedDB, updateDataInIndexedDB, loadDataFromIndexedDB, getDataFromIndexedDB } from './indexedDB.js';
-import modal from './modal/modal.js';
 import socketdata from './socket/socketdata.js';
 let copyFiles = [];
 async function getFiles() {
@@ -25,39 +24,7 @@ async function getFileById(fileId) {
 // }
 // console.log('testgetFileById', testgetFileById());
 getFiles()
-const main = async function() {
-    await modal.LoadModal();
-    const modalInstance = modal.Modales[0];
-    const contenedor = modalInstance.contenedor;
 
-    modalInstance.properties.fillForm({
-        nombre: 'juan',
-        event1: false,
-        event2: true,
-        event3: false,
-        event4: false,
-        selection: { options: copyFiles, selected: 0 },
-        aceptar: () => {
-            console.log('aceptar');
-            const datosFormulario = modalInstance.properties.obtenerDatos();
-            saveDataToIndexedDB(databases.MyDatabaseActionevent, datosFormulario);
-
-            console.log('Datos del formulario:', datosFormulario);
-        },
-        cancelar: () => {
-            console.log("cancelar botón");
-        },
-        borrar: () => {
-            console.log('borrar');
-            const datosFormulario = modalInstance.properties.obtenerDatos();
-            deleteDataFromIndexedDB(databases.MyDatabaseActionevent, datosFormulario);
-        },
-    });
-
-    return modal.Modales;
-}
-
-main();
 document.addEventListener('DOMContentLoaded', () => {
     window.api.onShowMessage((event, message) => {
         console.log(message);
@@ -178,7 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('existingFiles', JSON.stringify(existingFiles));
         loadFileList();
     };
-
+    const optionsgift = () => {
+        const result = window.globalSimplifiedStates;
+        console.log('optionsgift', result);
+        return result;
+    }
     let overlayPage = null; // Variable para almacenar la referencia a la ventana emergente
 
     fileList.addEventListener('click', async (event) => {
@@ -189,10 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const file = existingFiles[fileIndex];
             // console.log('file', file);
             // Additional data to be sent with the event
-            const additionalData = { example: 'additional data' };
+            const options = { check: true, select: '11', rango: '50', duracion: '15' };
             try {
-                // await window.api.createOverlayWindow();
-                await window.api.sendOverlayData('play', { src: file.path, fileType: file.type, additionalData });
+                await window.api.createOverlayWindow();
+                await window.api.sendOverlayData('play', { src: file.path, fileType: file.type, options });
                 console.log('Overlay event sent');
             } catch (error) {
                 console.error('Error sending overlay event:', error);
@@ -214,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let container = document.querySelector(`.data-container[data-id="${data.id}"]`);
         if (!container) {
             container = document.createElement('div');
-            container.className = 'data-container';
+            container.className = 'flex data-container';
             container.dataset.id = data.id;
             document.getElementById('loadrowactionsevents').appendChild(container);
         } else {
@@ -223,15 +194,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     
         // Crear el elemento de texto y agregarlo al contenedor
-        const textElement = document.createElement('p');
-        if (!data.Action) {
-            textElement.textContent = `Evento: ${data.evento?.nombre || 'N/A'}, Audio: ${getDataText(data["type-audio"])}, Video: ${getDataText(data["type-video"])}, Imagen: ${getDataText(data["type-imagen"])}`;
+        const textElement = document.createElement('div');
+        textElement.className = 'flex justify-center';
+        console.log('data-------------createbutton', data);
+        if (data.accionevento) {
+            textElement.textContent = `Evento: ${data.accionevento?.nombre || 'N/A'}, Audio: ${getDataText(data["type-audio"])}, Video: ${getDataText(data["type-video"])}, Imagen: ${getDataText(data["type-imagen"])}`;
         } else {
-            if (!data.Evento.select) {
-                textElement.textContent = `Evento: ${data.Evento?.nombre || 'N/A'}, Acción: faltando`;
-            } else {
-                textElement.textContent = `Evento: ${data.Evento.nombre}, Acción: ${data.Action.select?.evento || 'N/A'}`;
-            }
+                textElement.textContent = `Evento: ${data.accionevento?.nombre || 'N/A'}, Acción: faltando`;
         }
         container.appendChild(textElement);
     
@@ -248,13 +217,12 @@ document.addEventListener('DOMContentLoaded', () => {
         deleteButton.textContent = 'Borrar';
         deleteButton.addEventListener('click', () => {
             container.remove();
-            loadDataFromIndexedDB(databases.eventsDB, createElementWithButtons);
-            loadDataFromIndexedDB(databases.MyDatabaseActionevent, createElementWithButtons);
-            if (!data.Action) {
-                deleteDataFromIndexedDB(databases.MyDatabaseActionevent, data.id);
-            } else {
-                deleteDataFromIndexedDB(databases.eventsDB, data.id);
-            }
+
+            deleteDataFromIndexedDB(databases.MyDatabaseActionevent, data.id);
+            setTimeout(() => {
+                loadDataFromIndexedDB(databases.eventsDB, createElementWithButtons);
+                loadDataFromIndexedDB(databases.MyDatabaseActionevent, createElementWithButtons);
+                }, 1000);
             console.log('deleteDataFromIndexedDB', data);
         });
         container.appendChild(deleteButton);
@@ -263,14 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const testButton = document.createElement('button');
         testButton.textContent = 'Probar';
         testButton.addEventListener('click', () => {
-            eventmanager("chat", data);
             console.log('testButton', data);
         });
         container.appendChild(testButton);
     }
     
     function getDataText(data) {
-        return data && data.select ? data.select.name : 'N/A';
+        return data && data.select ? data.select : 'N/A';
     }
     
     //   const idelement = formulario.elements.namedItem('id');  
@@ -288,63 +255,92 @@ document.addEventListener('DOMContentLoaded', () => {
     //     }, 500);
     // }
     async function eventmanager(eventType, data) {
-        console.log('eventmanager', eventType, "eventype data -------------------", data);
+        // console.log('eventmanager', eventType, "eventype data -------------------", data);
     
         let eventsfind = await getDataFromIndexedDB(databases.MyDatabaseActionevent);
     
         // Conjunto para almacenar los tipos de archivo que ya se han procesado
         let processedTypes = new Set();
-        for (const eventname of eventsfind) {
-            for (const [key, value] of Object.entries(eventname)) {
+    
+        // Iteramos sobre cada evento encontrado
+        eventsfind.forEach(eventname => {
+            Object.entries(eventname).forEach(([key, value]) => {
                 let splitkey = key.split('-');
+    
+                // Verificamos si el tipo de evento coincide y si el evento no tiene check
                 if (splitkey[1] === eventType && !value.check) {
-                    console.log(splitkey,"eventsfind---------------------", eventType,"value------------------", value, "key data -------------------", key);
+                    console.log(splitkey[1] === eventType && !value.check);
+                    // console.log(splitkey, "eventsfind---------------------", eventsfind, "eventname---------------------", eventname, "eventType------------------", eventType, "value------------------", value, "key data -------------------", key);
                     return true;
                 }
+                // Verificamos si el tipo de evento coincide
                 if (splitkey[1] === eventType) {
-                    console.log('eventname', eventname["type-imagen"],"value", value, "key data -------------------", key);
-                    console.log('eventname', eventname["type-video"],"value", value, "key data -------------------", key);
-                    console.log('eventname', eventname["type-audio"],"value", value, "key data -------------------", key);
-                    // Verificamos si el evento tiene el check y si no ha sido procesado aún
-                    if (eventname["type-imagen"].check && processedTypes.has("image") === false) {
+                    // console.log('eventname', eventname["type-imagen"], "value", value, "key data -------------------", key);
+                    // console.log('eventname', eventname["type-video"], "value", value, "key data -------------------", key);
+                    // console.log('eventname', eventname["type-audio"], "value", value, "key data -------------------", key);
+                    // console.log("eventname---------------------", eventname, "eventType------------------", eventType, "value------------------", value, "key data -------------------", key);
+                    if (eventType === 'gift') {
+                        value.select = Number(value.select);
+                        if (value.select !== data.giftId) {
+                            return true;
+                        }
+                    }
+                    if (value.select === data.giftId) {
+                        console.log("value.select === data.giftId valor del select es igual al nombre del gift recibido", value.select === data.giftId, "data.giftId", data.giftId, "value.select", value.select);
+                    }
+                    // if (data.giftId) {
+                    //     console.log("data.giftId", data.giftId,"value", value);
+                    // }
+                    // Procesamos el tipo de imagen si no ha sido procesado aún
+                    if (eventname["type-imagen"] && eventname["type-imagen"].check && !processedTypes.has("image")) {
                         processedTypes.add("image");
-                        // console.log('eventname', eventname["type-imagen"], value, "key data -------------------", key);
-                        const srcoverlay = getfileId(eventname["type-imagen"].select);
-                        if(srcoverlay !== null) {
-                        window.api.createOverlayWindow();
-                        window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-imagen"] });
-                            console.log("srcoverlay encontrado","index",eventname["type-imagen"].select,"src",srcoverlay.path,"fileType",srcoverlay.type)
-                        }
-
+                        getfileId(eventname["type-imagen"].select).then(srcoverlay => {
+                            if (srcoverlay !== null) {
+                                window.api.createOverlayWindow();
+                                window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-imagen"] });
+                                console.log("srcoverlay encontrado", "index", eventname["type-imagen"].select, "src", srcoverlay.path, "fileType", srcoverlay.type);
+                            }
+                        });
                     }
     
-                    if (eventname["type-video"].check && processedTypes.has("video") === false) {
+                    // Procesamos el tipo de video si no ha sido procesado aún
+                    if (eventname["type-video"] && eventname["type-video"].check && !processedTypes.has("video")) {
                         processedTypes.add("video");
-                        // console.log('eventname', eventname["type-video"], value, "key data -------------------", key);
-                        const srcoverlay = getfileId(eventname["type-video"].select);
-                        if(srcoverlay !== null) {
-                        window.api.createOverlayWindow();
-                        window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-video"] });
-                            console.log("srcoverlay encontrado",srcoverlay,"index",eventname["type-video"].select,"src",srcoverlay.path,"fileType",srcoverlay.type)
-                        }
+                        getfileId(eventname["type-video"].select).then(srcoverlay => {
+                            if (srcoverlay !== null) {
+                                window.api.createOverlayWindow();
+                                window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-video"] });
+                                console.log("srcoverlay encontrado", srcoverlay, "index", eventname["type-video"].select, "src", srcoverlay.path, "fileType", srcoverlay.type);
+                            }
+                        });
                     }
     
-                    if (eventname["type-audio"].check && processedTypes.has("audio") === false) {
-                        processedTypes.add("audio");                        
-                        // console.log('eventname', eventname["type-audio"], value, "key data -------------------", key);
-                        const srcoverlay = getfileId(eventname["type-audio"].select);
-                        if(srcoverlay !== null ) {
-                        window.api.createOverlayWindow();
-                        window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-audio"] });
-                            console.log("srcoverlay encontrado",srcoverlay,"index",eventname["type-audio"].select,"src")
-                        } 
+                    // Procesamos el tipo de audio si no ha sido procesado aún
+                    if (eventname["type-audio"] && eventname["type-audio"].check && !processedTypes.has("audio")) {
+                        processedTypes.add("audio");
+                        getfileId(eventname["type-audio"].select).then(srcoverlay => {
+                            if (srcoverlay !== null) {
+                                window.api.createOverlayWindow();
+                                window.api.sendOverlayData('play', { src: srcoverlay.path, fileType: srcoverlay.type, options: eventname["type-audio"] });
+                                console.log("srcoverlay encontrado", srcoverlay, "index", eventname["type-audio"].select, "src");
+                            }
+                        });
                     }
                 }
-            }
-        }
+            });
+        });
     }
-    
-    function getfileId(id) {
+    function giftevent(eventType, data) {
+        console.log('giftevent gestion default si no existe', eventType);
+
+    }
+    const actionnameinput = document.getElementById('action-name');
+    const testactionevent = document.getElementById('testactionevent');
+    testactionevent.addEventListener('click', () => {
+        eventmanager(actionnameinput.value, actionnameinput.value);
+        // console.log('testactionevent', actionnameinput.value);
+    });
+    async function getfileId(id) {
         if (id === undefined || id === null) {
             return null;
         } 
@@ -352,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return null;
         }
         let converidtonumber = Number(id);
-        let findelement = copyFiles.find(file => file.index === converidtonumber)
+        let findelement = window.api.getFileById(converidtonumber);
         // console.log('findelement', findelement,"else----------------", id, "id data -------------------", copyFiles);
         if (findelement) {
             return findelement;
@@ -387,6 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tab5Action({
         elementContainer: document.getElementById('tab5-action'),
         files: existingFiles, // Los archivos que se van a mostrar en la ventana emergente
+        optionsgift: optionsgift(),
         onSave: (datos) => {console.log('onSave', datos)
             saveDataToIndexedDB(databases.eventsDB, datos)},
         onCancel: (datos) => {

@@ -1,22 +1,5 @@
-window.señal = ()=>{}
-
-let elemento = new Proxy({ value: 0 }, {
-    set: (target, prop, value) => {
-        target[prop] = value;
-        señal(target[prop])
-        return true;
-    },
-    get: (target, prop) => {
-        return target[prop];
-    }
-});
 
 
-
-// para usar 
-// window.señal = (valor) => {
-//     console.log("Señal recibida, ", valor);
-// }
 export const databases = {
     eventsDB: { name: 'eventsDB', version: 1, store: 'events' },
     MyDatabaseActionevent: { name: 'MyDatabaseActionevent', version: 1, store: 'files' }
@@ -51,7 +34,6 @@ export const databases = {
         delete data.id;
 
     }
-    elemento.value++;
 
     const request = objectStore.add(data);
       request.onsuccess = (event) => {
@@ -93,7 +75,6 @@ export const databases = {
 
         request.onsuccess = () => {
             console.log(`Data with id ${data.id} updated in IndexedDB`, data);
-            elemento.value++;
         };
 
         request.onerror = (event) => {

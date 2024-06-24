@@ -109,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
-        fetch('/api/create', {
+        fetch(`${backendUrl}/api/create`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function disconnectBot() {
-        fetch('/api/disconnect', {
+        fetch(`${backendUrl}/api/disconnect`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

@@ -1,22 +1,21 @@
 .tab5-action{
-    position: absolute;
+    position: fixed;
     left: 50%;
     top: 50%;
     /* width: 60%; */
     transform: translate(-50%, -50%);
     z-index: 99;
     background-color: rgb(255, 255, 255);
-    padding: 20px;
     border-radius: 10px;
     border: 1px solid rgb(0, 0, 0);
     color: rgb(0, 0, 0);
     display: flex;
     overflow-y: auto;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     gap: 10px;
     .ElementITEM{
+        padding: 20px;
+
         max-height: 25rem;
         overflow-y: auto;
         .inputGroup{
@@ -25,9 +24,7 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             align-items: center;
-            label{
-                max-width: 400px;
-            }
+
             input[type="checkbox"]{
                 width: 20px;
                 height: 20px;
@@ -36,7 +33,12 @@
             .config{
                 display: none;
             }
-            
+            .checkbox-group{
+                display: flex;
+                flex-wrap: wrap;
+                width: 200px;
+                gap: 10px;
+            }
             input[type="checkbox"]:checked ~ .config{
                 display: grid;
                 cursor: auto;

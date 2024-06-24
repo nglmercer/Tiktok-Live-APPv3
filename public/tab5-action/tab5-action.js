@@ -7,6 +7,7 @@ import {
 export default async function tab5Action({
     elementContainer,
     files = [],
+    optionsgift = [],
     onCancel = () => {},
     separator = "_"
 }) {
@@ -273,6 +274,17 @@ if (!hasAudio && selectAudio) {
     optionElement.value = 'false';
     selectAudio.appendChild(optionElement);
 }
+const giftselect = document.getElementById('event-gift_select');
+const availableGifts = optionsgift[0].availableGifts || []; // Asegúrate de que availableGifts esté definido y sea un array
+console.log('optionsgift', optionsgift[0].availableGifts);
+availableGifts.forEach(gift => {
+    const optionElement = document.createElement('option');
+    optionElement.textContent = gift.name;
+    optionElement.value = gift.giftId;
+    // console.log('optionElement', optionElement);
+    // console.log('gift', gift);gift.name + '_' +
+    giftselect.appendChild(optionElement);
+});
 
     
 

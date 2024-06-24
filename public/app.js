@@ -1,13 +1,6 @@
 // This will use the demo backend if you open index.html locally via file://, otherwise your server will be used
 // Verifica si la aplicación se está ejecutando localmente o en un servidor remoto
-let backendUrl;
-if (location.protocol === 'file:') {
-    // Si se ejecuta localmente, usa la URL local para el servidor Socket.IO
-    backendUrl = "https://tiktok-chat-reader.zerody.one/";
-} else {
-    // Si se ejecuta en un servidor remoto, utiliza la URL del servidor remoto
-    backendUrl = "http://localhost:8081"; // Reemplaza 'example.com' con la URL real de tu servidor
-}
+let backendUrl = "http://localhost:8081"
 
 const log = new Proxy({
     hidden: [],
@@ -41,9 +34,6 @@ const log = new Proxy({
     }
 });
 
-// Asegúrate de que la URL tenga la ruta para Socket.IO
-backendUrl += "";
-
 // Crea la conexión al servidor Socket.IO con la URL obtenida
 let connection = new TikTokIOConnection(backendUrl);
 
@@ -65,6 +55,7 @@ $(document).ready(() => {
 
     if (window.settings.username) connect();
 })
+
 let isConnected = false;
 let currentRoomId = null;
 let currentUniqueId = null;
@@ -138,6 +129,40 @@ function connect() {
         alert('No username entered');
     }
 }
+const jsonFilePath = './datosjson/simplifiedStates.json';
+
+async function fetchSimplifiedState() {
+    try {
+        const response = await fetch(jsonFilePath);
+        if (!response.ok) {
+            throw new Error(`Error fetching JSON file: ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log('Fetched JSON data:', data);
+
+        // Verifica si data[0] es un array y crea una copia si es necesario
+        const availableGifts = Array.isArray(data[0]?.availableGifts) ? [...data[0].availableGifts] : [];
+
+        const simplifiedState = {
+            availableGifts: availableGifts,
+            // Puedes agregar más campos si es necesario
+        };
+        
+        return simplifiedState; // Devuelve el objeto creado
+    } catch (error) {
+        console.error('Error fetching JSON:', error);
+        return null;
+    }
+}
+
+fetchSimplifiedState().then(data => {
+    if (data) {
+        // Usa los datos como desees
+        console.log('Fetched simplified state:', data);
+        globalSimplifiedStates.push(data);
+    }
+});
+
 let globalSimplifiedStates = [];
 window.globalSimplifiedStates = globalSimplifiedStates;
 
@@ -148,39 +173,36 @@ function availableGiftsimage(state) {
         const savedState = JSON.parse(savedStateJson);
         if (savedState && savedState.availableGifts) {
             state = savedState;
-        } else {
-            console.error('No se encontraron datos de availableGifts en el localStorage.');
-            return giftImages;
         }
     }
     
     const container = document.getElementById('giftContainer');
     container.innerHTML = '';
     state.availableGifts.sort((a, b) => a.diamond_count - b.diamond_count);
-    
+
     state.availableGifts.map(gift => {
         const giftName = gift.name;
         const imageUrl = gift.image.url_list[1];
         giftImages[giftName] = imageUrl;
-        
+
         const giftBox = document.createElement('div');
         giftBox.classList.add('gift-box');
-        
+
         const giftImage = document.createElement('img');
         giftImage.src = imageUrl;
         giftImage.alt = giftName;
         giftBox.appendChild(giftImage);
-        
+
         const giftNameText = document.createElement('p');
         const foundGift = state.availableGifts.find(gift => gift.name.toLowerCase() === giftName.toLowerCase());
         if (foundGift) {
             giftNameText.textContent = `${foundGift.name} ${foundGift.diamond_count}🌟`;
         }
         giftBox.appendChild(giftNameText);
-        
+
         container.appendChild(giftBox);
     });
-    
+
     const simplifiedState = {
         availableGifts: state.availableGifts.map(gift => ({
             name: gift.name,
@@ -189,13 +211,42 @@ function availableGiftsimage(state) {
             imageUrl: gift.image.url_list[1]
         }))
     };
-    
-    const simplifiedStateJson = JSON.stringify(state);
+
     globalSimplifiedStates.push(simplifiedState);
-    
+
+    const simplifiedStateJson = JSON.stringify(state);
     localStorage.setItem('simplifiedState', simplifiedStateJson);
+
+    // Añadir el botón de descarga si no existe
+    addDownloadButton();
+
     return giftImages;
 }
+
+function addDownloadButton() {
+    const buttonContainer = document.getElementById('downloadButtonContainer');
+    buttonContainer.innerHTML = '';
+
+    const downloadButton = document.createElement('button');
+    downloadButton.textContent = 'Descargar JSON';
+    downloadButton.onclick = downloadJson;
+
+    buttonContainer.appendChild(downloadButton);
+}
+
+function downloadJson() {
+    const dataStr = JSON.stringify(globalSimplifiedStates, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = url;
+    downloadLink.download = 'simplifiedStates.json';
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+}
+
 
 class Groups {
     static start() {
@@ -1744,7 +1795,7 @@ function getChatCommands() {
 
 
 function sendReplacedCommand(replacedCommand) {
-    fetch('/api/receive', {
+    fetch(`${backendUrl}/api/receive`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -1764,7 +1815,7 @@ async function sendToServer(eventType, data, color, msg, message) {
     let objet = {eventType, data};
     elemento.value = objet;
     elemento.data = objet;
-    fetch('/api/receive1', {
+    fetch(`${backendUrl}/api/receive1`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

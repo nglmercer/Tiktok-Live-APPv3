@@ -11,6 +11,7 @@ body {
   color: white !important;
   word-wrap: break-word;
 }
+
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -18,23 +19,26 @@ body {
 /* Personalizar el pulgar */
 ::-webkit-scrollbar-thumb {
   width: 10px;
-  background-image: linear-gradient(to bottom, rgb(255, 0, 200), #00f);
+  background-image: linear-gradient(to bottom, rgba(55, 25, 70, 0.685), rgba(22, 22, 59, 0.582));
 }
 
 .containerbox {
+  position: relative;
   border: 1px solid rgba(88, 88, 255, 0.123);
   background-color: #212121;
   margin: 1rem;
   min-width: 90%;
   min-height: 90%;
 }
+
 .containerbox-child {
   border: 1px solid rgba(88, 88, 255, 0.123);
   background-color: #1a1919;
-  min-width: 90%;
-  min-height: 90%;
+  min-width: 500px;
+  min-height: 200px;
   margin-right: 10%;
 }
+
 .containerbox:hover {
   border: 1px solid rgb(51, 51, 139);
 }
@@ -171,11 +175,11 @@ input[type="button"] {
   box-sizing: content-box;
 }
 input[type="text"] {
-  color: #f84cfe;
+  color: #814cfe;
   font-size: 15px;
   font-weight: bolder;
   min-width: 11rem;
-  border: 1px solid #5e4dcd;
+  border: 1px solid #5d45f7;
   border-radius: 6px 6px 6px 6px;
   background-color: #5e4dcd00;
   box-sizing: content-box;
@@ -207,18 +211,20 @@ input[type="text"] {
   flex-direction: column;
 }
 .file-container {
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
   z-index: 999;
-  font-size: 1rem;
-  font-weight: 700;
-  color: #000000;
-  text-align: center;
+  font-size: 0.5rem;
+  font-weight: 500;
   overflow: auto;
-  width: 100%;
-  height: 100%;
+  min-width: 500px; 
+  min-height: 500px;
 }
+#file-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, 200px); /* Ancho máximo 200px */
+  grid-auto-rows: minmax(100px, auto); /* Altura mínima 100px */
+  gap: 5px;
+}
+
 /* Estilos para la imagen de perfil */
 .user-profile-image img {
   box-sizing: border-box;
@@ -398,7 +404,12 @@ audio:hover {
   margin-right: 5px;
   cursor: pointer;
 }
-
+.center-element{
+    position: absolute;
+    top: 50%;
+    left: 70%;
+    font-size: 1rem;
+}
 .cyberpunk-checkbox:before {
   content: "";
   background-color: #30cfd0;

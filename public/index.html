@@ -590,28 +590,34 @@ meta
     </div>
 </div>
     <div id="tab4" class="tab-content">
-        <div class="containerbox h-96">
-            <h2>arrastre elementos aquí</h2>
-            
+        <div class="containerbox h-96">       
+            <div class="center-element">arrastre elementos aquí</div>
+     
             <div class="file-container " id="drop-area">
-                <ul id="file-list"> </ul></div>
+                <ul id="file-list"> </ul>
+            </div>
+                
             </div>
             
         <div class="containerbox h-96">
                 <div id="tab5-action"></div>
-                <button id="openaction" >openaction</button>
-                <button id="closeaction" >close</button>
+                <button id="openaction" class="btn btn-primary">openaction</button>
+                <button id="closeaction" class="btn btn-primary">closeaction</button>
                 <div id="loadrowactionsevents"></div>
+                <div>
+                    <input type="text" id="action-name" placeholder="action name">
+                    <button id="testactionevent" class="btn btn-primary">test</button>
+                </div>
 
         </div>
         <div class="containerbox h-96">
             <div class="modalhtml"></div>
     
-            <button id="open" >open</button>
-            <button id="close" >close</button>
+            <button id="open" style="display: none;">open</button>
+            <button id="close" style="display: none;">close</button>
             
             <div class="inputFields">
-                <input id="channel" type="text" placeholder="Twitch channel"><button id="channel-button" value="GOOO" type="button"></button>
+                <input id="channel" type="text" placeholder="Twitch channel" ><button id="channel-button" class="btn btn-primary" value="GOOO" type="button">GOOO</button>
             </div>
             <div id="chatbox"></div>
             </div>
@@ -622,7 +628,8 @@ meta
         <div id="giftContainer" class="gift-container">
             <!-- Aquí se agregarán dinámicamente los cuadros de regalo -->
         </div>
-        
+        <div id="downloadButtonContainer"></div>
+
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
