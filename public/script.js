@@ -420,9 +420,5 @@ $("#searchButton").click(function() {
   searchMyInstants(query);
 });
 
-// Modify addButton event listener to open the modal instead of file upload
-document.getElementById("addButton").addEventListener("click", () => {
-  $('#audioModal').modal('show');
-  searchMyInstants("");
-});
+
 // # ENDJAVASCRIPT Modify addButton event listener

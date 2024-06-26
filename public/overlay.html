@@ -64,7 +64,7 @@
             }
             const video = document.createElement('video');
             video.style.width = 'auto';
-            video.style.height = '400px';
+            video.style.height = '200px';
             video.autoplay = true;
             let duracion = options.duracion * 1000;
             if (duracion <= 1000) {
@@ -95,7 +95,7 @@
             let duracion = options.duracion * 1000;
             img.src = data.src;
             img.style.maxWidth = '100%';
-            img.style.maxHeight = '400px';
+            img.style.maxHeight = '200px';
 
             if (duracion <= 1000) {
                 duracion = 5000
@@ -117,7 +117,7 @@
             audio.autoplay = true; // Reproducción automática
             audio.volume = options.rango / 100; // Volumen (de 0 a 1)
             audio.style.maxWidth = '100%';   // Estilos opcionales
-            audio.style.maxHeight = '400px';
+            audio.style.maxHeight = '200px';
             if (duracion <= 1000) {
                 duracion = 5000
             } // Estilos opcionales
@@ -173,7 +173,23 @@
                 }
             }
         }
+        function showUserpicture(data, position, options) {
+            const img = document.createElement('img');
+            let duracion = options.duracion * 1000;
+            img.src = data.src;
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '400px';
 
+            if (duracion <= 1000) {
+                duracion = 5000
+            }
+            setPosition(img, position);
+            container.appendChild(img);
+            setTimeout(() => {
+                container.removeChild(img);
+            }, duracion);
+            console.log('duracion', duracion);
+        }
         window.api.onShowMessage((event, message) => {
             console.log(message);
         });

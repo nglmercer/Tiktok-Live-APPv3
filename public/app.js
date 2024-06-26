@@ -889,7 +889,6 @@ connection.on('gift', (data) => {
     }
     addOverlayEvent('gift',data, data.giftPictureUrl, 'red', true, data.repeatCount);
     handleEvent('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
-    sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
 
     if (!isPendingStreak(data) && data.diamondCount > 0) {
         diamondsCount += (data.diamondCount * data.repeatCount);
@@ -897,12 +896,18 @@ connection.on('gift', (data) => {
         let prefixGiftEvent = document.getElementById('prefixGiftEvent').value; 
         if (readGiftEvent.checked && data.giftName) {
             readGiftText = `${data.uniqueId} ${prefixGiftEvent} ${data.repeatCount} ${data.giftName}`
-            log.readGiftEvent(data.uniqueId + prefixGiftEvent + data.giftName);
+            // log.readGiftEvent(data.uniqueId + prefixGiftEvent + data.giftName);
             leerMensajes(readGiftText);
             
         }
+        log.isPendingStreak(data.uniqueId + prefixGiftEvent + data.giftName,"data repeatcount si terminoooooo",true,data.repeatCount);
+        sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
         userPoints[data.nickname] + data.diamondCount;
         updateRoomStats();
+    }
+    if(!data.repeatEnd && data.diamondCount >= 2){
+        sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
+        log.isPendingStreak(data.uniqueId + prefixGiftEvent + data.giftName,"data repeatcount no terminoooooo",false,data.repeatCount);
     }
     userGiftname = data.giftName;
     if (window.settings.showGifts === "0") return;
@@ -983,6 +988,7 @@ connection.on('social', (data) => {
         color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
         message = `${data.nickname} compartió el directo`;
         handleEvent2('share', data);
+        sendToServer('share', data);
         addOverlayEvent('share', data);
         if (sendDataCheckbox.checked) {
             enviarCommandID( 'share', data);
@@ -1651,7 +1657,7 @@ function testHandleEvent() {
         var dataInput = document.getElementById('data').value;
         let data = { giftName: dataInput };
         handleEvent(eventType, data);
-        handleSound(eventType, data)
+        handleSound(eventType, data);
     } else {
         var data = document.getElementById('data').value;
         handleEvent2(eventType, data);
@@ -1678,7 +1684,22 @@ let elemento = new Proxy({ value: 0, data: {} }, {
 
 let commandCounter = 0; // Variable de control de contador
 const maxRepeatCount = 50; // Valor máximo para repeatCount
+// let inforequest = getinfoindexdb("gifts");
+// function getinfoindexdb(storeName) {
+// const transaction = db.transaction([storeName], "readonly");
+// const objectStore = transaction.objectStore(storeName);
 
+// const request = objectStore.getAll();
+
+// request.onsuccess = (event) => {
+//     console.log(event,"event-displayEvents");
+// }
+// request.onerror = (event) => {
+//     console.error("Display error: ", event.target.errorCode);
+// };
+//  return request;
+// } 
+// console.log(inforequest);
 function handleEvent(eventType, data, msg, likes) {
     let MinecraftLivetoggle = document.getElementById("MinecraftLive")
 
@@ -1795,24 +1816,12 @@ function getChatCommands() {
 
 
 function sendReplacedCommand(replacedCommand) {
-    fetch(`${backendUrl}/api/receive`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ replacedCommand })
-    })
-    .then(response => response.json())
-    .then(data => {
-      //log.console(data); // Maneja la respuesta del servidor si es necesario
-    })
-    .catch(error => {
-      console.error('Error:', error);
-    });
+    window.api.sendChatMessage(replacedCommand);
 }
 
 async function sendToServer(eventType, data, color, msg, message) {
     let objet = {eventType, data};
+    /// aqui enviamos a eventos eventmanager
     elemento.value = objet;
     elemento.data = objet;
     fetch(`${backendUrl}/api/receive1`, {

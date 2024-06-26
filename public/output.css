@@ -184,7 +184,6 @@ table {
 3. Remove default padding in all browsers.
 */
 
-button,
 input,
 optgroup,
 select,
@@ -213,10 +212,9 @@ textarea {
 Remove the inheritance of text transform in Edge and Firefox.
 */
 
-button,
 select {
   text-transform: none;
-  background-color: black;
+  background-color: rgb(0, 0, 0);
 }
 
 /*
@@ -224,17 +222,6 @@ select {
 2. Remove default button styles.
 */
 
-button,
-[type='button'],
-[type='reset'],
-[type='submit'] {
-  -webkit-appearance: button;
-  /* 1 */
-  background-color: transparent;
-  /* 2 */
-  background-image: none;
-  /* 2 */
-}
 
 /*
 Use the modern Firefox focus style for all focusable elements.

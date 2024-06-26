@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fileList.innerHTML = files.map(file => `
             <div class="file-item">
                 <span>${file.name}</span>
-                <button onclick="deleteFile('${file.name}')">Delete</button>
+                <button onclick="deleteFile('${file.name}')" class="deleteButton">Delete</button>
                 <button class="play-button">Play</button>
                 ${getMediaElement(file.path, file.type)}
             </div>
@@ -215,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Crear y agregar el botón de borrar
         const deleteButton = document.createElement('button');
         deleteButton.textContent = 'Borrar';
+        deleteButton.className = "deleteButton";
         deleteButton.addEventListener('click', () => {
             container.remove();
 
@@ -418,9 +419,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // ipExample = "localhost:25565";
         const keyBOT = document.getElementById('keyBOT').value.trim();
         const keySERVER = document.getElementById('keySERVER').value.trim();
-        serverip = keySERVER.split(':')[0];
-        serverport = keySERVER.split(':')[1] || 25565;
-        const keyLOGIN = document.getElementById('keyLOGIN').value.trim();
+        let serverip = keySERVER.split(':')[0];
+        let serverport = keySERVER.split(':')[1] || 25565;
+        const keyLOGIN = document.getElementById('InitcommandInput').value.trim();
         const resultMessage = document.getElementById('resultMessage');
 
         const options = {
@@ -457,5 +458,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 });
-
-

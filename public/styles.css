@@ -1,6 +1,5 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
-  margin-top: 20px;
   font-weight: bold;
   font-size: 1.5em;
   cursor: auto;
@@ -21,6 +20,34 @@ body {
   width: 10px;
   background-image: linear-gradient(to bottom, rgba(55, 25, 70, 0.685), rgba(22, 22, 59, 0.582));
 }
+.parent {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  grid-column-gap: 0px;
+  grid-row-gap: 0px;
+  width: 100vw;
+  height: 100vh;
+}
+
+.divmenu {
+  grid-area: 1 / 1 / 6 / 2;
+  /* background-color: rgb(230, 0, 0); */
+}
+
+.divcontent {
+  grid-area: 1 / 2 / 6 / 6;
+  /* background-color: rgb(87, 0, 109); */
+}
+.divfooter {
+  display: flex;
+  position: absolute;
+  background-color: #26355cd0;
+  bottom: 0px;
+  width: 100%;
+  max-height: 120px;
+}
+
 
 .containerbox {
   position: relative;
@@ -69,11 +96,10 @@ body {
 }
 
 .tabs-menu {
-  margin-top: 20px;
-  float: inline-start;
-  margin-inline: 0.5rem;
-  width: 180px;
-  max-height: 100dvh; /* ajusta la altura máxima del contenedor */
+  position: relative;
+  justify-content: center;
+  display: grid;
+  margin-inline: 1rem;
   overflow-x: hidden;
 }
 
@@ -85,22 +111,17 @@ body {
   --button-font-size: 18px;
 }
 
-ul#soundList {
-  font-size: 1.5rem;
-  margin: 0.2rem;
-  padding: 0.2rem;
-}
 span {
   font-size: 1.5rem;
 }
 .tab {
-  padding: 5px 10px;
-  border: 1px solid #ccc;
-  border-bottom: none;
   padding: 5px;
+  border: 1px solid #ccc;
   margin: 5px;
-  border-radius: 5px 5px 0px 0px;
+  border-radius: 5px 5px 5px 5px;
   transition: background 0.3s;
+  box-shadow: #525252 0px 0px 10px;
+  text-align: center;
 }
 .indicator {
   height: 2px;
@@ -136,16 +157,7 @@ span {
 .tab-content.active {
   display: block;
 }
-button {
-  box-sizing: content-box;
-  min-height: 35px;
-  border: 1px solid #5e4dcd71;
-  border-radius: 6px 6px 6px 6px;
-  background-color: #5e4dcd;
-  font-size: 15px;
-  cursor: auto;
-  transition: background-color 0.3s ease-in-out;
-}
+
 textarea {
   field-sizing: content;
   max-height: 1600px;
@@ -157,23 +169,22 @@ textarea {
   color: white;
   font-weight: bolder;
 }
+button {
+  box-sizing: content-box;
+  min-height: 35px;
+  border: 1px solid #51cd4d71;
+  border-radius: 6px;
+  background-color: #108641;
+  transition: background-color 0.3s ease-in-out;
+  /* margin: auto; */
+  padding: 5px;
+  margin-block: 5px;
+  margin-inline: 5px;
+}
 button:hover {
-  background-color: #5e5dcd;
+  background-color: #7a9948c9;
 }
 
-input[type="button"] {
-  width: 11rem;
-  height: 30px;
-  border: 1px solid #5e4dcd;
-  border-radius: 6px 6px 6px 6px;
-  background-color: #5e4dcd;
-  color: #fff;
-  cursor: auto;
-  font-weight: bolder;
-  font-size: 15px;
-  transition: background-color 0.3s ease-in-out;
-  box-sizing: content-box;
-}
 input[type="text"] {
   color: #814cfe;
   font-size: 15px;
@@ -183,6 +194,19 @@ input[type="text"] {
   border-radius: 6px 6px 6px 6px;
   background-color: #5e4dcd00;
   box-sizing: content-box;
+}
+input[type="button"] {
+  color: #fdfdfd;
+  font-size: 15px;
+  font-weight: bolder;
+  min-width: 11rem;
+  border: 1px solid #178b5f;
+  border-radius: 6px 6px 6px 6px;
+  background-color: #269e70;
+  box-sizing: content-box;
+}
+input[type="button"]:hover {
+  background-color: #33c03a;
 }
 #uniqueIdInput {
   height: 30px;
@@ -212,8 +236,6 @@ input[type="text"] {
 }
 .file-container {
   z-index: 999;
-  font-size: 0.5rem;
-  font-weight: 500;
   overflow: auto;
   min-width: 500px; 
   min-height: 500px;
@@ -221,8 +243,14 @@ input[type="text"] {
 #file-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, 200px); /* Ancho máximo 200px */
-  grid-auto-rows: minmax(100px, auto); /* Altura mínima 100px */
-  gap: 5px;
+    img{
+      height: 180px;
+      width: 180px;
+    }
+    video {
+      height: 180px;
+      width: 180px;
+    }
 }
 
 /* Estilos para la imagen de perfil */
@@ -351,21 +379,16 @@ button:hover {
 
 .deleteButton {
   background-color: red;
-  width: 30px;
-  /* Esto establecerá el ancho del botón en 50px */
-  height: 30px;
+  box-sizing: content-box;
+  min-height: 30px;
+  min-width: 30px;
+  border: 1px solid #e7000071;
 }
-
+.deleteButton:hover {
+  background-color: #e70000c9;
+}
 audio {
-  position: relative;
-  transition: 10s;
-  width: 220px; /* Nueva altura cuando se hace hover */
-  height: 43px;
-  left: -20px;
-}
-audio:hover {
-  transition: 2s;
-  width: 220px; /* Nueva altura cuando se hace hover */
+  
 }
 
 .profile-picture {
@@ -434,4 +457,33 @@ audio:hover {
   user-select: none;
   display: flex;
   align-items: center;
+}
+#addButton:checked ~ .modal-fade {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  max-height: 600px;
+  transform: translate(-50%, -50%);
+  z-index: 99;
+  background-color: rgb(255, 255, 255);
+  border-radius: 10px;
+  border: 1px solid rgb(0, 0, 0);
+  color: rgb(0, 0, 0);
+  display: flex;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-fade {
+  display: none;
+}
+.sugerencia {
+  background-color: red;
+}
+.sugerencia:checked ~ .sugerencia-content {
+  display: block;
+}
+.sugerencia-content {
+  display: none;
 }

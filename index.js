@@ -4,7 +4,7 @@ const url = require('url');
 const Store = require('electron-store');
 const { TikTokConnectionWrapper, getGlobalConnectionCount } = require('./connectionWrapper');
 const routes = require('./routes');
-
+const mineflayer = require('mineflayer');
 const fileHandler = require('./fileHandler');
 const socketHandler = require('./socketHandler');
 const updateHandler = require('./updateHandler');

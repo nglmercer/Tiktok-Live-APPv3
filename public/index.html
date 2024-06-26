@@ -30,607 +30,329 @@ meta
 <script src="TTSmain.js"></script>
 <script src="minejs.js"></script>
 <script src="Settings.js"></script>
+<script src="indexdb.js" type="module"></script>
 <link rel="stylesheet" href="styles.css">
 <link href="select2.css" rel="stylesheet" />
 <link href="output.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script> 
-<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
-<body class="font-sans font-bold text-white text-xl mt-20 w-full h-full bg-gray-900">
+<body class="font-sans font-bold text-white text-xl mt-10 w-full h-full bg-gray-900 flex flex-col">
 
-    <div class="tabs-menu">
-        <div id="stateText"></div>
-        <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
-        <input type="button" id="connectButton" value="Conectar">
-        <div class="tab" data-tab="tab1">Chat LIVE</div>
-        <div class="tab" data-tab="tab2">Minecraft</div>
-        <div class="tab" data-tab="tab3">Sonidos</div>
-        <div class="tab" data-tab="tab4">Overlay</div>
-        <div class="tab" data-tab="tab5">Gifnames</div>
-        <div class="indicator"></div>
-        <label class="cyberpunk-checkbox-label">
-            <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
-            mixitupAlerts</label>
-        <div id="roomStats"></div>
-        <input id="skip-button" type="button" value="SKIP"> </button>
+    <div class="parent">
+        <div class="divmenu">
+            <div class="tabs-menu">
+                <div id="stateText"></div>
+                <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
+                <input type="button" id="connectButton" value="Conectar">
+                <div class="tab" data-tab="tab1">Chat LIVE</div>
+                <div class="tab" data-tab="tab2">Minecraft</div>
+                <div class="tab" data-tab="tab3">Sonidos</div>
+                <div class="tab" data-tab="tab4">Overlay</div>
+                <div class="tab" data-tab="tab5">Gifnames</div>
+                <div class="indicator"></div>
+                <label class="cyberpunk-checkbox-label">
+                    <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
+                    mixitupAlerts</label>
 
+                <label for="importButton" class="custom-file-upload">subir⏫Config⚙</label>
+                <input type="file" id="importButton" style="display:none">
+                <button onclick="importSettings()">Importar⚙</button>
+                <button id="exportButton" onclick="exportSettings()">Exportar⚙</button>
+                <span id="loadingIndicator" style="display: none;">Cargando...</span>
+                </div>
+        </div>
+        <div class="divcontent">
+            <div id="tab1" class="tab-content">
+                <!-- 
+                    <h1>Connection status: <strong id='status'></strong></h1>
+            -->
+            
+            <div class="containerbox">
+                <div class="inputFields">
+                    <div class="splitchattable grid grid-cols-2">
+                        <div class="chatcontainer">
+                            <h3 class="containerheader">Chats</h3>
+                        </div>
+                        <div class="giftcontainer">
+                            <h3 class="containerheader">Gifts</h3>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+            <div id="voiceSelectContainer" class="relative m-3 content-center"></div>
+                <div>
+    
+                </div>
+                <div class="containerbox">
+                <div>filtrar chat //:</div>
+                <textarea id="filter-words"></textarea>
+                <div>WitheList:</div>
+                <textarea id="filter-users"></textarea>
+                <div>
+                <label class="cyberpunk-checkbox-label">
+                    prefijo follow
+                    <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
+                    <input type="text" id="prefixuserfollow" value="te sige">
+                </label>
+                <label class="cyberpunk-checkbox-label">
+                    leer regalos
+                    <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
+                    prefijo:
+                    <input type="text" id="prefixGiftEvent" value="regalo">
+                </label>
+                <label class="cyberpunk-checkbox-label">
+                    leer usuario y mensaje
+                    <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
+                    prefijo:
+                    <input type="text" id="prefixusermessage" value="dice">
+                </label>
+                    puntos del canal +1 -10
+                    <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-600 w-20">
+                    <label class="cyberpunk-checkbox-label">si el usuario no tiene puntos no lee
+                    <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
+                    </label>
+                    <label class="cyberpunk-checkbox-label">solo mensajes =>3
+                    <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
+                    </label>
+        
+                    <label class="cyberpunk-checkbox-label">añadir puntos por nivel    
+                    <input type="checkbox" class="cyberpunk-checkbox" id="userlevelCheckbox" checked>
+                                 <input type="number" id="users-level" value="20" max="50" min="0" class="bg-slate-600 w-20">
+                </label>
+                </div>
+                </div>
+                
+                <label class="cyberpunk-checkbox-label">
+                <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff">
+                overlay on/off</label>
+                            <label class="cyberpunk-checkbox-label">
+    
+            </div>
+            
+            <div id="tab2" class="tab-content">
+                <div class="containerbox">
+                    <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
+                        <span>Leer Tutorial Minecraft</span>
+                      </a>
+                    <label class="cyberpunk-checkbox-label flex items-center">
+                        <input type="checkbox" class="cyberpunk-checkbox" id="MinecraftLive" checked>
+                        <span class="ml-2">MinecraftLive</span> </label>
+                        <form id="createBotForm" class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+                        <label for="keyBOT" class="justify-self-start">Nombre del Bot:</label>
+                        <input type="text" id="keyBOT" name="keyBOT" value="" required>
+                        <label for="keySERVER" class="justify-self-start">IP del Server:</label>
+                        <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
+                        <div class="grid grid-cols-2 gap-2 w-80 ">
+                          <button type="submit">Conectar Bot</button>
+                          <button id="disconnectButton" class="deleteButton">Desconectar Bot</button>
+                        </div>
+                      </form>
+                </div>
+                <div id="resultMessage"></div>
+
+                <div class="containerbox">
+                <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+                <label>Tu nombre de Minecraft:</label>
+                <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
+                    
+                <label>Comando Inicial de BOT:</label>
+                <input type="text" id="InitcommandInput" placeholder="login">
+                <label for="eventType" class="text-red-600 font-bold text-4xl"> Test comando:</label><div> 
+                    <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
+                    <label for="data"></label>
+                    <input type="text" id="data" placeholder="Default">
+                    <button id="testHandleevent" >Test comando</button> </div>
+                </div>
+                </div>
+                <div class="containerbox"> 
+    
+                    <button onclick="saveAllChanges1()">Guardar Cambios</button>
+                    <input type="checkbox" id="sugerencia" class="sugerencia">
+                    <label for="sugerencia">⁉️ Sugerencias</label>
+                    <div class="sugerencia-content">
+                        reemplaza playername       por  de  TU USUARIO DE MINECRAFT        
+                        <br>
+                        reemplaza uniqueId         por  del USUARIO              
+                        <br>
+                        reemplaza nickname         por  de  NOMBRE DE USUARIO                  
+                        <br>
+                        reemplaza comment          por  del COMENTARIO                   
+                        <br>
+                        reemplaza {milestoneLikes} por  de LOS LIKES                    
+                        <br>
+                        reemplaza {likes}          por  de LIKES             
+                        <br>
+                        reemplaza message          por  de  MENSAJE               
+                        <br>
+                        reemplaza giftName         por  de  LOS REGALOS                 
+                        <br>
+                        reemplaza repeatCount      por  de   REPETICIONES EN GIFT                 
+                    </div>
+                    <div>
+                        <div id="chat" class="flex justify-center text-cyan-600 text-4xl">chat</div>
+                        <textarea id="chatcommands" class="mx-8"></textarea>
+                      </div>
+                      <div>
+                        <div id="follow" class="flex justify-center text-cyan-600 text-4xl">follow</div>
+                        <textarea id="followcommands" class="mx-8"></textarea>
+                      </div>
+                      <div>
+                        <div id="likes" class="flex justify-center text-cyan-600 text-4xl">likes</div>
+                        <textarea id="likescommands" class="mx-8"></textarea>
+                      </div>
+                      <div>
+                        <div id="share" class="flex justify-center text-cyan-600 text-4xl">share</div>
+                        <textarea id="sharecommands" class="mx-8"></textarea>
+                      </div>
+                      <div>
+                        <div id="welcome" class="flex justify-center text-cyan-600 text-4xl">welcome</div>
+                        <textarea id="welcomecommands" class="mx-8"></textarea>
+                      </div>
+                      <div>
+                        <div id="envelope" class="flex justify-center text-cyan-600 text-4xl">envelope</div>
+                        <textarea id="envelopecommands" class="mx-8"></textarea>
+                      </div>
+                      <div>
+                        <div id="subscribe" class="flex justify-center text-cyan-600 text-4xl">subscribe</div>
+                        <textarea id="subscribecommands" class="mx-8"></textarea>
+                      </div>
+            </div>
+                <div class="containerbox">
+                    <div class="flex justify-center relative text-cyan-600 text-4xl">gift</div>
+                      <div id="eventsContainer"></div>
+                      <h1>Añadir eventos de minecraft Gift List</h1>
+                      <select id="gifts-title" >
+                      <textarea id="gifts-description" placeholder="comandos de minecraft"></textarea>
+                      <button id="addgift-button">Add Gift</button>
+                      <ul id="gifts-list"></ul>
+                        
+                      </div>
+            </div>
+
+        <div id="tab3" class="tab-content">
+            <div class="containerbox">
+            <label class="cyberpunk-checkbox-label">
+                <input class="cyberpunk-checkbox"  id="sendsoundCheckbox" type="checkbox" checked>
+    
+                <div class="checkmark">Sonidos</div>
+        </label>
+        <div class="container mx-auto p-4">
+            <h1 class="text-2xl font-bold mb-4">Audio Table</h1>
+            <label for="addButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add New Event</label>
+            <input type="checkbox" id="addButton" class="hidden">
+            <div class="modal-fade" id="audioModal" tabindex="-1" role="dialog" aria-labelledby="audioModalLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-gray-900 text-white">
+                            <h5 class="modal-title" id="audioModalLabel">Select Audio from MyInstants</h5>
+                            <button type="button" class="deleteButton" data-dismiss="modal" aria-label="Close">
+                            </button>
+                        </div>
+                        <div class="modal-body bg-gray-900 text-white">
+                            <!-- Search bar -->
+                            <input type="text" id="searchBox" class="form-control mb-4" placeholder="Search for audio...">
+                            <button id="searchButton" class="btn btn-primary">Search</button>
+                            <!-- Audio list will be displayed here -->
+                            <div id="audioList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="testButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-sm">Test</button>
+            <input type="text" id="test-event" class="py-1 px-2 rounded-sm">    
+            <table class="table-auto w-full mt-4 border">
+              <thead>
+                <tr>
+                  <th>Action</th>
+                  <th>Volume</th>
+                  <th>Enable</th>
+                  <th>Event Name</th>
+                  <th>Sound Effect</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody id="audioTableBody">
+                <!-- Table rows will be added here -->
+              </tbody>
+            </table>
+          </div>
+          <!-- Modal for selecting audio -->
+          <script>
+            document.addEventListener('click', function(event) {
+                const modal = document.querySelector('.modal-fade');
+                const addButton = document.getElementById('addButton');
+                
+                // Si el modal está visible y se hace clic fuera del contenido del modal, ocúltalo
+                if (addButton.checked && !modal.contains(event.target) && event.target !== addButton) {
+                    addButton.checked = false;
+                }
+            });
+            
+          </script>
+        </div>
+    </div>
+        <div id="tab4" class="tab-content">
+            <div class="containerbox">       
+                <div class="center-element">arrastre elementos aquí</div>
+         
+                <div class="file-container " id="drop-area">
+                    <ul id="file-list"> </ul>
+                </div>
+                    
+                </div>
+                
+            <div class="containerbox">
+                    <div id="tab5-action"></div>
+                    <button id="openaction" class="btn btn-primary">openaction</button>
+                    <button id="closeaction" class="btn btn-primary">closeaction</button>
+                    <div id="loadrowactionsevents"></div>
+                    <div>
+                        <input type="text" id="action-name" placeholder="action name">
+                        <button id="testactionevent" class="btn btn-primary">test</button>
+                    </div>
+    
+            </div>
+            <div class="containerbox">
+                <div class="modalhtml"></div>
+        
+                <button id="open" style="display: none;">open</button>
+                <button id="close" style="display: none;">close</button>
+                
+                <div class="inputFields">
+                    <input id="channel" type="text" placeholder="Twitch channel" ><button id="channel-button" class="btn btn-primary" value="GOOO" type="button">GOOO</button>
+                </div>
+                <div id="chatbox"></div>
+                </div>
+        </div>
+    
+        
+        <div id="tab5" class="tab-content">
+            <div id="giftContainer" class="gift-container">
+                <!-- Aquí se agregarán dinámicamente los cuadros de regalo -->
+            </div>
+            <div id="downloadButtonContainer"></div>
+    
+        </div>
+        </div>
+
+        
+    </div>
+    <div class="divfooter">
+        <div id="roomStats"></div>    
         <audio id="audio" controls autoplay>
         </audio>
         <audio id="audio" autoplay></audio>
         <audio id="soundPlayer" type="audio/mp3"></audio>
-        <label for="importButton" class="custom-file-upload">subirArchivo</label>
-        <input type="file" id="importButton" style="display:none">
-        <button onclick="importSettings()">ImportarSet</button>
-        <button id="exportButton" onclick="exportSettings()">ExportarSet</button>
-        <span id="loadingIndicator" style="display: none;">Cargando...</span>
-        </div>
+        <input id="skip-button" type="button" value="SKIP"> </button>
 
-    </div>
-    
-    <div id="durationDisplay"></div>
-
+        <div id="durationDisplay"></div>
     </div>
         <!-- Contenido de las pestañas -->
-        <div id="tab1" class="tab-content">
-            <!-- 
-                <h1>Connection status: <strong id='status'></strong></h1>
-        -->
-        
-        <div class="containerbox">
-            <div class="inputFields">
-                <div class="splitchattable grid grid-cols-2">
-                    <div class="chatcontainer">
-                        <h3 class="containerheader">Chats</h3>
-                    </div>
-                    <div class="giftcontainer">
-                        <h3 class="containerheader">Gifts</h3>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
-        <div id="voiceSelectContainer" class="relative m-3 content-center"></div>
-            <div>
 
-            </div>
-            <div class="containerbox">
-            <div>filtrar chat //:</div>
-            <textarea id="filter-words"></textarea>
-            <div>WitheList:</div>
-            <textarea id="filter-users"></textarea>
-            <div>
-            <label class="cyberpunk-checkbox-label">
-                prefijo follow
-                <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                <input type="text" id="prefixuserfollow" value="te sige">
-            </label>
-            <label class="cyberpunk-checkbox-label">
-                leer regalos
-                <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
-                prefijo:
-                <input type="text" id="prefixGiftEvent" value="regalo">
-            </label>
-            <label class="cyberpunk-checkbox-label">
-                leer usuario y mensaje
-                <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                prefijo:
-                <input type="text" id="prefixusermessage" value="dice">
-            </label>
-                puntos del canal +1 -10
-                <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-600 w-20">
-                <label class="cyberpunk-checkbox-label">si el usuario no tiene puntos no lee
-                <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
-                </label>
-                <label class="cyberpunk-checkbox-label">solo mensajes =>3
-                <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
-                </label>
-    
-                <label class="cyberpunk-checkbox-label">añadir puntos por nivel    
-                <input type="checkbox" class="cyberpunk-checkbox" id="userlevelCheckbox" checked>
-                             <input type="number" id="users-level" value="2" max="50" min="0" class="bg-slate-600 w-20">
-            </label>
-            </div>
-            </div>
-            <label class="cyberpunk-checkbox-label">
-            <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff">
-            overlay on/off</label>
-                        <label class="cyberpunk-checkbox-label">
-
-        </div>
-        
-        <div id="tab2" class="tab-content">
-            <div class="containerbox">
-                <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
-                    <span>Leer Tutorial Minecraft</span>
-                  </a>
-                <label class="cyberpunk-checkbox-label flex items-center">
-                    <input type="checkbox" class="cyberpunk-checkbox" id="MinecraftLive" checked>
-                    <span class="ml-2">MinecraftLive</span> </label>
-                    <form id="createBotForm" class="grid grid-cols-2 gap-4 max-w-xl mx-4">
-                    <label for="keyBOT" class="justify-self-start">Nombre del Bot:</label>
-                    <input type="text" id="keyBOT" name="keyBOT" value="" required>
-                    <label for="keySERVER" class="justify-self-start">IP del Server:</label>
-                    <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
-                    <div class="grid grid-cols-2 gap-2 w-80 ">
-                      <button type="submit">Conectar Bot</button>
-                      <button id="disconnectButton">Desconectar Bot</button>
-                    </div>
-                  </form>
-            </div>
-            <div id="resultMessage"></div>
-
-            <script>
-                let disconnectButtonPressCount = 0;
-                let disconnectButtonTimeout;
-                const disconnectButton = document.getElementById('disconnectButton');
-                document.getElementById('createBotForm').addEventListener('submit', function(event) {
-                    event.preventDefault();
-
-                    const keyBOT = document.getElementById('keyBOT').value.trim();
-                    const keySERVER = document.getElementById('keySERVER').value.trim();
-                    const Initcommand = InitcommandInput.value.trim();
-                    const data = {
-                        eventType: 'createBot',
-                        data: {
-                            keyBot: keyBOT,
-                            keyServer: keySERVER,
-                            Initcommand: Initcommand
-                        }
-                    };
-
-                    fetch('/api/create', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(data)
-                        })
-                        .then(response => response.json())
-                        .then(result => {
-                          console.log(result);
-                          const resultMessage = document.getElementById('resultMessage');
-                          resultMessage.textContent = result.message;
-                      
-                          if (result.message) {
-                            console.log('%cEl bot está conectado', 'color: green');
-                            resultMessage.style.color = 'green';
-                          } else {
-                            console.log('%cEl bot está desconectado', 'color: red');
-                            resultMessage.style.color = 'red';
-                          }
-                          disconnectButton.disabled = false;
-                        })
-                        .catch(error => {
-                            console.error(error);
-                            console.log(error);
-                            resultMessage.style.color = 'red';
-                        });
-                });
-
-                disconnectButton.addEventListener('click', function() {
-                    if (disconnectButtonPressCount === 0) {
-                        disconnectButtonPressCount++;
-                        clearTimeout(disconnectButtonTimeout);
-                        disconnectButtonTimeout = setTimeout(() => {
-                            disconnectBot();
-                            disconnectButtonPressCount = 0;
-                        }, 500);
-                    } else if (disconnectButtonPressCount === 1) {
-                        clearTimeout(disconnectButtonTimeout);
-                        reconnectBot();
-                        disconnectButtonPressCount = 0;
-                    }
-                });
-
-                function disconnectBot() {
-                    fetch('/api/disconnect', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                eventType: 'disconnectBot'
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(result => {
-                            console.log(result);
-                            document.getElementById('resultMessage').textContent = result.message;
-                            resultMessage.style.color = 'red';
-                            disconnectButton.disabled = true;
-                        })
-                        .catch(error => {
-                            console.error(error);
-                        });
-                }
-
-            </script>
-            <div class="containerbox">
-            <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
-            <label>Tu nombre de Minecraft:</label>
-            <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
-                
-            <label>Comando Inicial de BOT:</label>
-            <input type="text" id="InitcommandInput" placeholder="login">
-            <label for="eventType" class="text-red-600 font-bold text-4xl"> Test comando:</label><div> 
-                <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
-                <label for="data"></label>
-                <input type="text" id="data" placeholder="Default">
-                <button onclick="testHandleEvent()">Test comando</button> </div>
-            </div>
-            </div>
-            <div class="containerbox"> 
-
-                <button onclick="saveAllChanges1()">Guardar Cambios</button>
-                <div>
-                    <div id="chat" class="flex justify-center text-cyan-600 text-4xl">chat</div>
-                    <textarea id="chatcommands" class="mx-8"></textarea>
-                  </div>
-                  <div>
-                    <div id="follow" class="flex justify-center text-cyan-600 text-4xl">follow</div>
-                    <textarea id="followcommands" class="mx-8"></textarea>
-                  </div>
-                  <div>
-                    <div id="likes" class="flex justify-center text-cyan-600 text-4xl">likes</div>
-                    <textarea id="likescommands" class="mx-8"></textarea>
-                  </div>
-                  <div>
-                    <div id="share" class="flex justify-center text-cyan-600 text-4xl">share</div>
-                    <textarea id="sharecommands" class="mx-8"></textarea>
-                  </div>
-                  <div>
-                    <div id="welcome" class="flex justify-center text-cyan-600 text-4xl">welcome</div>
-                    <textarea id="welcomecommands" class="mx-8"></textarea>
-                  </div>
-                  <div>
-                    <div id="envelope" class="flex justify-center text-cyan-600 text-4xl">envelope</div>
-                    <textarea id="envelopecommands" class="mx-8"></textarea>
-                  </div>
-                  <div>
-                    <div id="subscribe" class="flex justify-center text-cyan-600 text-4xl">subscribe</div>
-                    <textarea id="subscribecommands" class="mx-8"></textarea>
-                  </div>
-        </div>
-            <div class="containerbox">
-                <div class="flex justify-center text-cyan-600 text-4xl">gift</div>
-                  <div id="eventsContainer"></div>
-                  <button onclick="addEvent()">Añadir evento</button>
-                  <button onclick="cargarDatos()">Cargar datos</button>
-                  </div>
-                  <script>
-                        const eventsContainer = document.getElementById('eventsContainer');
-                        let events = JSON.parse(localStorage.getItem('events')) || {};
-                        let eventIndex = events.gift && events.gift.default ? events.gift.default.length : 0;
-                        console.log(events);
-                        if (eventIndex === 0) {
-                            addEvent();
-                        }
-                        function addEvent() {
-                            // Obtener el índice actual de los eventos
-                            eventIndex++;
-                        
-                            // Crear un nuevo evento con la plantilla
-                            const newEvent = {
-                                "name": "default",
-                                "commands": "command " + eventIndex,
-                            };
-                        
-                            // Añadir el nuevo evento al objeto events
-                            if (!events.gift || !events.gift.default) {
-                                events.gift = { default: [] };
-                            }
-                            events.gift.default.unshift({
-                                "index": eventIndex,
-                                "name": newEvent.name,
-                                "commands": newEvent.commands
-                            });
-                        
-                            localStorage.setItem('events', JSON.stringify(events));
-                        
-                            // Mostrar el nuevo evento en el contenedor
-                            const newEventHTML = `
-                                <div class="containerbox-child">
-                                    <div id="${eventIndex}select">
-                                        <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
-                                        <select id="${eventIndex}-select2" class="text-black"></select>
-                                    </div>
-                                    <div>
-                                        <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${newEvent.commands}</textarea>
-                                    </div>
-                                </div>
-                            `;
-                        
-                            const newEventDiv = document.createElement('div');
-                            newEventDiv.classList.add('event');
-                            newEventDiv.innerHTML = newEventHTML;
-                        
-                            // Insertar el nuevo evento al principio del contenedor
-                            eventsContainer.insertBefore(newEventDiv, eventsContainer.firstChild);
-                        
-                            // Inicializar select2 en el nuevo elemento select
-                            initializeSelect2(`${eventIndex}-select2`, newEvent);
-                        }
-                        
-                    
-                        // Función para enviar los datos al actualizar
-                        function sendguardarcomando(eventIndex) {
-                            const selectElement = document.getElementById(`${eventIndex}-select2`);
-                            const commandElement = document.getElementById(`${eventIndex}command`);
-                            
-                            // Asegúrate de que los elementos existan antes de intentar acceder a sus propiedades
-                            if (selectElement && commandElement) {
-                                const selectedValue = selectElement.value;
-                                guardarcomando(eventIndex, selectedValue, commandElement.value);
-                            } else {
-                                console.error('Elementos no encontrados para el índice:', eventIndex);
-                            }
-                        }
-                    
-                        // Función para enviar los datos al eliminar
-                        function senddeleteEvent(eventIndex) {
-                            deleteEvent(eventIndex);
-                        }
-                    
-                        function guardarcomando(eventIndex, eventNameinput, eventNamecommands) {
-                            log.guardarcomando(eventIndex, eventNameinput, eventNamecommands);
-                            const eventType = 'gift'; // Tipo de evento específico
-                            const defaultEventName = 'default'; // Nombre del evento predeterminado
-                        
-                            if (!events[eventType]) {
-                                events[eventType] = {}; // Inicializar el tipo de evento si no existe
-                            }
-                        
-                            if (!events[eventType][defaultEventName]) {
-                                events[eventType][defaultEventName] = []; // Inicializar el evento predeterminado si no existe
-                            }
-                        
-                            // Verificar si ya existe un evento con el mismo índice
-                            const existingEventIndex = events[eventType][defaultEventName].findIndex(event => event.index === eventIndex);
-                        
-                            if (existingEventIndex !== -1) {
-                                // Actualizar los valores del evento
-                                events[eventType][defaultEventName][existingEventIndex].name = eventNameinput;
-                                events[eventType][defaultEventName][existingEventIndex].commands = eventNamecommands;
-                        
-                                // Guardar los eventos actualizados en el localStorage
-                                localStorage.setItem('events', JSON.stringify(events));
-                        
-                                console.log('Los cambios se guardaron exitosamente en el almacenamiento local.');
-                        
-                                // Recargar los datos para reflejar los cambios en el contenedor
-                                cargarDatos();
-                            } else {
-                                console.error('No se pudo encontrar el evento en el almacenamiento local.');
-                            }
-                        }
-                        function deleteEvent(eventIndex) {
-                            let events = JSON.parse(localStorage.getItem('events')); // Obtener los eventos del almacenamiento local
-                        
-                            const eventType = 'gift'; // Tipo de evento específico
-                            const defaultEventName = 'default'; // Nombre del evento predeterminado
-                        
-                            // Verificar si existen eventos y si el índice del evento a eliminar es válido
-                            if (events && events[eventType] && events[eventType][defaultEventName]) {
-                                console.log(events[eventType][defaultEventName]); // Add this line for debugging
-                                const eventToDeleteIndex = events[eventType][defaultEventName].findIndex(event => event.index === eventIndex);
-                                console.log(eventToDeleteIndex, eventIndex, defaultEventName);
-                                if (eventToDeleteIndex !== -1) {
-                                    // Eliminar el evento del arreglo de eventos
-                                    events[eventType][defaultEventName].splice(eventToDeleteIndex, 1);
-                        
-                                    // Guardar los eventos actualizados en el almacenamiento local
-                                    localStorage.setItem('events', JSON.stringify(events));
-                        
-                                    // Remover el elemento del contenedor de eventos
-                                    const eventDiv = document.getElementById(`${eventIndex}input`);
-                                    if (eventDiv && eventDiv.parentNode) {
-                                        eventDiv.parentNode.remove();
-                                    }
-                
-                                    // Volver a cargar los datos para reflejar los cambios en el contenedor
-                                    cargarDatos();
-                                } else {
-                                    console.error('No se pudo encontrar el evento con el índice proporcionado.');
-                                }
-                            } else {
-                                console.error('No se pudieron encontrar eventos válidos.');
-                            }
-                        }
-                        let globalSimplifiedStates2 = window.globalSimplifiedStates;
-                        console.log(globalSimplifiedStates2,"globalSimplifiedStateswindow");
-                        function cargarDatos() {
-                            let events = JSON.parse(localStorage.getItem('events'));
-                            eventsContainer.innerHTML = '';
-                        
-                            if (events && events.gift && Array.isArray(events.gift.default)) {
-                                events.gift.default.slice().reverse().forEach((eventData) => {
-                                    const eventIndex = eventData.index;
-                                    const eventNamegift = eventData.name;
-                                    const eventNamecommands = eventData.commands;
-                        
-                                    const newEventHTML = `
-                                        <div class="containerbox-child">
-                                            <div id="${eventIndex}select">
-                                                <button onclick="senddeleteEvent(${eventIndex})">Eliminar</button>
-                                                <select id="${eventIndex}-select2" class="text-black" style="width: 100%"></select>
-                                            </div>
-                                            <div>
-                                                <textarea id="${eventIndex}command" onchange="sendguardarcomando(${eventIndex})">${eventNamecommands}</textarea>
-                                            </div>
-                                        </div>
-                                    `;
-                        
-                                    const newEventDiv = document.createElement('div');
-                                    newEventDiv.classList.add('event');
-                                    newEventDiv.innerHTML = newEventHTML;
-                        
-                                    // Insertar el nuevo evento al principio del contenedor
-                                    eventsContainer.insertBefore(newEventDiv, eventsContainer.firstChild);
-                        
-                                    // Inicializar select2 en el elemento select dentro de este evento
-                                    initializeSelect2(`${eventIndex}-select2`, eventIndex, { name: eventNamegift });
-                                });
-                            }
-                        }
-                        function initializeSelect2(selectId, eventIndex, event) {
-                            const selectElement = document.getElementById(selectId);
-                            $(selectElement).select2({
-                                data: [
-                                    { id: event.name, text: event.name },
-                                    ...globalSimplifiedStates2.flatMap(state => state.availableGifts.map(gift => ({
-                                        id: gift.name,
-                                        text: gift.name,
-                                        imageUrl: gift.imageUrl
-                                    })))
-                                ],
-                                templateResult: formatGiftOption,
-                                escapeMarkup: markup => markup
-                            });
-                        
-                            $(selectElement).on('select2:select', function (e) {
-                                const selectedId = e.params.data.id;
-                                const selectedText = e.params.data.text;
-                                console.log('Selected ID:', selectedId, 'Selected Text:', selectedText);
-                                // Pasar el `eventIndex` correctamente a la función cuando ocurre el evento select2
-                                sendguardarcomando(eventIndex);
-                                console.log("e.params SELECT2:", e.params);
-                            });
-                        }
-                        setTimeout(() => {
-                            cargarDatos(); // Cargar los datos al cargar la página
-                            console.log('Cargando datos...');
-                        }, 1000);
-                    // Función para guardar todos los cambios
-                    function saveAllChanges1() {
-                    
-                    const commandjsonlist = {};
-                    
-                    const types = ['chat', 'follow', 'likes', 'share', 'welcome', 'envelope', 'subscribe'];
-                    
-                    types.forEach(type => {
-                      const commands = document.getElementById(`${type}commands`).value.trim();
-                    
-                      if (commands !== "") {
-                          commandjsonlist[type] = {
-                              "default": commands.split('\n')
-                          };
-                      } else {
-                          commandjsonlist[type] = {
-                              "default": []
-                          };
-                      }
-                    });
-                    
-                    localStorage.setItem('commandjsonlist', JSON.stringify(commandjsonlist));
-
-                    // Muestra los datos guardados en la consola
-                    console.log('Datos almacenados en el localStorage:');
-                    console.log(commandjsonlist);
-                    }
-
-                     </script>
-
-        </div>
-    </div>
-    <div id="tab3" class="tab-content">
-        <div class="containerbox">
-        <label class="cyberpunk-checkbox-label">
-            <input class="cyberpunk-checkbox"  id="sendsoundCheckbox" type="checkbox" checked>
-
-            <div class="checkmark">Sonidos</div>
-    </label>
-    <div class="container mx-auto p-4">
-        <h1 class="text-2xl font-bold mb-4">Audio Table</h1>
-        <button id="addButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          Add New Event
-        </button> <button id="testButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-sm">Test</button>
-        <input type="text" id="test-event" class="py-1 px-2 rounded-sm">    
-        <table class="table-auto w-full mt-4 border">
-          <thead>
-            <tr>
-              <th>Action</th>
-              <th>Volume</th>
-              <th>Enable</th>
-              <th>Event Name</th>
-              <th>Sound Effect</th>
-              <th>Delete</th>
-            </tr>
-          </thead>
-          <tbody id="audioTableBody">
-            <!-- Table rows will be added here -->
-          </tbody>
-        </table>
-      </div>
-      <!-- Modal for selecting audio -->
-      <div class="modal fade" id="audioModal" tabindex="-1" role="dialog" aria-labelledby="audioModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header bg-gray-900 text-white">
-              <h5 class="modal-title" id="audioModalLabel">Select Audio from MyInstants</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">×</span>
-              </button>
-            </div>
-            <div class="modal-body bg-gray-900 text-white">
-              <!-- Search bar -->
-              <input type="text" id="searchBox" class="form-control mb-4" placeholder="Search for audio...">
-              <button id="searchButton" class="btn btn-primary">Search</button>
-              <!-- Audio list will be displayed here -->
-              <div id="audioList"></div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-</div>
-    <div id="tab4" class="tab-content">
-        <div class="containerbox h-96">       
-            <div class="center-element">arrastre elementos aquí</div>
-     
-            <div class="file-container " id="drop-area">
-                <ul id="file-list"> </ul>
-            </div>
-                
-            </div>
-            
-        <div class="containerbox h-96">
-                <div id="tab5-action"></div>
-                <button id="openaction" class="btn btn-primary">openaction</button>
-                <button id="closeaction" class="btn btn-primary">closeaction</button>
-                <div id="loadrowactionsevents"></div>
-                <div>
-                    <input type="text" id="action-name" placeholder="action name">
-                    <button id="testactionevent" class="btn btn-primary">test</button>
-                </div>
-
-        </div>
-        <div class="containerbox h-96">
-            <div class="modalhtml"></div>
-    
-            <button id="open" style="display: none;">open</button>
-            <button id="close" style="display: none;">close</button>
-            
-            <div class="inputFields">
-                <input id="channel" type="text" placeholder="Twitch channel" ><button id="channel-button" class="btn btn-primary" value="GOOO" type="button">GOOO</button>
-            </div>
-            <div id="chatbox"></div>
-            </div>
-    </div>
-
-    </div>
-    <div id="tab5" class="tab-content">
-        <div id="giftContainer" class="gift-container">
-            <!-- Aquí se agregarán dinámicamente los cuadros de regalo -->
-        </div>
-        <div id="downloadButtonContainer"></div>
-
-    </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
           const tabs = document.querySelectorAll('.tab');

@@ -19,6 +19,7 @@
         max-height: 25rem;
         overflow-y: auto;
         .inputGroup{
+            color: blue;
             position: relative;
             padding: 10px;
             display: grid;
@@ -31,6 +32,12 @@
             }
         
             .config{
+                border: 2px solid black;
+                border-radius: 15px;
+                min-width: 280px;
+                margin-inline: 10px;
+                padding: 10px;
+                color: black;
                 display: none;
             }
             .checkbox-group{
