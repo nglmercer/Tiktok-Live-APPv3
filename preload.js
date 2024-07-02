@@ -46,3 +46,4 @@ window.addOverlayEvent = (eventType, data) => {
 };
 
 contextBridge.exposeInMainWorld("api", api);
+

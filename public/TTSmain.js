@@ -1,11 +1,21 @@
 // Función para obtener audio de la API
 var voiceSelect = document.createElement('select');
-Object.keys(VOICE_LIST).forEach(function(key) {
-    var option = document.createElement('option');
-    option.text = key;
-    option.value = VOICE_LIST[key];
-    voiceSelect.appendChild(option);
-});
+var CHANNEL_BLACKLIST = [
+    'streamlabs',
+    'streamelements',
+    'moobot',
+    'nightbot',
+    'ch4tsworld',
+    'streamstickers',
+    'laia_bot',
+    'soundalerts',
+    'ankhbot',
+    'phantombot',
+    'wizebot',
+    'botisimo',
+    'coebot',
+    'deepbot',
+];
 console.log('Voz seleccionada:', voiceSelect.value);
 voiceSelect.addEventListener('change', function() {
     var selectedOption = this.options[this.selectedIndex];

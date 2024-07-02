@@ -6,7 +6,7 @@ import {
 
 export default async function tab5Action({
     elementContainer,
-    files = [],
+    filesdata = [],
     optionsgift = [],
     onCancel = () => {},
     separator = "_"
@@ -31,7 +31,23 @@ export default async function tab5Action({
     ModalElement.appendChild(errorMessage);
 
     setTimeout(() => errorMessage.style.display = 'none', 5000);
+    let copyFiles123 = [];
 
+    async function getFiles123() {
+        try {
+            const files = await window.api.getFilesInFolder();
+            console.log('Files in folder:', files);
+
+            // Reemplazar el contenido de copyFiles con los nuevos archivos obtenidos
+            copyFiles123 = [...files];
+            console.log('Updated copyFiles:', copyFiles123);
+
+            return files;
+        } catch (error) {
+            console.error('Error fetching files:', error);
+            return [];
+        }
+    }
     function createErrorMessage() {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-message';
@@ -208,6 +224,13 @@ export default async function tab5Action({
             await saveDataToIndexedDB(databases.MyDatabaseActionevent, nameFilter);
         }
     });
+
+async function filesform() {
+    let files = getFiles123();
+    console.log('files', files);
+    if (files instanceof Promise) {
+        files = await files;
+    }
 // Limpiar los elementos select correspondientes
 const selectVideo = form.elements.namedItem('type-video_select');
 const selectImage = form.elements.namedItem('type-imagen_select');
@@ -221,14 +244,12 @@ if (selectAudio) selectAudio.innerHTML = '';
 let hasVideo = false;
 let hasImage = false;
 let hasAudio = false;
-
-// Iterar sobre los archivos y agregar opciones a los selects correspondientes
+    // Iterar sobre los archivos y agregar opciones a los selects correspondientes
 files.forEach(file => {
     // Creamos el elemento option
     const optionElement = document.createElement('option');
     optionElement.textContent = file.name;
     optionElement.value = file.index;
-
     // Seleccionamos el select correspondiente según el tipo de archivo
     let selectElement = null;
     if (file.type.startsWith('video')) {
@@ -249,7 +270,7 @@ files.forEach(file => {
         selectElement.appendChild(optionElement);
     }
 
-    console.log('selectname', selectElement, file);
+    // console.log('selectname', selectElement, file);
     cacheAssign[file.path] = file;
 });
 
@@ -274,6 +295,8 @@ if (!hasAudio && selectAudio) {
     optionElement.value = 'false';
     selectAudio.appendChild(optionElement);
 }
+}
+
 const giftselect = document.getElementById('event-gift_select');
 const availableGifts = optionsgift[0].availableGifts || []; // Asegúrate de que availableGifts esté definido y sea un array
 console.log('optionsgift', optionsgift[0].availableGifts);
@@ -308,16 +331,19 @@ availableGifts.forEach(gift => {
         element: ModalElement,
         form: form,
         close: () => {
+            filesform()
             elementModal.style.display = 'none';
             ModalElement = null;
         },
         open: (newFiles = null) => {
             resetForm();
+            filesform();
             elementModal.style.display = 'flex';
             elementModal.querySelector('.modalActionAdd').style.display = 'inline-block';
             elementModal.querySelector('.modalActionSave').style.display = 'none';
         },
         onUpdate: (datos) => {
+            filesform();
             fillForm(datos);
             elementModal.style.display = 'flex';
             elementModal.querySelector('.modalActionAdd').style.display = 'none';

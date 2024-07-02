@@ -200,8 +200,6 @@ textarea {
   /* 1 */
   line-height: inherit;
   /* 1 */
-  color: inherit;
-  /* 1 */
   margin: 0;
   /* 2 */
   padding: 0;
@@ -214,7 +212,6 @@ Remove the inheritance of text transform in Edge and Firefox.
 
 select {
   text-transform: none;
-  background-color: rgb(0, 0, 0);
 }
 
 /*
@@ -369,14 +366,6 @@ textarea::placeholder {
   /* 2 */
 }
 
-/*
-Set the default cursor for buttons.
-*/
-
-button,
-[role="button"] {
-  cursor: pointer;
-}
 
 /*
 Make sure disabled buttons don't get the pointer cursor.

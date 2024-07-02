@@ -1,5 +1,3 @@
-
-
 export const databases = {
     eventsDB: { name: 'eventsDB', version: 1, store: 'events' },
     MyDatabaseActionevent: { name: 'MyDatabaseActionevent', version: 1, store: 'files' }
@@ -34,11 +32,12 @@ export const databases = {
         delete data.id;
 
     }
-
+    
     const request = objectStore.add(data);
       request.onsuccess = (event) => {
         console.log('Data saved to IndexedDB', data);
         data.id = event.target.result;
+        observer.notify('save', data);
       };
       request.onerror = (event) => {
         console.error('Error saving data to IndexedDB', event.target.error);
@@ -75,6 +74,7 @@ export const databases = {
 
         request.onsuccess = () => {
             console.log(`Data with id ${data.id} updated in IndexedDB`, data);
+            observer.notify('update', data); // Notificar al observador
         };
 
         request.onerror = (event) => {
@@ -126,4 +126,25 @@ export const databases = {
       throw error;
     }
   }
-  
+  // dbObserver.js
+class DBObserver {
+  constructor() {
+      this.listeners = [];
+  }
+
+  subscribe(callback) {
+      this.listeners.push(callback);
+  }
+
+  unsubscribe(callback) {
+      this.listeners = this.listeners.filter(listener => listener !== callback);
+  }
+
+  notify(action, data) {
+      this.listeners.forEach(listener => {
+          listener(action, data);
+      });
+  }
+}
+
+export const observer = new DBObserver();

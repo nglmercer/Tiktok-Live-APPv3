@@ -213,10 +213,13 @@ function testHandleEvent123() {
       minecraftlive(eventType, data);
   } else {
       var data = document.getElementById('data').value;
-      minecraftlive(eventType, data);
+      handleEvent2(eventType, data);
   }
 }
 function minecraftlive(eventype, data) {
+  if (eventype !== 'gift') {
+      return;
+  }
   let MinecraftLivetoggle = document.getElementById("MinecraftLive")
 
   //log.console(MinecraftLivetoggle.checked);

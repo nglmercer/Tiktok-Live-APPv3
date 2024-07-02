@@ -121,16 +121,68 @@ function connect() {
         }).catch(errorMessage => {
             // Manejar el error en caso de que falle la conexión
             console.error("Error in connection:", errorMessage);
-            // Mostrar el mensaje de error en la interfaz de usuario
+            // Mostrar el  error en la interfaz de usuario
             $('#stateText').text(errorMessage);
+            let timeouttime = 10000 + updateRoomStats();
+            setTimeout(() => {
+                connect();
+            }, timeouttime);
         });
     } else {
         // Mostrar una alerta si no se proporciona un nombre de usuario
         alert('No username entered');
     }
 }
-const jsonFilePath = './datosjson/simplifiedStates.json';
+var voiceSelect = document.createElement('select');
 
+const jsonFilePath = './datosjson/simplifiedStates.json';
+const jsonVoicelist = './datosjson/voicelist.json';
+const jsonFilterWords = './datosjson/filterwords.json';
+async function fetchvoicelist() {
+    try {
+        const response = await fetch(jsonVoicelist);
+        if (!response.ok) {
+            throw new Error(`Error fetching JSON file: ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log('Fetched JSON voicelist:', data);
+        return data;
+    }
+         catch (error) {
+        console.error('Error fetching JSON:', error);
+        return null;
+    }
+}
+let customfilterWords = [];
+async function fetchFilterWords() {
+    try {
+        const response = await fetch(jsonFilterWords);
+        if (!response.ok) {
+            throw new Error(`Error fetching JSON file: ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log('Fetched JSON voicelist:', data);
+        filterWords = data.palabras;
+        return data;
+    }
+         catch (error) {
+        console.error('Error fetching JSON:', error);
+        return null;
+    }
+}
+setTimeout(async () => {
+    fetchvoicelist().then(data => {
+
+        Object.keys(data).forEach(function(key) {
+            var option = document.createElement('option');
+            option.text = key;
+            option.value = data[key];
+            voiceSelect.appendChild(option);
+        });
+    });
+    fetchFilterWords()
+    console.log(customfilterWords);
+}, 1000);
 async function fetchSimplifiedState() {
     try {
         const response = await fetch(jsonFilePath);
@@ -309,6 +361,7 @@ function sanitize(text) {
 
 function updateRoomStats() {
     $('#roomStats').html(`Espectadores: <b>${viewerCount.toLocaleString()}</b><br>Likes: <b>${likeCount.toLocaleString()}</b><br>Diamantes: <b>${diamondsCount.toLocaleString()}</b>`);
+    return diamondsCount;
 }
 
 
@@ -324,8 +377,67 @@ function isPendingStreak(data) {
  */
 let lastMessage = "";
 let lastNickname = "";
+setTimeout(()=>{
+    if (localStorage.getItem('lastChatItemdata')) {
+        evalBadge(JSON.parse(localStorage.getItem('lastChatItemdata')));
+    }
+},1000);
+    console.log(JSON.parse(localStorage.getItem('lastChatItemdata')));
+    console.log(JSON.parse(localStorage.getItem('lastChatItem')));
+    window.signal = () => {}
+    let signalmessage = new Proxy({ value: 0 }, {
+        set: (target, prop, value) => {
+            target[prop] = value;
+            signal(target[prop])
+            return true;
+        },
+        get: (target, prop) => {
+            return target[prop];
+        }
+    });
+    function leerMensajes(text) {
+        signalmessage.value = text;
+    }
+    function evalBadge(data) {
+        const checkboxes = document.querySelectorAll('.card-content input[type="checkbox"]');
+        let values = {};
+        checkboxes.forEach(checkbox => {
+            values[checkbox.id] = checkbox.checked;
+        });
+
+        if (data.uniqueId) {
+            console.log(data.uniqueId,"data uniqueId evalBadge",values);
+            Object.entries(values).forEach(([key, value]) => {
+                // console.log(key,value);
+                if (key === "isModerator" && data.isModerator === value) {
+                    console.log(data.isModerator,key,value);
+                    if (value===true) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else
+                if (key === "isSubscriber" && data.isSubscriber === value) {
+                    console.log(data.isNewGifter,key,value);
+                    if (value===true) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else
+                if (key === "allUsers") {
+                    console.log("retornamos true y no hacemos nada",key,value);
+                    return true;
+                }
+            });
+        }
+
+    }
+
 
 function addChatItem(color, data, text, summarize) {
+    localStorage.setItem('lastChatItem', JSON.stringify(data));
+    localStorage.setItem('lastChatItemdata', JSON.stringify(data));
     let container = location && location.href ? (location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer')) : $('.chatcontainer');
     if (container.find('div').length > 500) {
         container.find('div').slice(0, 200).remove();
@@ -368,6 +480,7 @@ function addChatItem(color, data, text, summarize) {
     container.animate({
         scrollTop: container[0].scrollHeight
     }, 400);
+    
     let filterWordsInput = document.getElementById('filter-words').value;
     let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
     let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
@@ -376,36 +489,8 @@ function addChatItem(color, data, text, summarize) {
     let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
 //    if (sendsoundCheckbox.checked) {}
     
-    const customFilterWords = [
-        "opahsaron", "tedesku", "unanimalh", "doketesam", "unmachetedesfigurolacara",
-        "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh", "tihtuh", "demih", "petatemah",
-        "tonash", "klezyanas", "onunasko", "melavosh", "tttthummamma", "vansokonun", "beshilketiensh",
-        "ghram", "thekomeshtu", "phuto", "bherga", "chivholitos", "endopreh", "ejakah", "nenegrho",
-        "pordio0", "ñateh", "graphuta", "portuhkabeh", "poniatazo", "tumamalaneh", "belkuh", "lodedah", "satejar",
-        "eztesujeto", "miliah", "datufa",
-        "chupa", "phinga", "haciah", "tiradoenelpuen", "tolasvo", "pidocalen", "péné",
-        "joshua.ticona", "welcome", "wó", "jaja", "30hp", "phyngal", "0hp", "ijodephutha",
-        "tucuh", "darunapa", "belkun", "ª", "teboyasacarlamih", "nodeni", "narentukara",
-        "pides", "graphuta", "tumamalaneh", "mentirachupamibhrgha", "ilagranpehra",
-        "rretiyeroijoepuhta", "astakeh", "directo", "comparti", "kameh", "neenunaba",
-        "gobioh", "@admin", "comerh", "azekkk", "kometeh", "miqaqa", "mabaslapin",
-        "íbamaos", "sigue", "éramoschivolitos", "enguyete", "soychih", "Yaaaaaaa",
-        "grospeh", "tolaphin", "enapretadi", "ginadebe", "gokareka", "medarisaestepela",
-        "drehesunazohrra", "unahpros", "🐈‍⬛", "kuloh", "kasinoh", "muchosh", "babhosoh",
-        "nalditha", "wª", "bahsura", "anopahsaron", "tedesku", "unanimalh", "doketesam",
-        "unmachetedesfigurolacara", "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh",
-        "tihtuh", "demih", "petatemah", "tonash", "klezyanas", "onunasko", "wibond", "kalateate",
-        "grabadazo", "sinenbargo", "correte", "manko", "gueh", "pohortah", "queh", "rashpeh",
-        "latemueh", "grih", "mhih", "ardhah", "vah", "llah", "driya", "temuh", "wi bom",
-        "feh ih", "ih toh", "neh grih", "grih toh", "yosi tepar", "tola kah", "kah beza", "beza deum", "iasi temuh",
-        "zojar jacha", "driya zojar", "lah driya", "+tur", "tu boca escuchaste", "ohn tu boca",
-        "harda", "gemi2", "ghemi", "hemi2", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", "", "", "",
-        "", "", "", "", "", "", "", "", "", "", "", "",
 
-      ];
-
-    for (let word of customFilterWords) {
+    for (let word of customfilterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
             if (userPoints[data.nickname] <= 0) {
                 //log.console('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
@@ -506,32 +591,6 @@ function addChatItem(color, data, text, summarize) {
         return;
     }
 
-    const customfilterWords = [
-        "opahsaron", "tedesku", "unanimalh", "doketesam", "unmachetedesfigurolacara",
-        "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh", "tihtuh", "demih", "petatemah",
-        "tonash", "klezyanas", "onunasko", "melavosh", "tttthummamma", "vansokonun", "beshilketiensh",
-        "ghram", "thekomeshtu", "phuto", "bherga", "chivholitos", "endopreh", "ejakah", "nenegrho",
-        "pordio0", "ñateh", "graphuta", "portuhkabeh", "poniatazo", "tumamalaneh", "belkuh", "lodedah", "satejar",
-        "eztesujeto", "miliah", "datufa",
-        "chupa", "phinga", "haciah", "tiradoenelpuen", "tolasvo", "pidocalen", "péné",
-        "joshua.ticona", "welcome", "wó", "jaja", "30hp", "phyngal", "0hp", "ijodephutha",
-        "tucuh", "darunapa", "belkun", "ª", "teboyasacarlamih", "nodeni", "narentukara",
-        "pides", "graphuta", "tumamalaneh", "mentirachupamibhrgha", "ilagranpehra",
-        "rretiyeroijoepuhta", "astakeh", "directo", "comparti", "kameh", "neenunaba",
-        "gobioh", "@admin", "comerh", "azekkk", "kometeh", "miqaqa", "mabaslapin",
-        "íbamaos", "sigue", "éramoschivolitos", "enguyete", "soychih", "Yaaaaaaa",
-        "grospeh", "tolaphin", "enapretadi", "ginadebe", "gokareka", "medarisaestepela",
-        "drehesunazohrra", "unahpros", "🐈‍⬛", "kuloh", "kasinoh", "muchosh", "babhosoh",
-        "nalditha", "wª", "bahsura", "anopahsaron", "tedesku", "unanimalh", "doketesam",
-        "unmachetedesfigurolacara", "Votame", "botatu", "ardah", "vhiolar", "yoagolokeh",
-        "tihtuh", "demih", "petatemah", "tonash", "klezyanas", "onunasko", "wibond", "kalateate",
-        "grabadazo", "sinenbargo", "correte", "manko", "gueh", "pohortah", "queh", "rashpeh",
-        "latemueh", "grih", "mhih", "ardhah", "vah", "llah", "driya", "temuh", "wi bom",
-        "feh ih", "ih toh", "neh grih", "grih toh", "yosi tepar", "tola kah", "kah beza", "beza deum", "iasi temuh",
-        "zojar jacha", "driya zojar", "lah driya", "+tur", "tu boca escuchaste", "ohn tu boca",
-        "harda", "gemi2", "ghemi", "hemi2",
-
-      ];
       
     for (let word of customfilterWords) {
         if (word && lowerCaseText.includes(word.toLowerCase())) {
@@ -643,12 +702,6 @@ function isValidUrl(string) {
     return true;
 }
 
-let lastEvent = null;
-let eventDivs = {};
-let giftCounters = {};
-let lastFilteredPositions = [];
-let lastFilteredPositionIndex = 0;
-
 let userStats = {};
 
 connection.on('like', (data) => {
@@ -713,12 +766,9 @@ function addOverlayEvent(eventType, data) {
 
 //        pageB = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,nodeIntegration=no');
 //        pageB = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=true,transparent=false,nodeIntegration=no');
-
-// Resto del código...
-/** ID[${data.giftId}] id regalo
- * Agregar un nuevo regalo al contenedor de regalos
- */
+console.log(JSON.parse(localStorage.getItem('lastGiftItem')));
 function addGiftItem(data) {
+    localStorage.setItem('lastGiftItem', JSON.stringify(data));
     let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.giftcontainer');
     if (container.find('div').length > 200) {
         container.find('div').slice(0, 100).remove();
@@ -773,7 +823,56 @@ function addGiftItem(data) {
         scrollTop: container[0].scrollHeight
     }, 800);
 }
+function addEventsItem(eventType, data) {
+    let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.eventscontainer');
+    if (container.find('div').length > 200) {
+        container.find('div').slice(0, 100).remove();
+    }
+    // -- Evento
+    const profilePictureUrl = isValidUrl(data.profilePictureUrl) ? data.profilePictureUrl : 'url_de_imagen_por_defecto';
 
+    if (eventType === 'welcome') {
+        container.append(`
+            <div class="event">
+                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
+                <span>${data.uniqueId} ha sido bienvenido!</span>
+            </div>
+        `);
+    } else if (eventType === 'share') {
+        container.append(`
+            <div class="event">
+                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
+                <span>${data.uniqueId} ha compartido!</span>
+            </div>
+        `);
+    } else if (eventType === 'follow') {
+        container.append(`
+            <div class="event">
+                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
+                <span>${data.uniqueId} ha seguido!</span>
+            </div>
+        `);
+    } else if (eventType === 'likes') {
+        container.append(`
+            <div class="event">
+                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
+                <span>${data.uniqueId} ha dado un me gusta!</span>
+            </div>
+        `);
+    } else {
+        container.append(`
+            <div class="event">
+                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
+                <span>${data.uniqueId} tipo de evento: ${eventType}!</span>
+            </div>
+        `);
+    }
+    
+    container.stop();
+    container.animate({
+        scrollTop: container[0].scrollHeight
+    }, 800);
+}
 // viewer stats
 connection.on('roomUser', (data) => {
     if (typeof data.viewerCount === 'number') {
@@ -797,7 +896,7 @@ connection.on('member', (data) => {
 
     setTimeout(() => {
         joinMsgDelay -= addDelay;
-        addChatItem('#CDA434', data, 'welcome', true);
+        addEventsItem('welcome', data, 'welcome', true);
         addOverlayEvent('welcome', data);
         message = data.uniqueId;
         handleEvent2('welcome', data, message, null, data);
@@ -901,14 +1000,19 @@ connection.on('gift', (data) => {
             
         }
         log.isPendingStreak(data.uniqueId + prefixGiftEvent + data.giftName,"data repeatcount si terminoooooo",true,data.repeatCount);
-        sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
         userPoints[data.nickname] + data.diamondCount;
         updateRoomStats();
+        if (data.repeatCount === 1) {
+            sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
+        }
     }
-    if(!data.repeatEnd && data.diamondCount >= 2){
+    if ( data.repeatCount >= 2) {
         sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
-        log.isPendingStreak(data.uniqueId + prefixGiftEvent + data.giftName,"data repeatcount no terminoooooo",false,data.repeatCount);
     }
+    // if(!data.repeatEnd && data.diamondCount >= 2){
+    //     sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
+    //     log.isPendingStreak(data.uniqueId + prefixGiftEvent + data.giftName,"data repeatcount no terminoooooo",false,data.repeatCount);
+    // }
     userGiftname = data.giftName;
     if (window.settings.showGifts === "0") return;
     addGiftItem(data);
@@ -984,6 +1088,8 @@ connection.on('social', (data) => {
                 }, 60000); // 5 minutos
             }
         }
+        addEventsItem("follow", data);
+
     } else if (data.displayType.includes('share')) {
         color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
         message = `${data.nickname} compartió el directo`;
@@ -992,13 +1098,13 @@ connection.on('social', (data) => {
         addOverlayEvent('share', data);
         if (sendDataCheckbox.checked) {
             enviarCommandID( 'share', data);
-   /* */     }
+        }
+        addEventsItem("share", data);
     } else {
         color = '#CDA434'; // Color por defecto
         message = data.label.replace('{0:user}', '');
     }
 
-    addChatItem(color, data, message);
     sendToServer('social', data, null, color, message);
 });
 
@@ -1072,7 +1178,9 @@ connection.on('liveIntro', (msg) => {
     log.liveIntro('Unique ID:', msg.uniqueId);
     log.liveIntro(msg)
 });
-
+connection.on('Disconnected', (msg) => {
+    connect();
+});
 connection.on('emote', (data) => {
     log.emote(`${data.uniqueId} emote!`);
     log.emote('emote received', data);
@@ -1080,8 +1188,7 @@ connection.on('emote', (data) => {
 connection.on('envelope', data => {
     log.envelope('Unique ID:', data.uniqueId);
     log.envelope('Coins:', data.coins);
-    message = data.coins
-    addChatItem('',data,message)
+    addEventsItem('envelope',data)
     fetchAudio(`${data.uniqueId} envio cofre de ${data.coins} monedas para ${data.canOpen} personas`);
     log.envelope('envelope:', data);
 });
@@ -1214,239 +1321,9 @@ const DESCENDING = true; // newest on top
 const VOICE_PREFIX = '&';
 const pronoun_DB = {}; // username -> pronound_id
 const FEM_PRONOUNS = ['sheher', 'shethey'];
-var CHANNEL_BLACKLIST = [
-    'streamlabs',
-    'streamelements',
-    'moobot',
-    'nightbot',
-    'ch4tsworld',
-    'streamstickers',
-    'laia_bot',
-    'soundalerts',
-    'ankhbot',
-    'phantombot',
-    'wizebot',
-    'botisimo',
-    'coebot',
-    'deepbot',
-];
-var VOICE_LIST = {
-    "Penélope (Spanish, American)": "Penelope",
-    "Miguel (Spanish, American)": "Miguel",
-    "Enrique (Spanish, European)": "Enrique",
-    "Conchita (Spanish, European)": "Conchita",
-    "Mia (Spanish, Mexican)": "Mia",
-    "Rosalinda (Spanish, Castilian)": "Rosalinda Standard",
-    "Brian (English, British)": "Brian",
-    "Amy (English, British)": "Amy",
-    "Emma (English, British)": "Emma",
-    "Geraint (English, Welsh)": "Geraint",
-    "Russell (English, Australian)": "Russell",
-    "Nicole (English, Australian)": "Nicole",
-    "Joey (English, American)": "Joey",
-    "Justin (English, American)": "Justin",
-    "Matthew (English, American)": "Matthew",
-    "Ivy (English, American)": "Ivy",
-    "Joanna (English, American)": "Joanna",
-    "Kendra (English, American)": "Kendra",
-    "Kimberly (English, American)": "Kimberly",
-    "Salli (English, American)": "Salli",
-    "Raveena (English, Indian)": "Raveena",
-    "Zhiyu (Chinese, Mandarin)": "Zhiyu",
-    "Mads (Danish)": "Mads",
-    "Naja (Danish)": "Naja",
-    "Ruben (Dutch)": "Ruben",
-    "Lotte (Polly) (Dutch)": "Lotte",
-    "Mathieu (French)": "Mathieu",
-    "Céline (French)": "Celine",
-    "Chantal (French, Canadian)": "Chantal",
-    "Hans (German)": "Hans",
-    "Marlene (German)": "Marlene",
-    "Vicki (German)": "Vicki",
-    "Aditi (+English) (Hindi)": "Aditi",
-    "Karl (Icelandic)": "Karl",
-    "Dóra (Icelandic)": "Dora",
-    "Carla (Italian)": "Carla",
-    "Bianca (Italian)": "Bianca",
-    "Giorgio (Italian)": "Giorgio",
-    "Takumi (Japanese)": "Takumi",
-    "Mizuki (Japanese)": "Mizuki",
-    "Seoyeon (Korean)": "Seoyeon",
-    "Liv (Norwegian)": "Liv",
-    "Ewa (Polish)": "Ewa",
-    "Maja (Polish)": "Maja",
-    "Jacek (Polish)": "Jacek",
-    "Jan (Polish)": "Jan",
-    "Ricardo (Portuguese, Brazilian)": "Ricardo",
-    "Vitória (Portuguese, Brazilian)": "Vitoria",
-    "Cristiano (Portuguese, European)": "Cristiano",
-    "Inês (Portuguese, European)": "Ines",
-    "Carmen (Romanian)": "Carmen",
-    "Maxim (Russian)": "Maxim",
-    "Tatyana (Russian)": "Tatyana",
-    "Astrid (Swedish)": "Astrid",
-    "Filiz (Turkish)": "Filiz",
-    "Gwyneth (Welsh)": "Gwyneth",
-    "Carter (English, American)": "en-US-Wavenet-A",
-    "Paul (English, American)": "en-US-Wavenet-B",
-    "Evelyn (English, American)": "en-US-Wavenet-C",
-    "Liam (English, American)": "en-US-Wavenet-D",
-    "Jasmine (English, American)": "en-US-Wavenet-E",
-    "Madison (English, American)": "en-US-Wavenet-F",
-    "Mark (English, American)": "en-US-Standard-B",
-    "Vanessa (English, American)": "en-US-Standard-C",
-    "Zachary (English, American)": "en-US-Standard-D",
-    "Audrey (English, American)": "en-US-Standard-E",
-    "Layla (English, British)": "en-GB-Standard-A",
-    "Ali (English, British)": "en-GB-Standard-B",
-    "Scarlett (English, British)": "en-GB-Standard-C",
-    "Oliver (English, British)": "en-GB-Standard-D",
-    "Bella (English, British)": "en-GB-Wavenet-A",
-    "John (English, British)": "en-GB-Wavenet-B",
-    "Victoria (English, British)": "en-GB-Wavenet-C",
-    "Ron (English, British)": "en-GB-Wavenet-D",
-    "Zoe (English, Australian)": "en-AU-Standard-A",
-    "Luke (English, Australian)": "en-AU-Standard-B",
-    "Samantha (English, Australian)": "en-AU-Wavenet-A",
-    "Steve (English, Australian)": "en-AU-Wavenet-B",
-    "Courtney (English, Australian)": "en-AU-Wavenet-C",
-    "Jayden (English, Australian)": "en-AU-Wavenet-D",
-    "Ashleigh (English, Australian)": "en-AU-Standard-C",
-    "Daniel (English, Australian)": "en-AU-Standard-D",
-    "Anushri (English, Indian)": "en-IN-Wavenet-A",
-    "Sundar (English, Indian)": "en-IN-Wavenet-B",
-    "Satya (English, Indian)": "en-IN-Wavenet-C",
-    "Sonya (Afrikaans)": "af-ZA-Standard-A",
-    "Aisha (Arabic)": "ar-XA-Wavenet-A",
-    "Ahmad 1 (Arabic)": "ar-XA-Wavenet-B",
-    "Ahmad 2 (Arabic)": "ar-XA-Wavenet-C",
-    "Nikolina (Bulgarian)": "bg-bg-Standard-A",
-    "Li Na (Chinese, Mandarin)": "cmn-CN-Wavenet-A",
-    "Wang (Chinese, Mandarin)": "cmn-CN-Wavenet-B",
-    "Bai (Chinese, Mandarin)": "cmn-CN-Wavenet-C",
-    "Mingli (Chinese, Mandarin)": "cmn-CN-Wavenet-D",
-    "Silvia (Czech)": "cs-CZ-Wavenet-A",
-    "Marie (Danish)": "da-DK-Wavenet-A",
-    "Annemieke (Dutch)": "nl-NL-Standard-A",
-    "Eva (Dutch)": "nl-NL-Wavenet-A",
-    "Lars (Dutch)": "nl-NL-Wavenet-B",
-    "Marc (Dutch)": "nl-NL-Wavenet-C",
-    "Verona (Dutch)": "nl-NL-Wavenet-D",
-    "Lotte (Wavenet) (Dutch)": "nl-NL-Wavenet-E",
-    "Tala (Filipino (Tagalog))": "fil-PH-Wavenet-A",
-    "Marianne (Finnish)": "fi-FI-Wavenet-A",
-    "Yvonne (French)": "fr-FR-Standard-C",
-    "Gaspard (French)": "fr-FR-Standard-D",
-    "Emilie (French)": "fr-FR-Wavenet-A",
-    "Marcel (French)": "fr-FR-Wavenet-B",
-    "Brigitte (French)": "fr-FR-Wavenet-C",
-    "Simon (French)": "fr-FR-Wavenet-D",
-    "Juliette (French, Canadian)": "fr-CA-Standard-A",
-    "Felix (French, Canadian)": "fr-CA-Standard-B",
-    "Camille (French, Canadian)": "fr-CA-Standard-C",
-    "Jacques (French, Canadian)": "fr-CA-Standard-D",
-    "Karolina (German)": "de-DE-Standard-A",
-    "Albert (German)": "de-DE-Standard-B",
-    "Angelika (German)": "de-DE-Wavenet-A",
-    "Oskar (German)": "de-DE-Wavenet-B",
-    "Nina (German)": "de-DE-Wavenet-C",
-    "Sebastian (German)": "de-DE-Wavenet-D",
-    "Thalia (Greek)": "el-GR-Wavenet-A",
-    "Sneha (Hindi)": "hi-IN-Wavenet-A",
-    "Arnav (Hindi)": "hi-IN-Wavenet-B",
-    "Aadhav (Hindi)": "hi-IN-Wavenet-C",
-    "Ishtevan (Hungarian)": "hu-HU-Wavenet-A",
-    "Helga (Icelandic)": "is-is-Standard-A",
-    "Anisa (Indonesian)": "id-ID-Wavenet-A",
-    "Budi (Indonesian)": "id-ID-Wavenet-B",
-    "Bayu (Indonesian)": "id-ID-Wavenet-C",
-    "Gianna (Italian)": "it-IT-Standard-A",
-    "Valentina (Italian)": "it-IT-Wavenet-A",
-    "Stella (Italian)": "it-IT-Wavenet-B",
-    "Alessandro (Italian)": "it-IT-Wavenet-C",
-    "Luca (Italian)": "it-IT-Wavenet-D",
-    "Koharu (Japanese)": "ja-JP-Standard-A",
-    "Miho (Japanese)": "ja-JP-Wavenet-A",
-    "Eiko (Japanese)": "ja-JP-Wavenet-B",
-    "Haruto (Japanese)": "ja-JP-Wavenet-C",
-    "Eichi (Japanese)": "ja-JP-Wavenet-D",
-    "Heosu (Korean)": "ko-KR-Standard-A",
-    "Grace (Korean)": "ko-KR-Wavenet-A",
-    "Juris (Latvian)": "lv-lv-Standard-A",
-    "Nora (Norwegian, Bokmål)": "nb-no-Wavenet-E",
-    "Malena (Norwegian, Bokmål)": "nb-no-Wavenet-A",
-    "Jacob (Norwegian, Bokmål)": "nb-no-Wavenet-B",
-    "Thea (Norwegian, Bokmål)": "nb-no-Wavenet-C",
-    "Aksel (Norwegian, Bokmål)": "nb-no-Wavenet-D",
-    "Amelia (Polish)": "pl-PL-Wavenet-A",
-    "Stanislaw (Polish)": "pl-PL-Wavenet-B",
-    "Tomasz (Polish)": "pl-PL-Wavenet-C",
-    "Klaudia (Polish)": "pl-PL-Wavenet-D",
-    "Beatriz (Portuguese, Portugal)": "pt-PT-Wavenet-A",
-    "Francisco (Portuguese, Portugal)": "pt-PT-Wavenet-B",
-    "Lucas (Portuguese, Portugal)": "pt-PT-Wavenet-C",
-    "Carolina (Portuguese, Portugal)": "pt-PT-Wavenet-D",
-    "Alice (Portuguese, Brazilian)": "pt-BR-Standard-A",
-    "Маша (Masha) (Russian)": "ru-RU-Wavenet-A",
-    "Илья (Ilya) (Russian)": "ru-RU-Wavenet-B",
-    "Алёна (Alena) (Russian)": "ru-RU-Wavenet-C",
-    "Пётр (Petr) (Russian)": "ru-RU-Wavenet-D",
-    "Aleksandra (Serbian)": "sr-rs-Standard-A",
-    "Eliska (Slovak)": "sk-SK-Wavenet-A",
-    "Elsa (Swedish)": "sv-SE-Standard-A",
-    "Zehra (Turkish)": "tr-TR-Standard-A",
-    "Yagmur (Turkish)": "tr-TR-Wavenet-A",
-    "Mehmet (Turkish)": "tr-TR-Wavenet-B",
-    "Miray (Turkish)": "tr-TR-Wavenet-C",
-    "Elif (Turkish)": "tr-TR-Wavenet-D",
-    "Enes (Turkish)": "tr-TR-Wavenet-E",
-    "Vladislava (Ukrainian)": "uk-UA-Wavenet-A",
-    "Linh (Vietnamese)": "vi-VN-Wavenet-A",
-    "Nguyen (Vietnamese)": "vi-VN-Wavenet-B",
-    "Phuong (Vietnamese)": "vi-VN-Wavenet-C",
-    "Viet (Vietnamese)": "vi-VN-Wavenet-D",
-    "Linda (English, Canadian)": "Linda",
-    "Heather (English, Canadian)": "Heather",
-    "Sean (English, Irish)": "Sean",
-    "Hoda (Arabic, Egypt)": "Hoda",
-    "Naayf (Arabic, Saudi Arabia)": "Naayf",
-    "Ivan (Bulgarian)": "Ivan",
-    "Herena (Catalan)": "Herena",
-    "Tracy (Chinese, Cantonese, Traditional)": "Tracy",
-    "Danny (Chinese, Cantonese, Traditional)": "Danny",
-    "Huihui (Chinese, Mandarin, Simplified)": "Huihui",
-    "Yaoyao (Chinese, Mandarin, Simplified)": "Yaoyao",
-    "Kangkang (Chinese, Mandarin, Simplified)": "Kangkang",
-    "HanHan (Chinese, Taiwanese, Traditional)": "HanHan",
-    "Zhiwei (Chinese, Taiwanese, Traditional)": "Zhiwei",
-    "Matej (Croatian)": "Matej",
-    "Jakub (Czech)": "Jakub",
-    "Guillaume (French, Switzerland)": "Guillaume",
-    "Michael (German, Austria)": "Michael",
-    "Karsten (German, Switzerland)": "Karsten",
-    "Stefanos (Greek)": "Stefanos",
-    "Szabolcs (Hungarian)": "Szabolcs",
-    "Andika (Indonesian)": "Andika",
-    "Heidi (Finnish)": "Heidi",
-    "Kalpana (Hindi)": "Kalpana",
-    "Hemant (Hindi)": "Hemant",
-    "Rizwan (Malay)": "Rizwan",
-    "Filip (Slovak)": "Filip",
-    "Lado (Slovenian)": "Lado",
-    "Valluvar (Tamil, India)": "Valluvar",
-    "Pattara (Thai)": "Pattara",
-    "An (Vietnamese)": "An",
-};
-const VOICE_LIST_ALT = Object.keys(VOICE_LIST).map(k => VOICE_LIST[k]);
-var voiceSelect = document.createElement('select');
 
-Object.keys(VOICE_LIST).forEach(function(key) {
-    var option = document.createElement('option');
-    option.text = key;
-    option.value = VOICE_LIST[key];
-    voiceSelect.appendChild(option);
-});
-
+// appendvoicelist voicelistarray
+// const VOICE_LIST_ALT = Object.keys(VOICE_LIST).map(k => VOICE_LIST[k]);
 document.addEventListener('DOMContentLoaded', (event) => {
     var voiceSelectContainer = document.getElementById('voiceSelectContainer');
     voiceSelectContainer.appendChild(voiceSelect);
@@ -1507,22 +1384,22 @@ class Queue {
     }
 }
 
-function leerMensajes(text) {
-    if (text && !isReading) {
-        fetchAudio(text).then(audioUrl => {
-            if (audioUrl) {
-                audioqueue.enqueue(audioUrl);
-                if (!isPlaying) kickstartPlayer();
-            }
-        });
-    }
-}
+// function leerMensajes(text) {
+//     // if (text && !isReading) {
+//     //     fetchAudio(text).then(audioUrl => {
+//     //         if (audioUrl) {
+//     //             audioqueue.enqueue(audioUrl);
+//     //             if (!isPlaying) kickstartPlayer();
+//     //         }
+//     //     });
+//     // }
+
+// }
 
 let audioQueue = [];
 let lastReadText = null;
 let audioMap = {};
 let audioKeys = [];
-let lastSelectedVoice = null;
 
 function calculatePercentageOfAlphabets(text) {
     let alphabetCount = 0;
@@ -1533,7 +1410,6 @@ function calculatePercentageOfAlphabets(text) {
     }
     return (alphabetCount / text.length) * 100;
 }
-let lastTwoSelectedVoices = [null, null];
 
 async function fetchAudio(txt) {
     try {
@@ -1563,12 +1439,6 @@ async function fetchAudio(txt) {
         // Agregar el nuevo audio al mapa
         audioMap[txt] = blobUrl;
         audioKeys.push(txt);
-
-        // Si el mapa tiene más de 30 audios, eliminar el audio más antiguo
-        if (audioKeys.length > 30) {
-            const keyToRemove = audioKeys.shift();
-            delete audioMap[keyToRemove];
-        }
 
         return blobUrl;
     } catch (error) {
@@ -1674,7 +1544,7 @@ window.señal = ()=>{}
 let elemento = new Proxy({ value: 0, data: {} }, {
     set: (target, propiedad, value) => {
         target[propiedad] = value;
-        window.señal(target[propiedad], target['data'])
+        window.señal(target[propiedad])
         return true;
     },
     get: (target, prop) => {
@@ -1823,7 +1693,6 @@ async function sendToServer(eventType, data, color, msg, message) {
     let objet = {eventType, data};
     /// aqui enviamos a eventos eventmanager
     elemento.value = objet;
-    elemento.data = objet;
     fetch(`${backendUrl}/api/receive1`, {
         method: 'POST',
         headers: {

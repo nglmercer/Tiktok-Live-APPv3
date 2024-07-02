@@ -31,27 +31,31 @@ const addOrReplaceFile = (fileToAdd, fileName, destination) => {
         filePath = generateUniqueFileName(filePath);
     }
 
-    // Convert base64 string to binary data safely
-    const base64Data = fileToAdd.split(',')[1];
-    const fileBinary = Buffer.from(base64Data, 'base64'); // Correct and safe usage of Buffer.from()
+    const base64Data = fileToAdd.replace(/^data:.+;base64,/, ''); // Eliminar la parte data URL del base64
 
-    fs.writeFileSync(filePath, fileBinary);
-    const mimeType = mime.lookup(fileName) || 'application/octet-stream';
+    fs.writeFile(filePath, base64Data, { encoding: 'base64' }, (err) => {
+        if (err) {
+            console.error('Error writing file:', err);
+            return;
+        }
 
-    // Retrieve and increment the file index counter
-    let fileIndex = store.get('fileIndex', 0) || 0;
-    fileIndex++;
-    store.set('fileIndex', fileIndex);
+        const mimeType = mime.lookup(fileName) || 'application/octet-stream';
 
-    fileData.push({ 
-        index: fileIndex,
-        name: path.basename(filePath), 
-        path: filePath, 
-        type: mimeType 
+        let fileIndex = store.get('fileIndex', 0) || 0;
+        fileIndex++;
+        store.set('fileIndex', fileIndex);
+
+        fileData.push({ 
+            index: fileIndex,
+            name: path.basename(filePath), 
+            path: filePath, 
+            type: mimeType 
+        });
+
+        store.set('fileData', fileData);
+        console.log(fileToAdd, fileName, destination, "addOrReplaceFile fileToAdd, fileName, destination");
     });
 
-    store.set('fileData', fileData);
-    console.log(fileToAdd, fileName, destination, "addOrReplaceFile fileToAdd, fileName, destination");
     return filePath;
 };
 
@@ -101,6 +105,9 @@ const getFileById = (fileId) => {
     const fileData = store.get('fileData', []);
     // Asegúrate de que fileId es un número
     const fileIdNumber = Number(fileId);
+    if (isNaN(fileIdNumber)) {
+        throw new Error(`Invalid file id: ${fileId}`);
+    }
     const file = fileData.find(file => file.index === fileIdNumber);
     
     console.log('file', file, "fileid", fileIdNumber);

@@ -396,7 +396,7 @@ $("#audioList").on("click", "a", function(event) {
   
   // Add audio to the table
   addRow(audioPath, audioTitle, audioTitle , 1, true); // Default volume: 0.5, Default enable: true
-  $('#audioModal').modal('hide');
+  //.modal('hide');
 });
 
 $("#audioList").on("click", ".play-button", function() {
@@ -411,7 +411,7 @@ $("#audioList").on("click", ".play-button", function() {
   // Add a new row to the table
   addRow(audioPath, audioTitle, "selecciona" , 0.5, true); // Default volume: 0.5, Default enable: true
 
-  $('#audioModal').modal('hide');
+  //
 });
 
 // Event listener for searching audio

@@ -1,6 +1,14 @@
 <form class="tab5-action">
   <div class="ElementITEM">
-    <h1>Actions</h1>
+    <h1>Acciones y Eventos</h1>
+    <input type="checkbox" id="sugerencia" class="sugerencia">
+    <label for="sugerencia">⁉️ Sugerencias</label>
+    <div class="sugerencia-content">
+        Puedes agregar acciones a eventos como imagenes videos y audios
+        con duracion y volumen
+        <br>
+        y tambien puedes asignar eventos a la accion configurada
+    </div>
   </div>
 
   <div class="ElementITEM">
@@ -41,9 +49,9 @@
     <div class="inputGroup">
       <input name="id" type="hidden" id="modalactionsId" />
     </div>
-      <div class="inputGroup">
+      <div class="inputGroup Eventoscheck">
         <label for="modalactionsCheckbox4">Eventos</label>
-        <input name="accionevento_check" type="checkbox" id="modalactionsCheckbox4" class="form-control" />
+        <input name="accionevento_check" type="checkbox" id="modalactionsCheckbox4" class="form-control"/>
 
         <div class="config">
           <div class="checkbox-group" data-group-name="eventos">
@@ -59,13 +67,13 @@
         </div>
       </div>
 
-  <div class="ElementITEM">
-    <button type="button" class="btn btn-primary modalActionAdd">Agregar Evento</button>
-    <button type="button" class="position-absolute top-0 end-0 btn btn-danger modalActionClose">Cerrar</button>
-    <button type="button" class="btn btn-primary modalActionSave" style="display: none;">Guardar</button>
-  </div>
+</div>
+
 
   <div class="ElementITEM">
+    <button type="button" class="btn btn-primary modalActionAdd">Agregar Evento</button>
+    <button type="button" class="position-absolute top-0 end-0 btn deleteButton modalActionClose">Cerrar</button>
+    <button type="button" class="btn btn-primary modalActionSave" style="display: none;">Guardar</button>
     <textarea id="import-data" class="form-control" rows="5" style="display: none;"></textarea>
     <button type="button" id="confirm-import-button" class="btn btn-primary" style="display: none;">Confirmar Importación</button>
   </div>

@@ -8,7 +8,7 @@ server2.on('listening', () => {
   console.log('OSC Server is listening.');
 });
 
-let bot = null; 
+let bot; 
 let botStatus;
 let disconnect;
 const COMMAND_LIMIT = 1; // Límite de comandos por minuto
@@ -120,105 +120,7 @@ router.post('/receive', (req, res) => {
   
     res.json();
   });
-  router.post('/create', (req, res) => {
-    const { eventType, data } = req.body;
-  
-    if (eventType === 'createBot') {
-      const { keyBot, keyServer, Initcommand } = data;
-      if (keyBot && keyServer) {
-        if (!bot) {
-          const serverParts = keyServer.split(':');
-          const serverAddress = serverParts[0];
-          const serverPort = serverParts[1] ? parseInt(serverParts[1]) : null;
-          setTimeout(() => {
-              createBot(keyBot, serverAddress, serverPort);
-          }, 3000);
 
-          const startPos = { x: 166, y: 122, z: -26 };
-          const endPos = { x: 180, y: 134, z: -12 };
-          res.json({ message: 'Bot creado' });
-        }
-      } 
-    } else {
-      disconnect = true;
-      removeBot();
-      res.json({ message: 'Bot desconectado', botStatus });
-    }
-  });
-  function createBot(keyBot, keyServer, keyServerPort, attemptCount1) {
-    let maxAttempts = 5;
-    let attemptCount = 1; // Track the number of connection attempts
-
-    const botOptions = {
-      host: keyServer,
-      username: keyBot,
-    };
-
-    if (keyServerPort) {
-      botOptions.port = keyServerPort;
-    }
-
-    if (attemptCount >= 5){
-      console.log("attemptCount Limit",attemptCount)
-      return
-    }
-    if (botStatus && attemptCount1 >= 5) {
-      attemptCount += 4;
-      bot.quit(); // Desconectarse del servidor actual
-      console.log("disconnect",attemptCount)
-      return
-    }
-    console.log("createBot now...");
-
-    bot = mineflayer.createBot(botOptions);
-
-    if (bot){ 
-      bot.on('login', () => {
-        botStatus = true;
-        console.log('Bot is Online');
-        bot.chat('say Bot is Online');
-      });
-    }
-      bot.on('error', (err) => {
-        console.error('Error:', err);
-        if (!bot && botStatus) {
-          botStatus = false;
-          setTimeout(() => {
-            setTimeout(() => createBot(), 3000); // Recursive call
-          }, 5000); // Esperar 5 segundos antes de intentar reconectarse
-        }
-      });
-      bot.on('kicked', (reason) => {
-        console.log(`Bot expulsado del servidor: ${reason}`);
-        if (!bot && botStatus) {
-          setTimeout(() => {
-            setTimeout(() => createBot(), 3000); // Recursive call
-          }, 5000); // Esperar 5 segundos antes de intentar reconectarse
-        }
-
-      });
-      bot.on('end', () => {
-        botStatus = false;
-        if (!bot && botStatus) {
-          if (attemptCount < maxAttempts) { // Check if attempts are exceeded
-            console.log(`Connection ended, reconnecting in 3 seconds (attempt ${attemptCount}/${maxAttempts})`);
-            attemptCount++;
-            setTimeout(() => createBot(), 3000); // Recursive call
-          }
-        }
-      });
-  }
-  function removeBot() {
-    if (bot) {
-      createBot(keyBot, keyServer, keyServerPort, 5)
-      bot.quit(); // Desconectar el bot del servidor
-      bot = null; // Limpiar la referencia al bot
-      botStatus = false; // Actualizar el estado del bot a desconectado
-      console.log("Bot desconectado y eliminado correctamente.");
-    } else {
-      console.log("No hay ningún bot para desconectar.");
-    }
-  }
   router.post('/api/disconnect', (req, res) => {
     const { eventType } = req.body;
     console.log(eventType);

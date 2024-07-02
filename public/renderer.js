@@ -1,18 +1,45 @@
 import tab5Action from "./tab5-action/tab5-action.js";
-import { databases, saveDataToIndexedDB, deleteDataFromIndexedDB, updateDataInIndexedDB, loadDataFromIndexedDB, getDataFromIndexedDB } from './indexedDB.js';
+import { databases, saveDataToIndexedDB, deleteDataFromIndexedDB, updateDataInIndexedDB, loadDataFromIndexedDB, getDataFromIndexedDB, observer } from './indexedDB.js';
 import socketdata from './socket/socketdata.js';
-let copyFiles = [];
-async function getFiles() {
-    window.api.getFilesInFolder().then(files => {
-        console.log('Files in folder:', files);
-        copyFiles.push(...files);
-        return files;
+import { TTS } from './functions/tts.js';
 
-    }).catch(error => {
+let copyFiles = [];
+
+async function getFiles() {
+    try {
+        const files = await window.api.getFilesInFolder();
+        console.log('Files in folder:', files);
+
+        // Reemplazar el contenido de copyFiles con los nuevos archivos obtenidos
+        copyFiles = [...files];
+        console.log('Updated copyFiles:', copyFiles);
+
+        return files;
+    } catch (error) {
         console.error('Error fetching files:', error);
         return [];
-    });
+    }
 }
+function populateVoiceList() {
+    if (typeof speechSynthesis === "undefined") {
+      return;
+    }
+    const voices = speechSynthesis.getVoices();
+    for (let i = 0; i < voices.length; i++) {
+      const option = document.createElement("option");
+      option.textContent = `${voices[i].name} (${voices[i].lang})`;
+  
+      option.setAttribute("data-lang", voices[i].lang);
+      option.setAttribute("data-name", voices[i].name);
+      document.getElementById("voiceSelect").appendChild(option);
+    }
+  }
+  
+  
+  window.speechSynthesis.onvoiceschanged = function() {
+    populateVoiceList();
+  }
+  
 async function getFileById(fileId) {
     return window.api.getFileById(fileId);
 }
@@ -24,11 +51,43 @@ async function getFileById(fileId) {
 // }
 // console.log('testgetFileById', testgetFileById());
 getFiles()
+// setTimeout(() => {
+//     manageEvent({displayName: 'test'}, 'test', "test");
+//     //Uncaught TypeError: Cannot read properties of null (reading 'checked')
+// },  1000);
 
+
+function manageEvent(tags, message, userstate) {
+    console.log('not in lines');
+  }
 document.addEventListener('DOMContentLoaded', () => {
     window.api.onShowMessage((event, message) => {
         console.log(message);
     });
+    document.getElementById("testvoicebtn").addEventListener("click", function() {
+        const messages = document.getElementById("testvoice").value;
+        leerMensajes1(messages);
+    });
+    window.signal = (data) => {
+        console.log('signal recived', data);
+        leerMensajes1(data);
+    }
+    async function leerMensajes1(text) {
+        const selectedVoice = document.querySelector('input[name="selectvoice"]:checked');
+        if (selectedVoice.id === 'selectvoice1') {
+            if (text && !isReading) {
+                fetchAudio(text).then(audioUrl => {
+                    if (audioUrl) {
+                        audioqueue.enqueue(audioUrl);
+                        if (!isPlaying) kickstartPlayer();
+                    }
+                });
+            }
+        } else if (selectedVoice.id === 'selectvoice2') {
+            new TTS(text);
+        }
+        return true;
+    }
     const dropArea = document.getElementById('drop-area');
     const fileList = document.getElementById('file-list');
 
@@ -42,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     let existingFiles = JSON.parse(localStorage.getItem('existingFiles')) || [];
+
     dropArea.addEventListener('drop', async (event) => {
         event.preventDefault();
         dropArea.classList.remove('highlight');
@@ -120,22 +180,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const getMediaElement = (filePath, fileType) => {
         if (fileType) {
             if (fileType.startsWith('image/')) {
-                return `<img src="${filePath}" class="file-thumbnail" />`;
+                return `<img src="file:///${filePath}" class="file-thumbnail" />`;
             } else if (fileType.startsWith('video/')) {
                 return `<video controls class="file-thumbnail">
-                            <source src="${filePath}" type="${fileType}">
+                            <source src="file:///${filePath}" type="${fileType}">
                             Your browser does not support the video tag.
                         </video>`;
             } else if (fileType.startsWith('audio/')) {
                 return `<audio controls class="file-thumbnail">
-                            <source src="${filePath}" type="${fileType}">
+                            <source src="file:///${filePath}" type="${fileType}">
                             Your browser does not support the audio tag.
                         </audio>`;
             } else {
                 return `<span>Unsupported file type</span>`;
             }
         } else {
-            return `<img src="${filePath}" class="file-thumbnail" />`;
+            return `<img src="file:///${filePath}" class="file-thumbnail" />`;
         }
     };
 
@@ -174,6 +234,81 @@ document.addEventListener('DOMContentLoaded', () => {
             deleteFile(fileName);
         }
     });
+
+    function getOrCreateTableContainer() {
+        let table = document.querySelector('.data-table');
+        if (!table) {
+            table = document.createElement('table');
+            table.className = 'data-table';
+            document.getElementById('loadrowactionsevents').appendChild(table);
+    
+            // Crear y agregar el encabezado de la tabla
+            const headerRow = document.createElement('tr');
+            const headers = ['Nombre', 'Imagen', 'Video', 'Sonido', 'Eventos', 'Botones'];
+            headers.forEach(headerText => {
+                const headerCell = document.createElement('td');
+                headerCell.textContent = headerText;
+                headerRow.appendChild(headerCell);
+            });
+            table.appendChild(headerRow);
+        }
+        return table;
+    }
+    
+    function getOrCreateRow(data) {
+        let row = document.querySelector(`.data-row[data-id="${data.id}"]`);
+        if (!row) {
+            row = document.createElement('tr');
+            row.className = 'data-row';
+            row.dataset.id = data.id;
+        } else {
+            // Limpiar la fila existente
+            row.innerHTML = '';
+        }
+        return row;
+    }
+    
+    function createTextCell(text) {
+        const textCell = document.createElement('td');
+        textCell.textContent = text;
+        return textCell;
+    }
+    
+    function createButtonCell(data, row) {
+        const buttonCell = document.createElement('td');
+        buttonCell.className = 'button-cell';
+    
+        const editButton = document.createElement('button');
+        editButton.textContent = 'Editar';
+        editButton.addEventListener('click', async () => {
+            objectModal.onUpdate(data);
+        });
+    
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Borrar';
+        deleteButton.className = "deleteButton";
+        deleteButton.addEventListener('click', () => {
+            row.remove();
+            deleteDataFromIndexedDB(databases.MyDatabaseActionevent, data.id);
+            setTimeout(() => {
+                loadDataFromIndexedDB(databases.eventsDB, createElementWithButtons);
+                loadDataFromIndexedDB(databases.MyDatabaseActionevent, createElementWithButtons);
+            }, 1000);
+            console.log('deleteDataFromIndexedDB', data);
+        });
+    
+        const testButton = document.createElement('button');
+        testButton.textContent = 'Probar';
+        testButton.addEventListener('click', () => {
+            console.log('testButton', data);
+        });
+    
+        buttonCell.appendChild(editButton);
+        buttonCell.appendChild(deleteButton);
+        buttonCell.appendChild(testButton);
+    
+        return buttonCell;
+    }
     
     async function createElementWithButtons(dbConfig, data) {
         if (!data || !data.id) {
@@ -181,80 +316,50 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
     
-        // Seleccionar o crear el contenedor
-        let container = document.querySelector(`.data-container[data-id="${data.id}"]`);
-        if (!container) {
-            container = document.createElement('div');
-            container.className = 'flex data-container';
-            container.dataset.id = data.id;
-            document.getElementById('loadrowactionsevents').appendChild(container);
-        } else {
-            // Limpiar el contenedor existente
-            container.innerHTML = '';
-        }
+        const table = getOrCreateTableContainer();
+        const row = getOrCreateRow(data);
     
-        // Crear el elemento de texto y agregarlo al contenedor
-        const textElement = document.createElement('div');
-        textElement.className = 'flex justify-center';
-        console.log('data-------------createbutton', data);
-        if (data.accionevento) {
-            textElement.textContent = `Evento: ${data.accionevento?.nombre || 'N/A'}, Audio: ${getDataText(data["type-audio"])}, Video: ${getDataText(data["type-video"])}, Imagen: ${getDataText(data["type-imagen"])}`;
-        } else {
-                textElement.textContent = `Evento: ${data.accionevento?.nombre || 'N/A'}, Acción: faltando`;
-        }
-        container.appendChild(textElement);
+        const nombreCell = createTextCell(data.accionevento?.nombre || 'N/A');
+        const imagenCell = createTextCell(await getDataText(data["type-imagen"]));
+        const videoCell = createTextCell(await getDataText(data["type-video"]));
+        const sonidoCell = createTextCell(await getDataText(data["type-audio"]));
+        
+        row.appendChild(nombreCell);
+        row.appendChild(imagenCell);
+        row.appendChild(videoCell);
+        row.appendChild(sonidoCell);
     
-        // Crear y agregar el botón de editar
-        const editButton = document.createElement('button');
-        editButton.textContent = 'Editar';
-        editButton.addEventListener('click', async () => {
-            objectModal.onUpdate(data);
+        // Crear celdas de eventos
+        const eventosCell = document.createElement('td');
+        Object.entries(data).forEach(([key, value]) => {
+            if (key.startsWith('event-')) {
+                const eventname = key.split('-')[1];
+                const eventText = value && value.check ? eventname : 'false';
+                if (eventText === 'false') {
+                    return;
+                }
+                const eventTextNode = document.createTextNode(eventText + ' ');
+                eventosCell.appendChild(eventTextNode);
+                console.log(eventname, key, value);
+            }
         });
-        container.appendChild(editButton);
+        row.appendChild(eventosCell);
     
-        // Crear y agregar el botón de borrar
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Borrar';
-        deleteButton.className = "deleteButton";
-        deleteButton.addEventListener('click', () => {
-            container.remove();
-
-            deleteDataFromIndexedDB(databases.MyDatabaseActionevent, data.id);
-            setTimeout(() => {
-                loadDataFromIndexedDB(databases.eventsDB, createElementWithButtons);
-                loadDataFromIndexedDB(databases.MyDatabaseActionevent, createElementWithButtons);
-                }, 1000);
-            console.log('deleteDataFromIndexedDB', data);
-        });
-        container.appendChild(deleteButton);
+        const buttonCell = createButtonCell(data, row);
+        row.appendChild(buttonCell);
     
-        // Crear y agregar el botón de probar
-        const testButton = document.createElement('button');
-        testButton.textContent = 'Probar';
-        testButton.addEventListener('click', () => {
-            console.log('testButton', data);
-        });
-        container.appendChild(testButton);
+        table.appendChild(row);
     }
     
-    function getDataText(data) {
+    async function getDataText(data) {
+        let datatextname = await getfileId(data.select);
+        if (datatextname) {
+            return datatextname.name;
+        }
         return data && data.select ? data.select : 'N/A';
     }
     
-    //   const idelement = formulario.elements.namedItem('id');  
-    // function addOverlayEvent(eventType, data) {
-    //     if (!overlayPage || overlayPage.closed) {
-    //         overlayPage = window.open('overlay.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,alwaysOnTop=true,nodeIntegration=no');
-
-    //     }
-    //     setTimeout(() => {
-    //         try {
-    //             overlayPage.postMessage({ eventType, indexData: data }, '*');
-    //         } catch (err) {
-    //             console.error('Error sending message to overlayPage:', err);
-    //         }
-    //     }, 500);
-    // }
+    let lastrepeatcount = 0;
     async function eventmanager(eventType, data) {
         // console.log('eventmanager', eventType, "eventype data -------------------", data);
     
@@ -274,6 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // console.log(splitkey, "eventsfind---------------------", eventsfind, "eventname---------------------", eventname, "eventType------------------", eventType, "value------------------", value, "key data -------------------", key);
                     return true;
                 }
+
                 // Verificamos si el tipo de evento coincide
                 if (splitkey[1] === eventType) {
                     // console.log('eventname', eventname["type-imagen"], "value", value, "key data -------------------", key);
@@ -281,6 +387,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     // console.log('eventname', eventname["type-audio"], "value", value, "key data -------------------", key);
                     // console.log("eventname---------------------", eventname, "eventType------------------", eventType, "value------------------", value, "key data -------------------", key);
                     if (eventType === 'gift') {
+                        if (data.repeatCount) {
+                            console.log("data.repeatCount", data.repeatCount);
+                            lastrepeatcount = data.repeatCount;
+                        } else {
+                            console.log("data --------> eventmanager", data);
+                            return true;
+                        }
                         value.select = Number(value.select);
                         if (value.select !== data.giftId) {
                             return true;
@@ -338,7 +451,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const actionnameinput = document.getElementById('action-name');
     const testactionevent = document.getElementById('testactionevent');
     testactionevent.addEventListener('click', () => {
-        eventmanager(actionnameinput.value, actionnameinput.value);
+        // eventmanager(actionnameinput.value, actionnameinput.value);
+        let eventtype = actionnameinput.value.split('-')[0];
+        let datagiftname = actionnameinput.value.split('-')[1];
+        let playername = "test";
+        let data = {
+            giftName: datagiftname,
+            repeatCount: 1,
+            giftId: 7934, /// rose id 5655
+            repeatEnd: false,
+            diamondCount: 0,
+            nickname: playername,
+            uniqueId: playername
+        }
+        eventmanager(eventtype, data);
+        console.log('testactionevent',eventtype, data);
         // console.log('testactionevent', actionnameinput.value);
     });
     async function getfileId(id) {
@@ -367,8 +494,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // }
         console.log('overlaywindow', file);
     }
-    window.señal = (valor,data1) => {
-        console.log('señal recibido', valor,"data----------------", data1);
+    window.señal = (valor) => {
+        console.log('señal recibido', valor,"data----------------");
         const {eventType, data} = valor;
         eventmanager(eventType, data);
     }
@@ -378,18 +505,19 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('recargado');
     }
     loadDataFromIndexedDB123();
+    observer.subscribe(loadDataFromIndexedDB123);
     loadFileList();
     let objectModal;
-
     tab5Action({
         elementContainer: document.getElementById('tab5-action'),
-        files: existingFiles, // Los archivos que se van a mostrar en la ventana emergente
+        files: getFiles(), // Los archivos que se van a mostrar en la ventana emergente
         optionsgift: optionsgift(),
         onSave: (datos) => {console.log('onSave', datos)
+            loadDataFromIndexedDB123();
             saveDataToIndexedDB(databases.eventsDB, datos)},
         onCancel: (datos) => {
             console.log('onCancel', datos);
-            // Lógica para el evento onCancel
+            getFiles();
         },
     }).then((modal) => {
         objectModal = modal;

@@ -6,21 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tiktokLiveApp</title>
     <meta name="description" content="A chat reader for TikTok LIVE utilizing TikTok-Live-Connector and Socket.IO to forward the data to the client. This demo project uses the unofficial TikTok API to retrieve chat comments, gifts and other events from TikTok LIVE.">
-    <!-- Content-Security
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://tiktok-chat-reader.zerody.one/ https://tiktok-chat-reader.zerody.one/ wss://irc-ws.chat.twitch.tv http://localhost:3001 http://localhost:3000 https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p77-sign-va.tiktokcdn.com/ https://p19-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-useast2a.tiktokcdn.com/ http://localhost:8081 https://api.streamelements.com https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-va.tiktokcdn.com/ http://localhost:8911; img-src 'self' https://p16-sign-va.tiktokcdn.com/ https://p16-pu-sign-useast8.tiktokcdn-us.com/; media-src 'self' blob:;"> 
-meta
-<meta http-equiv="Content-Security-Policy" content="
-  default-src 'self';
-  script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com;
-  connect-src 'self' https://localhost https://unpkg.com https://tiktok-chat-reader.zerody.one wss://irc-ws.chat.twitch.tv wss://tiktok-chat-reader.zerody.one http://localhost:3001 https://api.streamelements.com;
-  style-src 'self' 'unsafe-inline';
-">
- -->
- <div class="title-bar">
-    <h1>tiktokLiveApp</h1>
-</div>
-</head>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="connection.js"></script>
 <script src="app.js"></script>
@@ -37,32 +23,76 @@ meta
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <!-- Content-Security
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://tiktok-chat-reader.zerody.one/ https://tiktok-chat-reader.zerody.one/ wss://irc-ws.chat.twitch.tv http://localhost:3001 http://localhost:3000 https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p77-sign-va.tiktokcdn.com/ https://p19-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-useast2a.tiktokcdn.com/ http://localhost:8081 https://api.streamelements.com https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-va.tiktokcdn.com/ http://localhost:8911; img-src 'self' https://p16-sign-va.tiktokcdn.com/ https://p16-pu-sign-useast8.tiktokcdn-us.com/; media-src 'self' blob:;"> 
+meta
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://unpkg.com;
+  connect-src 'self' https://localhost https://unpkg.com https://tiktok-chat-reader.zerody.one wss://irc-ws.chat.twitch.tv wss://tiktok-chat-reader.zerody.one http://localhost:3001 https://api.streamelements.com;
+  style-src 'self' 'unsafe-inline';
+">
+ -->
+ <div class="title-bar">
+    <h1>tiktokLiveApp</h1>
+</div>
+    <style>
+        button {
+            background-color: #57af4c;
+        }
+        select {
+            background-color: #c4c4c4;
+        }
+    </style>
 </head>
 <body class="font-sans font-bold text-white text-xl mt-10 w-full h-full bg-gray-900 flex flex-col">
 
     <div class="parent">
         <div class="divmenu">
+            <input type="checkbox" id="menu-toggle" >
+
             <div class="tabs-menu">
+                <label for="menu-toggle" class="menu-button">
+                    <img src="svg/pinboard.svg" class="icon">
+                    <span class="text">Menu</span>
+                </label>
+                 <!-- Creamos un Fijador para el menú de tabs -->
                 <div id="stateText"></div>
                 <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
                 <input type="button" id="connectButton" value="Conectar">
-                <div class="tab" data-tab="tab1">Chat LIVE</div>
-                <div class="tab" data-tab="tab2">Minecraft</div>
-                <div class="tab" data-tab="tab3">Sonidos</div>
-                <div class="tab" data-tab="tab4">Overlay</div>
-                <div class="tab" data-tab="tab5">Gifnames</div>
+                <div class="tab" data-tab="tab1">
+                    <img src="svg/chat.svg" class="icon">
+                    <span class="text">Chat LIVE</span>
+                </div>
+                <div class="tab" data-tab="tab2">
+                    <img src="svg/minecraft.svg" class="icon">
+                    <span class="text">Minecraft</span>
+                </div>
+                <div class="tab" data-tab="tab3">
+                    <img src="svg/sounds.svg" class="icon">
+                    <span class="text">Sonidos</span>
+                </div>
+                <div class="tab" data-tab="tab4">
+                    <img src="svg/actionsevent.svg" class="icon">
+                    <span class="text">Overlay</span>
+                </div>
+                <div class="tab" data-tab="tab5">
+                    <img src="svg/gift.svg" class="icon">
+                    <span class="text">Gifnames</span>
+                </div>
+                <div class="tab" data-tab="tab6">
+                    <img src="svg/settings.svg" class="icon">
+                    <span class="text">Settings</span>
+                </div>
                 <div class="indicator"></div>
                 <label class="cyberpunk-checkbox-label">
                     <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
-                    mixitupAlerts</label>
-
-                <label for="importButton" class="custom-file-upload">subir⏫Config⚙</label>
-                <input type="file" id="importButton" style="display:none">
-                <button onclick="importSettings()">Importar⚙</button>
-                <button id="exportButton" onclick="exportSettings()">Exportar⚙</button>
-                <span id="loadingIndicator" style="display: none;">Cargando...</span>
-                </div>
+                    mixitupAlerts
+                </label>
+            </div>
+ 
         </div>
+        
         <div class="divcontent">
             <div id="tab1" class="tab-content">
                 <!-- 
@@ -71,20 +101,175 @@ meta
             
             <div class="containerbox">
                 <div class="inputFields">
-                    <div class="splitchattable grid grid-cols-2">
-                        <div class="chatcontainer">
-                            <h3 class="containerheader">Chats</h3>
-                        </div>
-                        <div class="giftcontainer">
-                            <h3 class="containerheader">Gifts</h3>
-                        </div>
+                    <div class="LiveContainer">
+                        <div class="chat1 chatcontainer">Chats</div>
+                        <div class="gift2 giftcontainer">Gifts</div>
+                        <div class="events3 eventscontainer">Events</div>
                     </div>
                 </div>
-                
+
             </div>
-            <div id="voiceSelectContainer" class="relative m-3 content-center"></div>
-                <div>
-    
+                <div class="containerbox">
+                    <div class="flexbox">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">General Settings</h2>
+                            </div>
+                            <div class="card-content space-y-4">
+                                    <input type="checkbox" id="voiceenabled" checked>
+                                    <label for="voiceenabled">Enabled</label>
+
+                                <div class="card-subcontent">
+                                    <label class="voiceselect-label" for="selectvoice1">Voz1</label>
+                                    <input type="radio" name="selectvoice" id="selectvoice1" checked>
+                                    <div id="voiceSelectContainer" class="relative m-3 content-center"></div>
+
+                                    <label class="voiceselect-label" for="selectvoice2">Voz2</label>
+                                    <input type="radio" name="selectvoice" id="selectvoice2">
+
+                                <div class="grid">
+                                    <select id="voiceSelect" class="form-control bg-slate-600 w-2/4"></select>
+                                    <div class="flex">                                <label for="randomVoice">Random Voice</label>
+                                        <input type="checkbox" id="randomVoice" checked></div>
+                                    <div class="flex">                                <label for="randomSpeed"><small>random speed</small></label>
+                                        <input type="checkbox" id="randomSpeed">
+                                        <input type="range" id="randomSpeedValue" name="randomSpeedValue" value="1" min="0.1" max="2" step="0.1">
+                                        </div>
+                                    <div class="flex">  <label for="randomPitch"><small>random pitch</small></label>
+                                        <input type="checkbox" id="randomPitch">
+                                        <input type="range" id="randomPitchValue" name="randomPitchValue" value="1" min="0.1" max="2" step="0.1">
+                                    </div>
+                                    <div class="flex">
+                                        <label for="default-speed">Default Speed</label>
+                                        <input type="range" id="default-speed" class="input-range">
+                                    </div>
+                                    <div class="flex">
+                                        <label for="default-pitch">Default Pitch</label>
+                                        <input type="range" id="default-pitch" class="input-range">
+                                    </div>
+                                    <small>Speech Volume</small>
+                                    <label for="volume">
+                                        <i class="bi bi-volume-up-fill"></i></label>
+                                        <input id="volume" type="range" min="0" max="1" value="1" step="0.1" class="input-range">
+                                    
+                                </div>
+                                </div>
+                            </div>
+                        </div>
+                
+                        <audio id="audiotrack"></audio>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Allowed Users</h2>
+                            </div>
+                            <div class="card-content space-y-4 text-lg">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="allUsers" checked>
+                                    <label for="allUsers">All Users</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="followers" checked>
+                                    <label for="followers">Followers</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="isSubscriber" checked>
+                                    <label for="isSubscriber">isSubscriber</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="isModerator" checked>
+                                    <label for="isModerator">isModerator</label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="team-members" checked>
+                                    <label for="team-members">
+                                        Team Members <span>Min. Level: 1</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="top-gifters" checked>
+                                    <label for="top-gifters">
+                                        Top Gifters <span>Top: 3</span>
+                                    </label>
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="allowed-users-list" checked>
+                                    <label for="allowed-users-list">
+                                        Allowed Users from list <span>Manage List</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <button onclick="getCheckboxValues()">Obtener Valores</button>
+                        
+                            <script>
+                                function getCheckboxValues() {
+                                    const checkboxes = document.querySelectorAll('.card-content input[type="checkbox"]');
+                                    const values = {};
+                                    checkboxes.forEach(checkbox => {
+                                        values[checkbox.id] = checkbox.checked;
+                                    });
+                                    console.log(values);
+                                }
+                            </script>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Comment Types</h2>
+                            </div>
+                            <div class="card-content space-y-4">
+                                <label>Read...</label>
+                                <div>
+                                    <div class="flex items-center">
+                                        <input type="radio" name="comment-type" value="any-comment" id="any-comment" checked>
+                                        <label for="any-comment">Any comment</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="radio" name="comment-type" value="dot-comment" id="dot-comment">
+                                        <label for="dot-comment">Comments starting with dot (.)</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="radio" name="comment-type" value="slash-comment" id="slash-comment">
+                                        <label for="slash-comment">Comments starting with slash (/)</label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input type="radio" name="comment-type" value="command-comment" id="command-comment">
+                                        <label for="command-comment">Comments starting with Command:</label>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <label for="command">Command</label>
+                                    <input type="text" id="command" placeholder="!speak">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">More Settings</h2>
+
+                            </div>    
+                            <div class="card-content space-y-4">
+                                <label class="cyberpunk-checkbox-label">
+                                    leer follower prefijo:
+                                    <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
+                                    <input type="text" id="prefixuserfollow" value="te sige">
+                                </label>
+                                <label class="cyberpunk-checkbox-label">
+                                    leer regalos prefijo:
+                                    <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
+                                    <input type="text" id="prefixGiftEvent" value="regalo">
+                                </label>
+                                <label class="cyberpunk-checkbox-label">
+                                    leer usuario y mensaje prefijo:
+                                    <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
+                                    <input type="text" id="prefixusermessage" value="dice">
+                                </label>
+                                <label class="cyberpunk-checkbox-label">solo mensajes =>3
+                                    <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
+                                    </label>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="text" id="testvoice">
+                    <button id="testvoicebtn">testvoice</button>
                 </div>
                 <div class="containerbox">
                 <div>filtrar chat //:</div>
@@ -92,31 +277,13 @@ meta
                 <div>WitheList:</div>
                 <textarea id="filter-users"></textarea>
                 <div>
-                <label class="cyberpunk-checkbox-label">
-                    prefijo follow
-                    <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                    <input type="text" id="prefixuserfollow" value="te sige">
-                </label>
-                <label class="cyberpunk-checkbox-label">
-                    leer regalos
-                    <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
-                    prefijo:
-                    <input type="text" id="prefixGiftEvent" value="regalo">
-                </label>
-                <label class="cyberpunk-checkbox-label">
-                    leer usuario y mensaje
-                    <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                    prefijo:
-                    <input type="text" id="prefixusermessage" value="dice">
-                </label>
+
                     puntos del canal +1 -10
                     <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-600 w-20">
                     <label class="cyberpunk-checkbox-label">si el usuario no tiene puntos no lee
                     <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
                     </label>
-                    <label class="cyberpunk-checkbox-label">solo mensajes =>3
-                    <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
-                    </label>
+
         
                     <label class="cyberpunk-checkbox-label">añadir puntos por nivel    
                     <input type="checkbox" class="cyberpunk-checkbox" id="userlevelCheckbox" checked>
@@ -152,7 +319,74 @@ meta
                       </form>
                 </div>
                 <div id="resultMessage"></div>
+                <div class="containerbox">
+                    <h1 class="text-xl font-bold mb-4">ServerTap Plugin Configuration</h1>
+                    <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+                        <label for="playerName" >Player Name</label>
+                        <input type="text" id="playerName" value="@a">
+                        <label for="ip" >IP</label>
+                        <input type="text" id="ip" value="127.0.0.1">
+                        <label for="port" >Port</label>
+                        <input type="text" id="port" value="4567">
+                        <label for="password" >Password</label>
+                        <input type="password" id="password" class="text-gray-700" value="change_me">
+                    
+                
+                    </div>
+                    <button class="btn btn-primary" id="testConnection">Test Connection</button>
+                </div>
+                <div id="output"></div>
 
+                <script>
+                    document.getElementById('testConnection').addEventListener('click', function() {
+                        fetch("http://localhost:4567/v1/server", {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'key': 'change_me' // Cambia esto por tu clave de autenticación si es necesario
+                            }
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Network response was not ok ' + response.statusText);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Server status:', data);
+                            document.getElementById('output').innerText = JSON.stringify(data, null, 2);
+                        })
+                        .catch(error => {
+                            console.error('There has been a problem with your fetch operation:', error);
+                            document.getElementById('output').innerText = 'Error: ' + error.message;
+                        });
+                    });
+                    function wsconsole() {
+                        document.cookie = "x-servertap-key=change_me"; // Cambia esto por tu clave de autenticación si es necesario
+                        let ws = new WebSocket('ws://localhost:4567/v1/ws/console');
+            
+                        ws.onopen = function() {
+                            console.log('Opened connection');
+                            document.getElementById('output').innerText = 'Opened connection';
+                            ws.send('status'); // Envía un comando para obtener el estado del servidor
+                        };
+            
+                        ws.onmessage = function(event) {
+                            console.log('Message from server:', event.data);
+                            document.getElementById('output').innerText = '\n' + event.data.replaceAll('\n', '<br>');
+                        };
+            
+                        ws.onerror = function(error) {
+                            console.log('WebSocket Error:', error);
+                            document.getElementById('output').innerText += '\nWebSocket Error: ' + error.message;
+                        };
+            
+                        ws.onclose = function() {
+                            console.log('Closed connection');
+                            document.getElementById('output').innerText += '\nClosed connection';
+                        };
+                    }
+                </script>
                 <div class="containerbox">
                 <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
                 <label>Tu nombre de Minecraft:</label>
@@ -231,7 +465,17 @@ meta
                         
                       </div>
             </div>
-
+            <script>
+                // hacemos que 30 segundos despues de estar checked sugerencia se desaparece desmarcando la casilla existen vario
+                // hay varios elementos con esta clase y se hara para todos de ellos
+                document.querySelector('.sugerencia').addEventListener('change', function() {
+                    setTimeout(function() {
+                        document.querySelectorAll('.sugerencia').forEach(function(element) {
+                            element.checked = false;
+                        });
+                    }, 30000);
+                });
+            </script>
         <div id="tab3" class="tab-content">
             <div class="containerbox">
             <label class="cyberpunk-checkbox-label">
@@ -294,7 +538,7 @@ meta
             
           </script>
         </div>
-    </div>
+        </div>
         <div id="tab4" class="tab-content">
             <div class="containerbox">       
                 <div class="center-element">arrastre elementos aquí</div>
@@ -307,8 +551,8 @@ meta
                 
             <div class="containerbox">
                     <div id="tab5-action"></div>
-                    <button id="openaction" class="btn btn-primary">openaction</button>
-                    <button id="closeaction" class="btn btn-primary">closeaction</button>
+                    <button id="openaction" class="button-center">Añadir Accion&Eeventos</button>
+                    <button id="closeaction" class="deleteButton">Cerrar</button>
                     <div id="loadrowactionsevents"></div>
                     <div>
                         <input type="text" id="action-name" placeholder="action name">
@@ -337,11 +581,20 @@ meta
             <div id="downloadButtonContainer"></div>
     
         </div>
+        <div id="tab6" class="tab-content">
+            <div class="containerbox">
+                <label for="importButton" class="custom-file-upload">subir⚙</label>
+                <input type="file" id="importButton" style="display:none">
+                <button onclick="importSettings()">Importar⚙</button>
+                <button id="exportButton" onclick="exportSettings()">Exportar⚙</button>
+                <span id="loadingIndicator" style="display: none;">Cargando...</span>
         </div>
 
-        
+    </div>    
+    </div>
     </div>
     <div class="divfooter">
+
         <div id="roomStats"></div>    
         <audio id="audio" controls autoplay>
         </audio>

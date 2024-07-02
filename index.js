@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, globalShortcut, ipcRenderer, contextBridge } = require('electron');
+const { app, BrowserWindow, protocol, ipcMain, dialog, globalShortcut, ipcRenderer, contextBridge } = require('electron');
 const path = require('path');
 const url = require('url');
 const Store = require('electron-store');
@@ -8,35 +8,71 @@ const mineflayer = require('mineflayer');
 const fileHandler = require('./fileHandler');
 const socketHandler = require('./socketHandler');
 const updateHandler = require('./updateHandler');
+const WebSocket = require('ws');
+let ws = null;
 const store = new Store(); 
 let port = process.env.PORT || 8081;
-
+// ws = new WebSocket('ws://localhost:4567/v1/ws/console', {
+//   headers: {
+//       'Cookie': `x-servertap-key=change_me`  // Aquí pasas la clave como un encabezado personalizado
+//   }
+// });
+// ws.on('open', function open() {
+//   console.log('WebSocket connection opened. Sending default command to server.');
+//   ws.send('/say hello');
+// });
+// ws.on('error', function error(err) {
+//   console.error('WebSocket Error: ', err);
+// });
+// ws.on('close', function close() {
+//   console.log('WebSocket closed. Reconnecting...');
+// });
+// function sendtows(message) {
+//   ws.send(message);
+// }
+// setInterval(() => {
+//   sendtows('/say hello');
+// }, 10000);
 // require('electron-reload')(__dirname, {
 //   electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
 //   hardResetMethod: 'exit'
 // });
 // Evento emitido cuando Electron ha terminado de inicializarse
 let mainWindow;
+
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: store.get('windowWidth', 1000), // Obtener el ancho de la ventana desde Electron Store, si no está definido, usar 1200
-    height: store.get('windowHeight', 800), // Obtener la altura de la ventana desde Electron Store, si no está definida, usar 1000
+    width: store.get('windowWidth', 1000), // Obtener el ancho de la ventana desde Electron Store, si no está definido, usar 1000
+    height: store.get('windowHeight', 800), // Obtener la altura de la ventana desde Electron Store, si no está definida, usar 800
     minWidth: 800, // Ancho mínimo de la ventana
     minHeight: 600, // Alto mínimo de la ventana
-    frame: false,
-    transparent: true,
-    // alwaysOnTop: false, 
-    // titleBarStyle: 'customButtonsOnHover',
-
-		webPreferences: {
-			preload: path.join(__dirname, "preload.js"),
-			nodeIntegration: true,
-		},
-  });
-  //load public/index.html mainWindow
-  mainWindow.loadFile('public/index.html');
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+        color: '#cfd4ff',
+        symbolColor: '#030238',
+        height: 25
+    },
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: true, // Importante: deshabilitar nodeIntegration por seguridad
+      contextIsolation: true,
+      worldSafeExecuteJavaScript: true,
+      webSecurity: false,
+  }
+});
+  // loadFile public/index.html mainWindow
+  // mainWindow.loadURL(`file://${__dirname}/public/index.html`);
+  // mainWindow.loadURL('http://localhost:' + port + '/index.html');
+  // establecer cookies para mainWindow con webContents
+  mainWindow.loadURL(`http://localhost:${port}/index.html`);
 }
+
 app.on('ready', () => {
+  protocol.registerFileProtocol('custom', (request, callback) => {
+    const filePath = request.url.replace('custom://', '');
+    const fileUrl = path.join(__dirname, filePath);
+    callback({ path: fileUrl });
+  });
   const express = require('express');
   const { createServer } = require('http');
   const cors = require('cors');
@@ -48,7 +84,9 @@ app.on('ready', () => {
   app1.use('/api', routes);
   const httpServer = createServer(app1);
   const io = socketHandler.initSocket(httpServer);
-
+  app1.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
   app1.use(express.static(path.join(__dirname, 'public')));
   httpServer.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {
@@ -253,6 +291,7 @@ ipcMain.handle('send-overlay-data', (_, { eventType, data, options }) => {
       return { success: false, error: 'Overlay window not created yet' };
   }
 });
+let bot;
 ipcMain.handle('create-bot', (event, options) => {
 bot = mineflayer.createBot(options);
 bot.on('login', () => {
