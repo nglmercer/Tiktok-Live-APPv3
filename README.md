@@ -16,7 +16,8 @@ Para instalar , deber ir y descargar el archivo.zip  ``` no el source code ```  
 4. MixitupApp API support (conecta mixitupApp para usar todas las herramientas)
 5. Minecraft interactive Bot (crea un bot para que envie los comandos que configures )
 6. VRChat chatbox support (envia los mensajes al chatbox para leerlo o mostrarlo en el juego)
-![tikliveappview](tikliveappview.png)
+![tikliveappview](https://github.com/nglmercer/Tiktok-Live-TTS-APPv2/assets/128845117/e2d667ef-34be-4a65-b360-52fd3040f5bf)
+
 
 ### Versiones Disponibles
 Se recomienda instalar y utilizar la version mas reciente. Presione sobre el nombre del articulo a descargar:
@@ -66,3 +67,33 @@ Esta documentacion es un tutorial de como utilizar puede revisar cada apartado p
 
 ### VRChat chatbox support  <font color="Gold">VRchat Chat ingame.</font>
 (envia los mensajes al chatbox para leerlo o mostrarlo en el juego)
+## Fix and Next Features
+1. eliminar elementos innecesarios
+2. refactorizar codigo
+3. cambiar elementos 
+4. eliminar subir archivo?¨ || cambiar posicion y elementos
+5. select GIFT ACTIONEVENT
+6. ---------> RANDOM VOICES 
+--------- SemiCompleto -------------
+7. Seleccion de voces
+- Function setTTS(voice|| random){ if voice === local || voice === apivoice }{}
+8. Sistema de puntos (mejorar interfaz)
+- Table User and Points
+- Save Backup
+-
+9. Function para saber si el User es Follower Sub Mod Team Member y Top Gift o si es Whitelist
+- Get Top Gifters
+- if user is -lvl .then { return true } || if user is [MOD, Team Member, Follower] || if user exist in [] Whitelist
+- whitelist user contains user return true , else if blacklist contains user return true, else { default || false}
+10. VRchat Chatbox ---> Input movimientos 
+- Function ConectOSC(Options){client.run || conect ---- return conect || true }
+- Redirect o manager Events to Chatbox
+11. Song Request
+- Youtube API
+12. Live Channels (numero de usuarios) Vista de canales afiliados
+13. GIFT animation
+----NEW Feature----
+14. Control Overlay type window type url 
+15.  Overlay window checkbox setSIZE or Fullscreen
+16. Overlay type Url always ON show url 
+17. Add Preview Profile picture url
