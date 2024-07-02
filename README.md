@@ -16,7 +16,8 @@ Para instalar , deber ir y descargar el archivo.zip  ``` no el source code ```  
 4. MixitupApp API support (conecta mixitupApp para usar todas las herramientas)
 5. Minecraft interactive Bot (crea un bot para que envie los comandos que configures )
 6. VRChat chatbox support (envia los mensajes al chatbox para leerlo o mostrarlo en el juego)
-![tikliveappview](tikliveappview.png)
+![tikliveappview](https://github.com/nglmercer/Tiktok-Live-TTS-APPv2/assets/128845117/e2d667ef-34be-4a65-b360-52fd3040f5bf)
+
 
 ### Versiones Disponibles
 Se recomienda instalar y utilizar la version mas reciente. Presione sobre el nombre del articulo a descargar:
