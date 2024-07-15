@@ -5,24 +5,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>tiktokLiveApp</title>
-    <meta name="description" content="A chat reader for TikTok LIVE utilizing TikTok-Live-Connector and Socket.IO to forward the data to the client. This demo project uses the unofficial TikTok API to retrieve chat comments, gifts and other events from TikTok LIVE.">
+    <meta name="description" content="Tiktok Live App">
+    <meta http-equiv="Permissions-Policy" content="interest-cohort=()">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="connection.js"></script>
-<script src="app.js"></script>
+<script type="module" src="app.js"></script>
 <script type="module" src="renderer.js"></script>
+<script type="module" src="functions/update.js"></script>
+<script type="module" src="functions/YoutubeApi.js"></script>
 <script src="localstorage.js"></script>
 <script src="tmi.min.js"></script>
-<script src="TTSmain.js"></script>
+<!-- <script src="TTSmain.js"></script> -->
 <script src="minejs.js"></script>
 <script src="Settings.js"></script>
-<script src="indexdb.js" type="module"></script>
+<script type="module" src="indexdb.js"></script>
 <link rel="stylesheet" href="styles.css">
 <link href="select2.css" rel="stylesheet" />
 <link href="output.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script type="module" src="./functions/calculatecommand.js"></script>
     <!-- Content-Security
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://tiktok-chat-reader.zerody.one/ https://tiktok-chat-reader.zerody.one/ wss://irc-ws.chat.twitch.tv http://localhost:3001 http://localhost:3000 https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p77-sign-va.tiktokcdn.com/ https://p19-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-useast2a.tiktokcdn.com/ http://localhost:8081 https://api.streamelements.com https://p16-pu-sign-useast8.tiktokcdn-us.com/ https://p16-sign-va.tiktokcdn.com/ http://localhost:8911; img-src 'self' https://p16-sign-va.tiktokcdn.com/ https://p16-pu-sign-useast8.tiktokcdn-us.com/; media-src 'self' blob:;"> 
 meta
@@ -37,15 +42,14 @@ meta
     <h1>tiktokLiveApp</h1>
 </div>
     <style>
-        button {
-            background-color: #57af4c;
-        }
+
         select {
             background-color: #c4c4c4;
         }
+
     </style>
 </head>
-<body class="font-sans font-bold text-white text-xl mt-10 w-full h-full bg-gray-900 flex flex-col">
+<body class="font-sans font-bold text-white text-xl mt-10 w-full bg-gray-900 flex flex-col">
 
     <div class="parent">
         <div class="divmenu">
@@ -54,41 +58,43 @@ meta
             <div class="tabs-menu">
                 <label for="menu-toggle" class="menu-button">
                     <img src="svg/pinboard.svg" class="icon">
-                    <span class="text">Menu</span>
                 </label>
                  <!-- Creamos un Fijador para el menú de tabs -->
                 <div id="stateText"></div>
                 <input type="text" placeholder="tu usuario @uniqueid" id="uniqueIdInput">
-                <input type="button" id="connectButton" value="Conectar">
-                <div class="tab" data-tab="tab1">
+                <input type="button" class="custombutton" id="connectButton" value="Conectar">
+                <div class="tabs" data-tab="tab1">
                     <img src="svg/chat.svg" class="icon">
-                    <span class="text">Chat LIVE</span>
+                    <a>Chat LIVE</a>
                 </div>
-                <div class="tab" data-tab="tab2">
+                <div class="tabs" data-tab="tab2">
                     <img src="svg/minecraft.svg" class="icon">
-                    <span class="text">Minecraft</span>
+                    <a>Minecraft</a>
                 </div>
-                <div class="tab" data-tab="tab3">
+                <div class="tabs" data-tab="tab3">
                     <img src="svg/sounds.svg" class="icon">
-                    <span class="text">Sonidos</span>
+                    <a>Sonidos</a>
                 </div>
-                <div class="tab" data-tab="tab4">
+                <div class="tabs" data-tab="tab4">
                     <img src="svg/actionsevent.svg" class="icon">
-                    <span class="text">Overlay</span>
+                    <a>Overlay</a>
                 </div>
-                <div class="tab" data-tab="tab5">
+                <div class="tabs" data-tab="tab5">
                     <img src="svg/gift.svg" class="icon">
-                    <span class="text">Gifnames</span>
+                    <a>Gifnames</a>
                 </div>
-                <div class="tab" data-tab="tab6">
+                <div class="tabs" data-tab="tab6">
                     <img src="svg/settings.svg" class="icon">
-                    <span class="text">Settings</span>
+                    <a>Settings</a>
                 </div>
-                <div class="indicator"></div>
+                <button class="btn btn-primary" id="Actualizar">Actualizar</button>
+                <div id="Actualizar-status"></div>
+
                 <label class="cyberpunk-checkbox-label">
-                    <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
-                    mixitupAlerts
-                </label>
+                    <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff">
+                    overlay on/off</label>
+                  
+                    <label class="cyberpunk-checkbox-label">
             </div>
  
         </div>
@@ -120,37 +126,35 @@ meta
                                     <label for="voiceenabled">Enabled</label>
 
                                 <div class="card-subcontent">
-                                    <label class="voiceselect-label" for="selectvoice1">Voz1</label>
-                                    <input type="radio" name="selectvoice" id="selectvoice1" checked>
+                                    <label class="label cursor-pointer" for="selectvoice1">Voz1</label>
+                                    <input type="radio" name="selectvoice" id="selectvoice1" class="radio checked:bg-blue-300" checked>
                                     <div id="voiceSelectContainer" class="relative m-3 content-center"></div>
 
-                                    <label class="voiceselect-label" for="selectvoice2">Voz2</label>
-                                    <input type="radio" name="selectvoice" id="selectvoice2">
+                                    <label class="label cursor-pointer" for="selectvoice2">Voz2</label>
+                                    <input type="radio" name="selectvoice" id="selectvoice2" class="radio checked:bg-blue-500">
 
                                 <div class="grid">
-                                    <select id="voiceSelect" class="form-control bg-slate-600 w-2/4"></select>
+                                    <select id="voiceSelect" class="select select-info"></select>
                                     <div class="flex">                                <label for="randomVoice">Random Voice</label>
                                         <input type="checkbox" id="randomVoice" checked></div>
                                     <div class="flex">                                <label for="randomSpeed"><small>random speed</small></label>
                                         <input type="checkbox" id="randomSpeed">
-                                        <input type="range" id="randomSpeedValue" name="randomSpeedValue" value="1" min="0.1" max="2" step="0.1">
+                                        <input type="range" class="range range-sm" id="randomSpeedValue" name="randomSpeedValue" value="1" min="0.1" max="2" step="0.1">
                                         </div>
                                     <div class="flex">  <label for="randomPitch"><small>random pitch</small></label>
                                         <input type="checkbox" id="randomPitch">
-                                        <input type="range" id="randomPitchValue" name="randomPitchValue" value="1" min="0.1" max="2" step="0.1">
+                                        <input type="range" class="range range-sm" id="randomPitchValue" name="randomPitchValue" value="1" min="0.1" max="2" step="0.1">
                                     </div>
                                     <div class="flex">
                                         <label for="default-speed">Default Speed</label>
-                                        <input type="range" id="default-speed" class="input-range">
-                                    </div>
+                                        <input type="range" id="default-speed" class="range range-sm">                                   </div>
                                     <div class="flex">
                                         <label for="default-pitch">Default Pitch</label>
-                                        <input type="range" id="default-pitch" class="input-range">
-                                    </div>
+                                        <input type="range" id="default-pitch" class="range range-sm">                                   </div>
                                     <small>Speech Volume</small>
                                     <label for="volume">
                                         <i class="bi bi-volume-up-fill"></i></label>
-                                        <input id="volume" type="range" min="0" max="1" value="1" step="0.1" class="input-range">
+                                        <input id="volume" type="range" min="0" max="1" value="1" step="0.1" class="range range-sm">
                                     
                                 </div>
                                 </div>
@@ -168,8 +172,8 @@ meta
                                     <label for="allUsers">All Users</label>
                                 </div>
                                 <div class="flex items-center">
-                                    <input type="checkbox" id="followers" checked>
-                                    <label for="followers">Followers</label>
+                                    <input type="checkbox" id="followRole" checked>
+                                    <label for="followRole">Followers</label>
                                 </div>
                                 <div class="flex items-center">
                                     <input type="checkbox" id="isSubscriber" checked>
@@ -180,16 +184,22 @@ meta
                                     <label for="isModerator">isModerator</label>
                                 </div>
                                 <div class="flex items-center">
-                                    <input type="checkbox" id="team-members" checked>
-                                    <label for="team-members">
-                                        Team Members <span>Min. Level: 1</span>
-                                    </label>
+                                    <input type="checkbox" id="isNewGifter" checked>
+                                    <label for="isNewGifter">isNewGifter</label>
                                 </div>
                                 <div class="flex items-center">
-                                    <input type="checkbox" id="top-gifters" checked>
-                                    <label for="top-gifters">
-                                        Top Gifters <span>Top: 3</span>
+                                    <input type="checkbox" id="teamMemberLevel" checked>
+                                    <label for="teamMemberLevel">
+                                        Team Members <span>Min. Level:</span>
                                     </label>
+                                    <input type="number" id="teamMemberLevel-value" class="input input-bordered w-12" value="1" min="0">
+                                </div>
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="topGifterRank" checked>
+                                    <label for="topGifterRank">
+                                        Top Gifters <span>Top:</span>
+                                    </label>
+                                    <input type="number" id="topGifterRank-value" class="input input-bordered w-12" value="3" min="0">
                                 </div>
                                 <div class="flex items-center">
                                     <input type="checkbox" id="allowed-users-list" checked>
@@ -198,7 +208,8 @@ meta
                                     </label>
                                 </div>
                             </div>
-                            <button onclick="getCheckboxValues()">Obtener Valores</button>
+                            
+                            <button class="custombutton" onclick="getCheckboxValues()">Obtener Valores</button>
                         
                             <script>
                                 function getCheckboxValues() {
@@ -219,19 +230,19 @@ meta
                                 <label>Read...</label>
                                 <div>
                                     <div class="flex items-center">
-                                        <input type="radio" name="comment-type" value="any-comment" id="any-comment" checked>
+                                        <input type="radio" name="comment-type" value="any-comment" id="any-comment" class="radio checked:bg-blue-300" checked>
                                         <label for="any-comment">Any comment</label>
                                     </div>
                                     <div class="flex items-center">
-                                        <input type="radio" name="comment-type" value="dot-comment" id="dot-comment">
+                                        <input type="radio" name="comment-type" value="dot-comment" id="dot-comment" class="radio checked:bg-blue-300">
                                         <label for="dot-comment">Comments starting with dot (.)</label>
                                     </div>
                                     <div class="flex items-center">
-                                        <input type="radio" name="comment-type" value="slash-comment" id="slash-comment">
+                                        <input type="radio" name="comment-type" value="slash-comment" id="slash-comment" class="radio checked:bg-blue-300">
                                         <label for="slash-comment">Comments starting with slash (/)</label>
                                     </div>
                                     <div class="flex items-center">
-                                        <input type="radio" name="comment-type" value="command-comment" id="command-comment">
+                                        <input type="radio" name="comment-type" value="command-comment" id="command-comment" class="radio checked:bg-blue-300">
                                         <label for="command-comment">Comments starting with Command:</label>
                                     </div>
                                 </div>
@@ -267,350 +278,546 @@ meta
                                     </label>
                             </div>
                         </div>
+                        <div class="card">
+                            <div class="card-header">
+                                <h2 class="card-title">Filtros</h2>
+                            </div>
+                            <div class="card-content space-y-4">
+                                <p>BlackList: Input de palabras que no aparecerán en el chat</p>
+                                <input type="text" id="filter-words" class="border p-2 mr-2">
+                                <button class="custombutton" id="addfilter-words" >✅word</button>
+                                <button id="load-known-filters" class="custombutton">Añadir filtros conocidos</button>
+                                <div id="containerfilter-words" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
+                            </div>
+                        
+                            <div class="card-content space-y-4">
+                                <p>WhiteList: Input de usuarios que aparecerán en el chat++</p>
+                                <input type="text" id="filter-users" class="border p-2 mr-2">
+                                <button class="custombutton" id="addfilter-users" >✅user</button>
+                                <div id="containerfilter-users" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            puntos iniciales del canal
+                            <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-600 w-20">
+                            <label class="cyberpunk-checkbox-label">sin puntos no lee
+                            <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
+                            </label>
+        
+                
+                            <label class="cyberpunk-checkbox-label">añadir puntos x lvl   
+                            <input type="checkbox" class="cyberpunk-checkbox" id="userlevelCheckbox" checked>
+                                         <input type="number" id="users-level" value="20" max="50" min="0" class="bg-slate-600 w-20">
+                        </label>
+                        </div>
                     </div>
-                    <input type="text" id="testvoice">
-                    <button id="testvoicebtn">testvoice</button>
+
                 </div>
                 <div class="containerbox">
-                <div>filtrar chat //:</div>
-                <textarea id="filter-words"></textarea>
-                <div>WitheList:</div>
-                <textarea id="filter-users"></textarea>
-                <div>
+                    <input type="text" id="testvoice">
+                    <button class="custombutton" id="testvoicebtn">testvoice</button>
 
-                    puntos del canal +1 -10
-                    <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-600 w-20">
-                    <label class="cyberpunk-checkbox-label">si el usuario no tiene puntos no lee
-                    <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
-                    </label>
-
-        
-                    <label class="cyberpunk-checkbox-label">añadir puntos por nivel    
-                    <input type="checkbox" class="cyberpunk-checkbox" id="userlevelCheckbox" checked>
-                                 <input type="number" id="users-level" value="20" max="50" min="0" class="bg-slate-600 w-20">
-                </label>
-                </div>
+                            
                 </div>
                 
-                <label class="cyberpunk-checkbox-label">
-                <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff">
-                overlay on/off</label>
-                            <label class="cyberpunk-checkbox-label">
+
     
             </div>
-            
             <div id="tab2" class="tab-content">
                 <div class="containerbox">
                     <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
-                        <span>Leer Tutorial Minecraft</span>
+                        <span class="link link-primary">Leer Tutorial Minecraft</span>
                       </a>
                     <label class="cyberpunk-checkbox-label flex items-center">
-                        <input type="checkbox" class="cyberpunk-checkbox" id="MinecraftLive" checked>
-                        <span class="ml-2">MinecraftLive</span> </label>
-                        <form id="createBotForm" class="grid grid-cols-2 gap-4 max-w-xl mx-4">
-                        <label for="keyBOT" class="justify-self-start">Nombre del Bot:</label>
-                        <input type="text" id="keyBOT" name="keyBOT" value="" required>
-                        <label for="keySERVER" class="justify-self-start">IP del Server:</label>
-                        <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
-                        <div class="grid grid-cols-2 gap-2 w-80 ">
-                          <button type="submit">Conectar Bot</button>
-                          <button id="disconnectButton" class="deleteButton">Desconectar Bot</button>
+                        <input type="checkbox" class="checkbox checkbox-lg" id="MinecraftLive" checked>
+                        <span class="ml-2 hover:text-blue-500">MinecraftLive</span> </label>
+                        <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+                            <label>Tu nombre de Minecraft:</label>
+                            <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
+                                
+                            <label>Comando Inicial de BOT:</label>
+                            <input type="text" id="InitcommandInput" placeholder="login">
+                            </div>
+                        <div class="collapse collapse-arrow bg-base-200 hover:bg-slate-800">
+                            <input type="radio" id="acordiondefaultcheck" name="my-accordion-2" checked="checked" />
+                            <div class="collapse-title text-xl font-medium">Minecraft bot server</div>
+                            <div class="collapse-content">
+                                <form id="createBotForm" class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+                                    <label for="keyBOT" class="justify-self-start">Nombre del Bot:</label>
+                                    <input type="text" id="keyBOT" name="keyBOT" value="" required>
+                                    <label for="keySERVER" class="justify-self-start">IP del Server:</label>
+                                    <input type="text" id="keySERVER" name="keySERVER" value="localhost:25565" required>
+                                    <label for="versionminecraft" class="justify-self-start">Version:</label>
+                                    <input type="text" id="versionminecraft" name="versionminecraft" value="1.20.4">
+                                    <div class="grid grid-cols-2 gap-2 w-120 ">
+                                      <button type="submit" class="custombutton">Conectar Bot</button>
+                                      <button id="disconnectButton" class="deleteButton">Desconectar Bot</button>
+                                      <div id="botStatus"></div>
+                                    </div>
+                                  </form>
+                            </div>
+                          </div>
+                          <div class="collapse collapse-arrow bg-base-200 hover:bg-slate-800">
+                            <input type="radio" id="acordiondefaultnocheck" name="my-accordion-2" />
+                            <div class="collapse-title text-xl font-medium">Minecraft plugin server</div>
+                            <div class="collapse-content">
+                                <h1 class="text-xl font-bold mb-4">ServerTap Plugin Configuration</h1>
+                                
+                            <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+                                <label for="ip" >IP</label>
+                                <input type="text" id="ip" value="127.0.0.1">
+                                <label for="port" >Port</label>
+                                <input type="text" id="port" value="4567">
+                                <label for="password" >Password</label>
+                                <input type="text" id="password" value="change_me">
+                            
+                            </div>
+                            <button class="btn btn-primary" id="testConnection">Connectar</button>
+                            </div>
+                            
                         </div>
-                      </form>
-                </div>
-                <div id="resultMessage"></div>
-                <div class="containerbox">
-                    <h1 class="text-xl font-bold mb-4">ServerTap Plugin Configuration</h1>
-                    <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
-                        <label for="playerName" >Player Name</label>
-                        <input type="text" id="playerName" value="@a">
-                        <label for="ip" >IP</label>
-                        <input type="text" id="ip" value="127.0.0.1">
-                        <label for="port" >Port</label>
-                        <input type="text" id="port" value="4567">
-                        <label for="password" >Password</label>
-                        <input type="password" id="password" class="text-gray-700" value="change_me">
-                    
-                
-                    </div>
-                    <button class="btn btn-primary" id="testConnection">Test Connection</button>
-                </div>
-                <div id="output"></div>
+                    <div id="output"></div>
 
-                <script>
-                    document.getElementById('testConnection').addEventListener('click', function() {
-                        fetch("http://localhost:4567/v1/server", {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'key': 'change_me' // Cambia esto por tu clave de autenticación si es necesario
-                            }
-                        })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok ' + response.statusText);
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            console.log('Server status:', data);
-                            document.getElementById('output').innerText = JSON.stringify(data, null, 2);
-                        })
-                        .catch(error => {
-                            console.error('There has been a problem with your fetch operation:', error);
-                            document.getElementById('output').innerText = 'Error: ' + error.message;
-                        });
-                    });
-                    function wsconsole() {
-                        document.cookie = "x-servertap-key=change_me"; // Cambia esto por tu clave de autenticación si es necesario
-                        let ws = new WebSocket('ws://localhost:4567/v1/ws/console');
-            
-                        ws.onopen = function() {
-                            console.log('Opened connection');
-                            document.getElementById('output').innerText = 'Opened connection';
-                            ws.send('status'); // Envía un comando para obtener el estado del servidor
-                        };
-            
-                        ws.onmessage = function(event) {
-                            console.log('Message from server:', event.data);
-                            document.getElementById('output').innerText = '\n' + event.data.replaceAll('\n', '<br>');
-                        };
-            
-                        ws.onerror = function(error) {
-                            console.log('WebSocket Error:', error);
-                            document.getElementById('output').innerText += '\nWebSocket Error: ' + error.message;
-                        };
-            
-                        ws.onclose = function() {
-                            console.log('Closed connection');
-                            document.getElementById('output').innerText += '\nClosed connection';
-                        };
-                    }
-                </script>
-                <div class="containerbox">
-                <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
-                <label>Tu nombre de Minecraft:</label>
-                <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
-                    
-                <label>Comando Inicial de BOT:</label>
-                <input type="text" id="InitcommandInput" placeholder="login">
-                <label for="eventType" class="text-red-600 font-bold text-4xl"> Test comando:</label><div> 
-                    <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
-                    <label for="data"></label>
-                    <input type="text" id="data" placeholder="Default">
-                    <button id="testHandleevent" >Test comando</button> </div>
+
+                <div id="resultMessage"></div>
+
                 </div>
-                </div>
-                <div class="containerbox"> 
-    
-                    <button onclick="saveAllChanges1()">Guardar Cambios</button>
-                    <input type="checkbox" id="sugerencia" class="sugerencia">
-                    <label for="sugerencia">⁉️ Sugerencias</label>
-                    <div class="sugerencia-content">
-                        reemplaza playername       por  de  TU USUARIO DE MINECRAFT        
-                        <br>
-                        reemplaza uniqueId         por  del USUARIO              
-                        <br>
-                        reemplaza nickname         por  de  NOMBRE DE USUARIO                  
-                        <br>
-                        reemplaza comment          por  del COMENTARIO                   
-                        <br>
-                        reemplaza {milestoneLikes} por  de LOS LIKES                    
-                        <br>
-                        reemplaza {likes}          por  de LIKES             
-                        <br>
-                        reemplaza message          por  de  MENSAJE               
-                        <br>
-                        reemplaza giftName         por  de  LOS REGALOS                 
-                        <br>
-                        reemplaza repeatCount      por  de   REPETICIONES EN GIFT                 
+                
+                <dialog id="my_modal_2" class="modal">
+                    <div class="modal-box">
+                      <h3 class="text-lg font-bold" id="modal-title">Title</h3>
+                      <p class="py-4" id="modal-content">Content</p>
                     </div>
-                    <div>
-                        <div id="chat" class="flex justify-center text-cyan-600 text-4xl">chat</div>
-                        <textarea id="chatcommands" class="mx-8"></textarea>
-                      </div>
-                      <div>
-                        <div id="follow" class="flex justify-center text-cyan-600 text-4xl">follow</div>
-                        <textarea id="followcommands" class="mx-8"></textarea>
-                      </div>
-                      <div>
-                        <div id="likes" class="flex justify-center text-cyan-600 text-4xl">likes</div>
-                        <textarea id="likescommands" class="mx-8"></textarea>
-                      </div>
-                      <div>
-                        <div id="share" class="flex justify-center text-cyan-600 text-4xl">share</div>
-                        <textarea id="sharecommands" class="mx-8"></textarea>
-                      </div>
-                      <div>
-                        <div id="welcome" class="flex justify-center text-cyan-600 text-4xl">welcome</div>
-                        <textarea id="welcomecommands" class="mx-8"></textarea>
-                      </div>
-                      <div>
-                        <div id="envelope" class="flex justify-center text-cyan-600 text-4xl">envelope</div>
-                        <textarea id="envelopecommands" class="mx-8"></textarea>
-                      </div>
-                      <div>
-                        <div id="subscribe" class="flex justify-center text-cyan-600 text-4xl">subscribe</div>
-                        <textarea id="subscribecommands" class="mx-8"></textarea>
-                      </div>
-            </div>
+                    <form method="dialog" class="modal-backdrop bg-transparent">
+                      <button>close</button>
+                    </form>
+                  </dialog>
                 <div class="containerbox">
+
+                    
+                Sugerencias y comandos 
+                <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" class="btn btn-circle btn-ghost btn-xs text-info">
+                    <svg
+                    tabindex="0"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    class="h-4 w-4 stroke-current">
+                    <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div
+                    tabindex="0"
+                    class="card compact dropdown-content bg-base-100 rounded-box z-[1] w-64 shadow">
+                    <div tabindex="0" class="card-body">
+                    <h1>Puedes reemplazar los siguiente por tus valores automaticamente</h1>
+                    Playername       por  tu usuario de Minecraft     
+                    <br>
+                    uniqueId         por  cada USUARIO              
+                    <br>
+                    nickname         por  cada USUARIO                  
+                    <br>
+                    comment          por  COMENTARIO                   
+                    <br>
+                    {milestoneLikes} por  los LIKES                    
+                    <br>
+                    {likes}          por  los LIKES                   
+                    <br>
+                    giftName         por  los REGALOS                 
+                    <br>
+                    repeatCount      por  repeticiones de GIFT      
+                    </div>
+                </div>
+                </div>
+
+
+                    <!-- <input type="checkbox" id="sugerencia" class="sugerencia">
+                    <label for="sugerencia">⁉️ Sugerencias</label>
+
+
+                    <div class="sugerencia-content">
+                        playername       por  de  TU USUARIO DE MINECRAFT        
+                        <br>
+                        uniqueId         por  del USUARIO              
+                        <br>
+                        nickname         por  de  NOMBRE DE USUARIO                  
+                        <br>
+                        comment          por  del COMENTARIO                   
+                        <br>
+                        {milestoneLikes} por  de LOS LIKES                    
+                        <br>
+                        {likes}          por  de LIKES             
+                        <br>
+                        message          por  de  MENSAJE               
+                        <br>
+                        giftName         por  de  LOS REGALOS                 
+                        <br>
+                        repeatCount      por  de   REPETICIONES EN GIFT                 
+                    </div> -->
+                    <details class="collapse bg-blue-950">
+                        <summary class="collapse-title text-xl font-medium">Click Aqui para que puedas editar tus comandos para el chat seguidores cada vez que dan like y comparten
+                            tambien son los comandos por defecto de LIKES GIFT Y CHAT si no se encuentra ningun comando personalizado
+                        </summary>
+                        <div class="collapse-content">
+                            <div>
+                                <div id="gift" class="flex justify-center text-cyan-600 text-4xl">Gift</div>
+                                <textarea id="giftcommands" class="textarea textarea-info mx-6" rows="4"></textarea>
+                              </div>
+                              <div>
+                                <div id="chat" class="flex justify-center text-cyan-600 text-4xl">chat</div>
+                                <textarea id="chatcommands" class="textarea textarea-info mx-6" rows="4"></textarea>
+                              </div>
+                              <div>
+                                <div id="likes" class="flex justify-center text-cyan-600 text-4xl">likes</div>
+                                <textarea id="likescommands" class="textarea textarea-info mx-6" rows="4"></textarea>
+                              </div>
+                              <div>
+                                <div id="follow" class="flex justify-center text-cyan-600 text-4xl">follow</div>
+                                <textarea id="followcommands" class="textarea textarea-info mx-6" rows="4"></textarea>
+                              </div>
+                              <div>
+                                <div id="share" class="flex justify-center text-cyan-600 text-4xl">share</div>
+                                <textarea id="sharecommands" class="textarea textarea-info mx-6" rows="4"></textarea>
+                              </div>
+                              <div>
+                                <div id="welcome" class="flex justify-center text-cyan-600 text-4xl">welcome</div>
+                                <textarea id="welcomecommands" class="textarea textarea-info mx-6" rows="4"></textarea>
+                              </div>
+                              <div>
+                                <div id="envelope" class="flex justify-center text-cyan-600 text-4xl">envelope</div>
+                                <textarea id="envelopecommands" class="textarea textarea-info mx-6" rows="4"></textarea>
+                              </div>
+                              <div>
+                                <div id="subscribe" class="flex justify-center text-cyan-600 text-4xl">subscribe</div>
+                                <textarea id="subscribecommands" class="textarea textarea-info mx-6" rows="4"></textarea>
+                              </div>
+                              <div class="tooltip tooltip-right tooltip-info" data-tip="guarda todos los cambios con Guardar Cambios">
+                                <button class="btn">No olvides ??</button>
+                                <button class="custombutton" id="saveAllChanges">Guardar Cambios</button>
+                              </div>
+                              
+                      
+                    </div>
+                   
+                      </details>
+
+
                     <div class="flex justify-center relative text-cyan-600 text-4xl">gift</div>
                       <div id="eventsContainer"></div>
-                      <h1>Añadir eventos de minecraft Gift List</h1>
-                      <select id="gifts-title" >
-                      <textarea id="gifts-description" placeholder="comandos de minecraft"></textarea>
-                      <button id="addgift-button">Add Gift</button>
-                      <ul id="gifts-list"></ul>
-                        
+                      <h1 class="text-2xl font-bold mb-4">Añadir eventos de minecraft Gift List</h1>
+                      <select id="gift-title" class="select select-info w-full"></select>
+                      <textarea id="gift-description" class="textarea textarea-info w-full" placeholder="comandos de minecraft"></textarea>
+                      <button id="addgift-button" class="custombutton bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300">Add Gift</button>
+                      <div class="collapse bg-base-200">
+                        <input type="radio" name="my-accordion-commandos" checked="checked" />
+                        <div class="collapse-title text-xl font-medium">Click ver y editar gift-list</div>
+                        <div class="collapse-content">
+                            <ul id="gift-list" class="mt-4 list-disc pl-5"></ul>
+                        </div>
                       </div>
+
+
+                      <h1 class="text-2xl font-bold mt-8 mb-4">Chat List</h1>
+                      <input type="text" id="chat-title" class="input input-bordered w-full" placeholder="chat Title">
+                      <textarea id="chat-description" class="textarea textarea-info w-full" placeholder="Comment Description"></textarea>
+                      <button id="addchat-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300">Add Chat</button>
+                      <div class="collapse bg-base-200">
+                        <input type="radio" name="my-accordion-commandos" />
+                        <div class="collapse-title text-xl font-medium">Click ver y editar chat-list</div>
+                        <div class="collapse-content">
+                            <ul id="chat-list" class="mt-4 list-disc pl-5"></ul>
+
+                        </div>
+                      </div>
+                      <h1 class="text-2xl font-bold mt-8 mb-4">Likes List</h1>
+                      <input type="number" id="likes-title" class="input input-bordered w-full" placeholder="likes Title">
+                      <textarea id="likes-description" class="textarea textarea-info w-full" placeholder="likes Description"></textarea>
+                      <button id="addlikes-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300">Add Likes</button>
+                      
+                      <div class="collapse bg-base-200">
+                        <input type="radio" name="my-accordion-commandos" />
+                        <div class="collapse-title text-xl font-medium">Click ver y editar likes-list</div>
+                        <div class="collapse-content">
+                            <ul id="likes-list" class="mt-4 list-disc pl-5"></ul>
+                        </div>
+                      </div>
+                      <h2>Aqui puedes agregar comandos de eventos de minecraft con un solo texto</h2>
+
+                      <div class="collapse bg-blue-950">
+                        <input type="radio" name="my-accordion-commandos" />
+                        <div class="collapse-title text-xl font-medium">Parsero de comandos</div>
+                        <div class="collapse-content">
+                            <input type="text" id="event-store-name" class="input input-bordered w-full" placeholder="titulo">
+                            <textarea id="event-data" class="textarea textarea-info w-full" placeholder="Pega aquí los comandos"></textarea>
+                            <button class="btn btn-primary mt-4" id="add-event-button">Añadir comandos</button>
+                        </div>
+                      </div>
+
+                      <label for="eventType" class="text-red-600 font-bold text-4xl"> Test comando:</label><div> 
+                        <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
+                        <label for="data"></label>
+                        <input type="text" id="data" placeholder="Default">
+                        <button class="custombutton" id="testHandleevent" >Test comando</button>
+                    <div id="lastcomandsended"></div> 
+                      </div>
+                      <div class="container mx-auto p-4">
+                        <h1 class="text-2xl font-bold mb-4">Generador de Comandos de Minecraft</h1>
+                        
+                        <div class="form-group mb-4">
+                            <label for="playerName" class="block font-semibold">Nombre del Jugador:</label>
+                            <input type="text" id="playerName" class="border p-2 w-full" placeholder="Introduce tu nombre">
+                        </div>
+                        
+                        <div class="form-group mb-4">
+                            <label for="action" class="block font-semibold">Acción:</label>
+                            <select id="action" class="border p-2 w-full">
+                                <option value="summon">Summon</option>
+                                <option value="give">Give</option>
+                                <option value="title">Title</option>
+                                <option value="subtitle">Subtitle</option>
+                                <option value="tellraw">Tellraw</option>
+                                <option value="actionbar">Actionbar</option>
+                                <option value="setblock">setblock</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group mb-4" id="mobTypeGroup">
+                            <label for="mobType" class="block font-semibold">Tipo de Mob:</label>
+                            <select id="mobType" class="border p-2 w-full"></select>
+                        </div>
+                        
+                        <div class="form-group mb-4" id="mobOptionsGroup" style="display: none;">
+                            <label for="mobOptions" class="block font-semibold">Opciones de Mob:</label>
+                            <input type="text" id="mobOptions" class="border p-2 w-full" placeholder="key:value,key:value">
+                        </div>
+                        
+                        <div class="form-group mb-4" id="itemTypeGroup" style="display: none;">
+                            <label for="itemType" class="block font-semibold">Tipo de Item:</label>
+                            <select id="itemType" class="border p-2 w-full"></select>
+                        </div>
+                        
+                        <div class="form-group mb-4" id="setblockGroup" style="display: none;">
+                            <label for="setblock" class="block font-semibold">Tipo de Item:</label>
+                            <select id="setblock" class="border p-2 w-full"></select>
+                        </div>
+                
+                        <div class="form-group mb-4" id="messageGroup" style="display: none;">
+                            <label for="message" class="block font-semibold">Mensaje:</label>
+                            <input type="text" id="message" class="border p-2 w-full" placeholder="Introduce tu mensaje">
+                        </div>
+                        
+                        <div class="form-group mb-4" id="messageOptionsGroup" style="display: none;">
+                            <label for="messageOptions" class="block font-semibold">Opciones de Mensaje:</label>
+                            <input type="text" id="messageOptions" class="border p-2 w-full" placeholder="key:value,key:value">
+                        </div>
+                        
+                        <button id="generateCommand" class="btn btn-primary">Generar Comando</button>
+                        
+                        <div id="outputcommand" class="mt-4"></div>
+                    </div>
+                    <div id="mine_content"></div>
             </div>
+            </div>
+            <div id="tab3" class="tab-content">
+                <div class="containerbox">
+                <label class="cyberpunk-checkbox-label">
+                    <input class="cyberpunk-checkbox"  id="sendsoundCheckbox" type="checkbox" checked>
+        
+                    <div class="checkmark">Sonidos</div>
+            </label>
+            <div class="container mx-auto p-4">
+                <h1 class="text-2xl font-bold mb-4">Audio Table</h1>
+                <label for="addButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add New Event</label>
+                <input type="checkbox" id="addButton" class="hidden">
+                <div class="modal-fade" id="audioModal" tabindex="-1" role="dialog" aria-labelledby="audioModalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header bg-gray-900 text-white">
+                                <h5 class="modal-title" id="audioModalLabel">Select Audio from MyInstants</h5>
+                                <button type="button" class="deleteButton" data-dismiss="modal" aria-label="Close">
+                                </button>
+                            </div>
+                            <div class="modal-body bg-gray-900 text-white">
+                                <!-- Search bar -->
+                                <input type="text" id="searchBox" class="form-control mb-4" placeholder="Search for audio...">
+                                <button id="searchButton" class="btn btn-primary">Search</button>
+                                <!-- Audio list will be displayed here -->
+                                <div id="audioList"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="testButton" class="custombutton" type="button">Test</button>
+                <input type="text" id="test-event" class="py-1 px-2 rounded-sm">    
+                
+                <table class="table-auto w-full mt-4 border">
+                <thead>
+                    <tr>
+                    <th>Action</th>
+                    <th>Volume</th>
+                    <th>Enable</th>
+                    <th>Event Name</th>
+                    <th>Sound Effect</th>
+                    <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="audioTableBody">
+                    <!-- Table rows will be added here -->
+                </tbody>
+                </table>
+            </div>
+            <!-- Modal for selecting audio -->
             <script>
-                // hacemos que 30 segundos despues de estar checked sugerencia se desaparece desmarcando la casilla existen vario
-                // hay varios elementos con esta clase y se hara para todos de ellos
-                document.querySelector('.sugerencia').addEventListener('change', function() {
-                    setTimeout(function() {
-                        document.querySelectorAll('.sugerencia').forEach(function(element) {
-                            element.checked = false;
-                        });
-                    }, 30000);
-                });
-            </script>
-        <div id="tab3" class="tab-content">
-            <div class="containerbox">
-            <label class="cyberpunk-checkbox-label">
-                <input class="cyberpunk-checkbox"  id="sendsoundCheckbox" type="checkbox" checked>
-    
-                <div class="checkmark">Sonidos</div>
-        </label>
-        <div class="container mx-auto p-4">
-            <h1 class="text-2xl font-bold mb-4">Audio Table</h1>
-            <label for="addButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add New Event</label>
-            <input type="checkbox" id="addButton" class="hidden">
-            <div class="modal-fade" id="audioModal" tabindex="-1" role="dialog" aria-labelledby="audioModalLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header bg-gray-900 text-white">
-                            <h5 class="modal-title" id="audioModalLabel">Select Audio from MyInstants</h5>
-                            <button type="button" class="deleteButton" data-dismiss="modal" aria-label="Close">
-                            </button>
-                        </div>
-                        <div class="modal-body bg-gray-900 text-white">
-                            <!-- Search bar -->
-                            <input type="text" id="searchBox" class="form-control mb-4" placeholder="Search for audio...">
-                            <button id="searchButton" class="btn btn-primary">Search</button>
-                            <!-- Audio list will be displayed here -->
-                            <div id="audioList"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <button id="testButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded-sm">Test</button>
-            <input type="text" id="test-event" class="py-1 px-2 rounded-sm">    
-            <table class="table-auto w-full mt-4 border">
-              <thead>
-                <tr>
-                  <th>Action</th>
-                  <th>Volume</th>
-                  <th>Enable</th>
-                  <th>Event Name</th>
-                  <th>Sound Effect</th>
-                  <th>Delete</th>
-                </tr>
-              </thead>
-              <tbody id="audioTableBody">
-                <!-- Table rows will be added here -->
-              </tbody>
-            </table>
-          </div>
-          <!-- Modal for selecting audio -->
-          <script>
-            document.addEventListener('click', function(event) {
-                const modal = document.querySelector('.modal-fade');
-                const addButton = document.getElementById('addButton');
-                
-                // Si el modal está visible y se hace clic fuera del contenido del modal, ocúltalo
-                if (addButton.checked && !modal.contains(event.target) && event.target !== addButton) {
-                    addButton.checked = false;
-                }
-            });
-            
-          </script>
-        </div>
-        </div>
-        <div id="tab4" class="tab-content">
-            <div class="containerbox">       
-                <div class="center-element">arrastre elementos aquí</div>
-         
-                <div class="file-container " id="drop-area">
-                    <ul id="file-list"> </ul>
-                </div>
+                document.addEventListener('click', function(event) {
+                    const modal = document.querySelector('.modal-fade');
+                    const addButton = document.getElementById('addButton');
                     
-                </div>
+                    // Si el modal está visible y se hace clic fuera del contenido del modal, ocúltalo
+                    if (addButton.checked && !modal.contains(event.target) && event.target !== addButton) {
+                        addButton.checked = false;
+                    }
+                });
                 
-            <div class="containerbox">
-                    <div id="tab5-action"></div>
-                    <button id="openaction" class="button-center">Añadir Accion&Eeventos</button>
-                    <button id="closeaction" class="deleteButton">Cerrar</button>
-                    <div id="loadrowactionsevents"></div>
-                    <div>
-                        <input type="text" id="action-name" placeholder="action name">
-                        <button id="testactionevent" class="btn btn-primary">test</button>
+            </script>
+            </div>
+            </div>
+            <div id="tab4" class="tab-content">
+                <div class="containerbox">       
+                    <div class="center-element">arrastre elementos aquí</div>
+            
+                    <div class="file-container " id="drop-area">
+                        <ul id="file-list"> </ul>
                     </div>
-    
-            </div>
-            <div class="containerbox">
-                <div class="modalhtml"></div>
+                        
+                    </div>
+                    
+                <div class="containerbox">
+                        <div id="tab5-action"></div>
+                        <button id="openaction" class="custombutton button-center">Añadir Accion&Eeventos</button>
+                        <button id="closeaction" class="deleteButton">Cerrar</button>
+                        <div id="loadrowactionsevents"></div>
+                        <div>
+                            <input type="text" id="action-name" placeholder="action name">
+                            <button id="testactionevent" class="btn btn-primary">test</button>
+                        </div>
         
-                <button id="open" style="display: none;">open</button>
-                <button id="close" style="display: none;">close</button>
-                
-                <div class="inputFields">
-                    <input id="channel" type="text" placeholder="Twitch channel" ><button id="channel-button" class="btn btn-primary" value="GOOO" type="button">GOOO</button>
                 </div>
-                <div id="chatbox"></div>
-                </div>
-        </div>
-    
-        
-        <div id="tab5" class="tab-content">
-            <div id="giftContainer" class="gift-container">
-                <!-- Aquí se agregarán dinámicamente los cuadros de regalo -->
+                <div class="containerbox">
+                    <div class="modalhtml"></div>
+            
+                    <button id="open" style="display: none;">open</button>
+                    <button id="close" style="display: none;">close</button>
+                    
+                    <div class="inputFields">
+                        <input id="channel" type="text" placeholder="Twitch channel" ><button id="channel-button" value="GOOO" type="button" class="btn btn-primary">GOOO</button>
+                    </div>
+                    <div id="chatbox"></div>
+                    </div>
             </div>
-            <div id="downloadButtonContainer"></div>
-    
+            <div id="tab5" class="tab-content">
+                <div id="giftContainer" class="gift-container">
+                    <!-- Aquí se agregarán dinámicamente los cuadros de regalo -->
+                </div>
+                <div id="downloadButtonContainer"></div>
+        
+            </div>
+            <div id="tab6" class="tab-content">
+                <div class="containerbox">
+                    <label for="importButton" class="custom-file-upload">subir⚙</label>
+                    <input type="file" id="importButton" style="display:none">
+                    <button class="custombutton" onclick="importSettings()">Importar⚙</button>
+                    <button class="custombutton" id="exportButton" onclick="exportSettings()">Exportar⚙</button>
+                    <span id="loadingIndicator" style="display: none;">Cargando...</span>
+                    <button id="exportDB">Exportar Base de Datos</button>
+                <input type="file" id="importDB" style="display: none;">
+                <button id="importDBButton">Importar Base de Datos</button>
+                </div>
+                <div class="containerbox">
+                    <h1>YT Music Search</h1>
+                    <div id="search-container">
+                        <input type="text" id="searchInput" placeholder="Search for songs...">
+                        <button id="searchButtonYT">Search</button>
+                    </div>
+                    
+                    <div id="ytmusic-container"></div>
+                    <div id="player-container"></div>
+                    <button id="skipButton" class="btn btn-secondary">Skip</button>
+                    <div id="playlist-container"></div>
+                </div>
+                <div class="containerbox">
+                    <label class="cyberpunk-checkbox-label">
+                        <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
+                        mixitupAlerts
+                    </label>
+                    <div class="flexbox">
+                        <h3>Testing handle events</h3>
+                        <select name="testselectevent" id="testselectevent"></select>
+                        <select name="testselectfunction" id="testselectfunction"></select>
+                        <button class="custombutton" id="testHandleeventselect" >Test comando</button>
+                    </div>
+                    <script>
+                        const events = [
+                            "gift",
+                            "chat",
+                            "likes",
+                            "share",
+                            "welcome",
+                            "envelope",
+                            "subscribe"
+                        ]
+                        const testfunctionselect = [
+                            "minecraftlive",
+                            "leerMensajes",
+                            "eventmanager"
+                        ]
+                        function testEventypeappend() {
+                            const selecttestevent = document.getElementById('testselectevent');
+                            const selecttestfunction = document.getElementById('testselectfunction');
+                            selecttestevent.innerHTML = '';
+                            selecttestfunction.innerHTML = '';
+                            events.forEach(event => {
+                                const option = document.createElement('option');
+                                option.text = event;
+                                option.value = event;
+                                selecttestevent.appendChild(option);
+                            });
+                            testfunctionselect.forEach(functions => {
+                                const option = document.createElement('option');
+                                option.text = functions;
+                                option.value = functions;
+                                selecttestfunction.appendChild(option);
+                            });
+                        }
+                        testEventypeappend();
+                    </script>
+                </div>
+
+            </div>
         </div>
-        <div id="tab6" class="tab-content">
-            <div class="containerbox">
-                <label for="importButton" class="custom-file-upload">subir⚙</label>
-                <input type="file" id="importButton" style="display:none">
-                <button onclick="importSettings()">Importar⚙</button>
-                <button id="exportButton" onclick="exportSettings()">Exportar⚙</button>
-                <span id="loadingIndicator" style="display: none;">Cargando...</span>
+        <div class="divfooter">
+            <div id="roomStats"></div>    
+            <audio id="audio" controls autoplay>
+            </audio>
+            <audio id="soundPlayer" type="audio/mp3"></audio>
+            <input id="skip-button" type="button" class="btn btn-primary" value="SKIP"> </button>
+
+            <div id="durationDisplay"></div>
         </div>
-
-    </div>    
     </div>
-    </div>
-    <div class="divfooter">
 
-        <div id="roomStats"></div>    
-        <audio id="audio" controls autoplay>
-        </audio>
-        <audio id="audio" autoplay></audio>
-        <audio id="soundPlayer" type="audio/mp3"></audio>
-        <input id="skip-button" type="button" value="SKIP"> </button>
-
-        <div id="durationDisplay"></div>
-    </div>
         <!-- Contenido de las pestañas -->
 
     <script>
+
         document.addEventListener('DOMContentLoaded', () => {
-          const tabs = document.querySelectorAll('.tab');
+          const tabs = document.querySelectorAll('.tabs');
           const tabContents = document.querySelectorAll('.tab-content');
-          const indicator = document.querySelector('.indicator');
       
           function activateTab(tab) {
               const tabId = tab.getAttribute('data-tab');
@@ -623,12 +830,6 @@ meta
               // Activate the selected tab and content
               tab.classList.add('active');
               content.classList.add('active');
-              //console.log(tab.offsetLeft, tab.offsetWidth, tab.offsetHeight, tab.offsetTop)
-
-              // Update indicator position and width
-              indicator.style.top = `${tab.offsetTop}px`;
-              indicator.style.width = `3px`;
-              indicator.style.height = `${tab.offsetHeight}px`;
       
               // Store the last active tab in localStorage
               localStorage.setItem('activeTab', tabId);
@@ -642,7 +843,7 @@ meta
           // Check for the last active tab in localStorage
           const lastActiveTab = localStorage.getItem('activeTab');
           if (lastActiveTab) {
-              const tab = document.querySelector(`.tab[data-tab="${lastActiveTab}"]`);
+              const tab = document.querySelector(`.tabs[data-tab="${lastActiveTab}"]`);
               if (tab) {
                   activateTab(tab);
               } else {

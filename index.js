@@ -3,40 +3,108 @@ const path = require('path');
 const url = require('url');
 const Store = require('electron-store');
 const { TikTokConnectionWrapper, getGlobalConnectionCount } = require('./connectionWrapper');
+const YTMusic = require("ytmusic-api");
 const routes = require('./routes');
 const mineflayer = require('mineflayer');
+const AutoAuth = require('mineflayer-auto-auth');
 const fileHandler = require('./fileHandler');
 const socketHandler = require('./socketHandler');
+const { RCONClient } = require('@minecraft-js/rcon');
+
+class MinecraftRCON {
+  constructor(host, password, port) {
+      this.host = host;
+      this.password = password;
+      this.port = port;
+      this.client = new RCONClient(host, password, port);
+      this.connected = false; // Variable para rastrear el estado de la conexión
+  }
+
+  async connect() {
+      try {
+          await this.client.connect();
+          this.connected = true;
+          console.log(`Connected to RCON server at ${this.host}:${this.port}`);
+      } catch (error) {
+          this.connected = false;
+          console.error('Error connecting to RCON:', error);
+          throw error;
+      }
+  }
+
+  async executeCommand(command) {
+      if (!this.connected) {
+          throw new Error('Not connected to RCON server');
+      }
+      return await this.client.executeCommand(command);
+  }
+
+  disconnect() {
+      this.client.disconnect();
+      this.connected = false;
+      console.log('Disconnected from RCON server');
+  }
+
+  setupListeners() {
+      this.client.on('authenticated', () => {
+          this.connected = true;
+          console.log('Authenticated with RCON');
+          // Puedes ejecutar comandos aquí después de la autenticación
+          this.executeCommand('say Hello from RCON!');
+      });
+
+      this.client.on('error', (err) => {
+          this.connected = false;
+          console.error('RCON Error:', err);
+          // Maneja los errores de conexión o ejecución de comandos
+      });
+
+      this.client.on('response', (requestId, packet) => {
+          console.log('Response from server:', packet);
+          // Maneja las respuestas del servidor aquí
+      });
+
+      this.client.on('end', () => {
+          this.connected = false;
+          console.log('RCON connection ended');
+      });
+  }
+
+  isConnected() {
+    if (this.connected) {
+      return {
+        success: true,
+        status: 'Bot is created and ready',
+        reconnectAttempts: this.reconnectAttempts,
+        maxReconnectAttempts: this.maxReconnectAttempts
+      };
+    } else {
+      return { success: false, error: 'Bot not created' };
+    }
+      
+  }
+}
+
 const updateHandler = require('./updateHandler');
 const WebSocket = require('ws');
 let ws = null;
 const store = new Store(); 
 let port = process.env.PORT || 8081;
-// ws = new WebSocket('ws://localhost:4567/v1/ws/console', {
-//   headers: {
-//       'Cookie': `x-servertap-key=change_me`  // Aquí pasas la clave como un encabezado personalizado
-//   }
-// });
-// ws.on('open', function open() {
-//   console.log('WebSocket connection opened. Sending default command to server.');
-//   ws.send('/say hello');
-// });
-// ws.on('error', function error(err) {
-//   console.error('WebSocket Error: ', err);
-// });
-// ws.on('close', function close() {
-//   console.log('WebSocket closed. Reconnecting...');
-// });
-// function sendtows(message) {
-//   ws.send(message);
-// }
-// setInterval(() => {
-//   sendtows('/say hello');
-// }, 10000);
-// require('electron-reload')(__dirname, {
-//   electron: path.join(__dirname, 'node_modules', '.bin', 'electron'),
-//   hardResetMethod: 'exit'
-// });
+(async () => {
+  const ytmusic = new YTMusic();
+  await ytmusic.initialize(/* Optional: Custom cookies */);
+
+  ipcMain.handle('search-song', async (event, query) => {
+      try {
+          const songs = await ytmusic.search(query);
+          return songs;
+      } catch (err) {
+          console.error('Error:', err);
+          throw err;
+      }
+  });
+})();
+
 // Evento emitido cuando Electron ha terminado de inicializarse
 let mainWindow;
 
@@ -66,7 +134,7 @@ function createWindow() {
   // establecer cookies para mainWindow con webContents
   mainWindow.loadURL(`http://localhost:${port}/index.html`);
 }
-
+app.disableHardwareAcceleration()
 app.on('ready', () => {
   protocol.registerFileProtocol('custom', (request, callback) => {
     const filePath = request.url.replace('custom://', '');
@@ -113,7 +181,6 @@ app.on('ready', () => {
     app.quit();
   });
 
-  mainWindow.webContents.setFrameRate(60)
   mainWindow.on('focus', () => {
     globalShortcut.register('Alt+F1', ToolDev);
     globalShortcut.register('Alt+F2', cdevTool);
@@ -256,7 +323,7 @@ ipcMain.handle('create-overlay-window', () => {
               preload: path.join(__dirname, 'preload.js')
           }
       });
-
+      overlayWindow.webContents.setFrameRate(60)
       overlayWindow.loadFile('public/overlay.html');
 
       overlayWindow.on('closed', () => {
@@ -291,32 +358,170 @@ ipcMain.handle('send-overlay-data', (_, { eventType, data, options }) => {
       return { success: false, error: 'Overlay window not created yet' };
   }
 });
-let bot;
-ipcMain.handle('create-bot', (event, options) => {
-bot = mineflayer.createBot(options);
-bot.on('login', () => {
-    console.log('Bot logged in');
-    event.sender.send('bot-event', 'login');
-});
-bot.on('chat', (username, message) => {
-    console.log(`${username}: ${message}`);
-    event.sender.send('bot-event', 'chat', { username, message });
-});
-bot.on('end', () => {
-    console.log('Bot disconnected');
-    event.sender.send('bot-event', 'end');
-});
-// Añade más eventos y métodos según sea necesario
-return { success: true };
+class BotManager {
+  constructor() {
+    this.bot = null;
+    this.reconnectAttempts = 0;
+    this.maxReconnectAttempts = 3;
+  }
+
+  createBot(event, options, keyLOGIN) {
+    if (!keyLOGIN) {
+      console.error('keyLOGIN is undefined or null');
+      event.sender.send('bot-event', 'error', { message: 'keyLOGIN is undefined or null' });
+      return;
+    }
+
+    if (keyLOGIN) {
+      keyLOGIN = keyLOGIN.replace('/login ', '').replace('/register ', '');
+      console.log("createBot with keyLOGIN:", keyLOGIN);
+      options.plugins = [AutoAuth];
+      options.AutoAuth = {
+        logging: true,
+        password: keyLOGIN, // Use keyLOGIN as password if it starts with '/'
+        ignoreRepeat: true
+      };
+    }
+
+    this.bot = mineflayer.createBot(options);
+
+    this.bot.on('login', () => {
+      console.log('Bot logged in');
+      event.sender.send('bot-event', 'login');
+      this.reconnectAttempts = 0; // Reset reconnect attempts on successful login
+      // Si el comando inicial empieza con '/', enviar mensaje de chat
+      if (keyLOGIN.startsWith('/')) {
+        this.sendMessage(keyLOGIN);
+      }
+    });
+
+    this.bot.on('chat', (username, message) => {
+      console.log(`${username}: ${message}`);
+      event.sender.send('bot-event', 'chat', { username, message });
+    });
+
+    this.bot.on('end', () => {
+      console.log('Bot disconnected');
+      event.sender.send('bot-event', 'end');
+      this.handleReconnect(event, options, keyLOGIN);
+    });
+
+    this.bot.on('error', (error) => {
+      console.error('Bot error:', error);
+      this.handleReconnect(event, options, keyLOGIN);
+    });
+
+    this.bot.on('serverAuth', () => {
+      console.log('Bot authenticated');
+      event.sender.send('bot-event', 'authenticated');
+    });
+
+    // Agregar manejo de errores para el evento de respawn
+    this.bot.on('respawn', () => {
+      try {
+        // Verificar que el bot y su mundo estén definidos
+        if (this.bot && this.bot.world && this.bot.world.overworld) {
+          handleRespawnPacketData(this.bot); // Asegúrate de que esta función está bien definida
+        } else {
+          console.error('Bot world or overworld is undefined');
+        }
+      } catch (error) {
+        console.error('Error handling respawn:', error);
+      }
+    });
+  }
+
+  handleReconnect(event, options, keyLOGIN) {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      console.log(`Reconnection attempt ${this.reconnectAttempts}`);
+      setTimeout(() => {
+        this.createBot(event, options, keyLOGIN); // Attempt to reconnect
+      }, 1000); // Delay before reconnecting
+    } else {
+      console.log('Max reconnection attempts reached');
+      event.sender.send('bot-event', 'reconnection-failed');
+    }
+  }
+
+  sendMessage(message) {
+    if (this.bot && this.bot.chat) {
+      this.bot.chat(message);
+      return { success: true };
+    } else {
+      return { success: false, error: 'Bot not created or not ready' };
+    }
+  }
+
+  getStatus() {
+    if (this.bot) {
+      return {
+        success: true,
+        status: 'Bot is created and ready',
+        reconnectAttempts: this.reconnectAttempts,
+        maxReconnectAttempts: this.maxReconnectAttempts
+      };
+    } else {
+      return { success: false, error: 'Bot not created' };
+    }
+  }
+
+  on(event, callback) {
+    if (this.bot) {
+      this.bot.on(event, callback);
+    }
+  }
+
+  end() {
+    if (this.bot) {
+      this.bot.end();
+    }
+  }
+
+  quit() {
+    if (this.bot) {
+      this.bot.quit();
+    }
+  }
+}
+
+const botManager = new BotManager();
+const rcon = new MinecraftRCON('209.222.98.146', 'hello', 25795);
+
+
+ipcMain.handle('create-bot', (event, options, keyLOGIN) => {
+  console.log("createbot", event, options, keyLOGIN); // Asegúrate de que keyLOGIN se imprime aquí
+  // botManager.createBot(event, options, keyLOGIN);
+  rcon.connect();
+  rcon.setupListeners();
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      // if (botManager.bot && botManager.bot.chat) {
+      //   resolve({ success: true });
+      // } else {
+      //   resolve({ success: true, error: 'Bot not created' });
+      // }
+      if (rcon.isConnected()) {
+        resolve({ success: true });
+      } else {
+        resolve({ success: false, error: 'Bot not created' });
+      }
+    }, 1000);
+  });
 });
 
 ipcMain.handle('send-chat-message', (event, message) => {
-if (bot) {
-    bot.chat(message);
-    return { success: true };
-}
-return { success: false, error: 'Bot not created' };
+  const command = message.replace(/^\/?/, '');
+  rcon.executeCommand(command);
+
+  return botManager.sendMessage(message);
 });
+
+ipcMain.handle('bot-status', () => {
+  return rcon.isConnected();
+  // return botManager.getStatus();
+});
+
 let oscClient2;
 ipcMain.handle('create-client-osc', () => {
 const defaultClientPort = 9000;
@@ -343,4 +548,9 @@ if (oscClient2) {
   return { success: true };
 }
 return { success: false, error: 'OSC Client not created' };
+});
+ipcMain.handle('update', (event, message) => {
+  console.log('update', message);
+  updateHandler.checkForUpdatesManually(); // Llamar a la función para verificar actualizaciones manualmente
+  return { success: true };
 });

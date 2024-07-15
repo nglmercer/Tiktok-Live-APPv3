@@ -18,34 +18,6 @@ function sendChatMessage(text) {
     client.send('/chatbox/input', text, true);
   }
 router.post('/receive', (req, res) => {
-    const { replacedCommand } = req.body;
-    if (!bot) {
-      console.log("No hay bot para enviar el comando",bot);
-      res.json({ message: 'No hay bot para enviar el comando' });
-    }
-    // Calcular el retraso base en base al número de comandos
-    const additionalDelay = Math.floor(commandCount / COMMAND_LIMIT) * DELAY_PER_COMMAND;
-
-    // Inicializar el retraso
-    let delay = 0;
-
-    // Verificar si replacedCommand es un número
-    if (!isNaN(replacedCommand)) {
-        delay = parseInt(replacedCommand) + 20;
-    } else {
-        delay = additionalDelay;
-    }
-    console.log(`commandCount: ${replacedCommand},`);
-    // Aplicar el retraso
-    setTimeout(() => {
-      if (botStatus && bot) {
-        bot.chat(replacedCommand);
-      }
-    }, delay);
-    res.json({ message: 'Datos recibidos' });
-    // Incrementar el contador de comandos después de haber asignado el retraso
-    commandCount++;
-    
     //console.log(`Comando recibido. Retraso adicional: ${additionalDelay}ms`);
   });
 
@@ -99,37 +71,8 @@ router.post('/receive', (req, res) => {
   
     res.json({ message: 'Datos recibidos receive1' });
   });
-  router.get('/send1', (req, res) => {
-    const { eventType, data } = req.body;
-  
-    switch (eventType) {
-      case 'chat':
-
-        break;
-      case 'gift':
-
-        break;
-      case 'social':
-
-        break;
-      case 'streamEnd':
-        break;
-      default:
-        console.log(`Evento desconocido: ${eventType}`);
-    }
-  
-    res.json();
-  });
-
   router.post('/api/disconnect', (req, res) => {
     const { eventType } = req.body;
     console.log(eventType);
-    if (eventType === 'disconnectBot') {
-      removeBot();
-      disconnect = true;
-      res.json({ message: 'Bot desconectado' });
-    } else {
-      res.json({ message: 'Datos recibidos' });
-    }
   });
 module.exports = router;

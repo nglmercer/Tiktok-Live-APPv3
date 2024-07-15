@@ -247,50 +247,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Dirección del servidor:', serverAddress);
         console.log('Puerto del servidor:', serverPort);
     });
-    const uniqueIdInput = document.getElementById('uniqueIdInput');
-    const connectButton = document.getElementById('connectButton');
 
-    // Load the last entered value from localStorage
-    const uniqueId = localStorage.getItem('uniqueId');
-    if (uniqueId) {
-        uniqueIdInput.value = uniqueId;
-    }
-
-    if (connectButton) {
-        connectButton.addEventListener('click', () => {
-            const currentValue = uniqueIdInput.value;
-            if (currentValue) {
-                // Store the current value in localStorage
-                localStorage.setItem('uniqueId', currentValue);
-            }
-        });
-    }
-
-    const filterWordsInput = document.getElementById('filter-words');
-    setupLocalStorage(filterWordsInput, 'lastFilterWords');
-    filterWordsInput.addEventListener('change', function(event) {
-        const currentValue = filterWordsInput.value;
-        if (currentValue) {
-            localStorage.setItem('lastFilterWords', currentValue);
-        }
-        console.log('Valor actualizado:', currentValue);
-    });
-    const filterUsersInput = document.getElementById('filter-users');
-    setupLocalStorage(filterUsersInput, 'lastfilterUsers');
     const userpointsInput = document.getElementById('users-points');
     setupLocalStorage(userpointsInput, 'userpoints');
-    // Cargar el comando inicial guardado
-    const initCommandInput = document.getElementById('InitcommandInput');
-    setupLocalStorage(document.getElementById('InitcommandInput'), 'Initcommand');
-    setupLocalStorage(document.getElementById('playerNameInput'), 'playerName');
-    
-    // Cargar el nombre del jugador guardado
-    const playerNameInput = document.getElementById('playerNameInput');
-    
+
     document.getElementById('saveAllChanges').addEventListener('click', saveAllChanges1);
 
 });
 function saveAllChanges1() {
+                    
     const commandjsonlist = {};
     
     const types = ['chat', 'follow', 'likes', 'share', 'welcome', 'envelope', 'subscribe', 'gift'];
@@ -299,19 +264,19 @@ function saveAllChanges1() {
       const commands = document.getElementById(`${type}commands`).value.trim();
     
       if (commands !== "") {
-        commandjsonlist[type] = {
-          "default": commands.split('\n')
-        };
+          commandjsonlist[type] = {
+              "default": commands.split('\n')
+          };
       } else {
-        commandjsonlist[type] = {
-          "default": []
-        };
+          commandjsonlist[type] = {
+              "default": []
+          };
       }
     });
     
     localStorage.setItem('commandjsonlist', JSON.stringify(commandjsonlist));
-  
+
     // Muestra los datos guardados en la consola
     console.log('Datos almacenados en el localStorage:');
     console.log(commandjsonlist);
-  }
+    }

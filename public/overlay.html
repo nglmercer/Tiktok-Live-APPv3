@@ -21,15 +21,19 @@
     <div id="container"></div>
     <script>
         const container = document.getElementById('container');
+        let positions = [];
+        let lastxposition = 0;
+        let lastyposition = 0;
+        let currentPositionIndex = 0;
 
-        // Función para generar una posición aleatoria
-        function randomPosition() {
-            const x = Math.floor(Math.random() * (window.innerWidth - 200));
-            const y = Math.floor(Math.random() * (window.innerHeight - 200));
-            return { x, y };
+        // Generar posiciones en una cuadrícula
+        for (let x = 8; x <= 88; x += 4) {
+            for (let y = 8; y <= 88; y += 4) {
+                positions.push({ x, y });
+            }
         }
 
-        // Función para barajar un array
+        // Barajar el array de posiciones
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -38,25 +42,46 @@
             return array;
         }
 
-        // Crear una matriz de posiciones predefinida
-        let positions = [];
-        for (let x = 8; x <= 88; x += 4) {
-            for (let y = 8; y <= 88; y += 4) {
-                positions.push({ x, y });
-            }
-        }
-
-        // Barajar el array de posiciones
         positions = shuffleArray(positions);
 
-        // Función que devuelve una posición aleatoria o una posición proporcionada
+        // Función para obtener la siguiente posición de manera circular
+        function getNextPosition() {
+            const position = positions[currentPositionIndex];
+            currentPositionIndex = (currentPositionIndex + 1) % positions.length;
+            return position;
+        }
+
+        // Función para predecir la siguiente posición sin avanzar el índice
+        function predictNextPosition() {
+            let position = positions[currentPositionIndex];
+            let newY = position.y - 6; // Ajusta el valor de 4 según sea necesario
+            let newX = position.x + 0.2;
+            // Asegúrate de que newY no sea menor que 0
+            if (newY < 0) {
+                newY = 0;
+            }
+            if (newX < 0) {
+                newX = 0;
+            }
+            return { x: newX, y: newY };
+        }
+        
+
+        // Función que devuelve una posición aleatoria o la siguiente posición
         function getPosition(existingPosition = null) {
             if (existingPosition) {
                 return existingPosition;
             }
-            return randomPosition();
+            return getNextPosition();
         }
-
+        function setPosition(element, position) {
+            const { x, y } = position;
+            element.style.left = `${x}%`;
+            element.style.top = `${y}%`;
+            lastyposition = y;
+            lastxposition = x;
+            element.classList.add('overlay');
+        }
         // Función para crear y añadir un video
         function addVideo(data, position, options) {
             if (options.check === false) {
@@ -68,12 +93,11 @@
             video.autoplay = true;
             let duracion = options.duracion * 1000;
             if (duracion <= 1000) {
-                duracion = 5000
+                duracion = 5000;
             }
             const source = document.createElement('source');
             source.src = data.src;
             source.type = 'video/mp4';
-            // volume options.rango entre 100 porque es 50 y volumen de 0 a 1
             video.volume = options.rango / 100;
             video.appendChild(source);
             setPosition(video, position);
@@ -86,11 +110,10 @@
                 container.removeChild(video);
             }, duracion);
             console.log('duracion', duracion);
-
         }
 
         // Función para crear y añadir una imagen
-        function addImage(data, position,options) {
+        function addImage(data, position, options) {
             const img = document.createElement('img');
             let duracion = options.duracion * 1000;
             img.src = data.src;
@@ -98,7 +121,7 @@
             img.style.maxHeight = '200px';
 
             if (duracion <= 1000) {
-                duracion = 5000
+                duracion = 5000;
             }
             setPosition(img, position);
             container.appendChild(img);
@@ -107,42 +130,30 @@
             }, duracion);
             console.log('duracion', duracion);
         }
+
         function addAudio(data, position, options) {
-            // Crear el elemento de audio
             const audio = document.createElement('audio');
             console.log('options', options);
-            // Configurar las propiedades del audio
-            let duracion = options.duracion * 1000; // Duración en milisegundos
-            audio.src = data.src; // Fuente del audio
-            audio.autoplay = true; // Reproducción automática
-            audio.volume = options.rango / 100; // Volumen (de 0 a 1)
-            audio.style.maxWidth = '100%';   // Estilos opcionales
+            let duracion = options.duracion * 1000;
+            audio.src = data.src;
+            audio.autoplay = true;
+            audio.volume = options.rango / 100;
+            audio.style.maxWidth = '100%';
             audio.style.maxHeight = '200px';
             if (duracion <= 1000) {
-                duracion = 5000
-            } // Estilos opcionales
-        
-            // Establecer la posición del audio en el contenedor
+                duracion = 5000;
+            }
             setPosition(audio, position);
-            
-            // Añadir el elemento de audio al contenedor
             container.appendChild(audio);
-        
-            // Remover el audio después de la duración especificada
+
             setTimeout(() => {
                 container.removeChild(audio);
             }, duracion);
             console.log('duracion', duracion);
+        }
 
-        }
-        
         // Función para establecer la posición de un elemento
-        function setPosition(element, position) {
-            const { x, y } = position;
-            element.style.left = `${x}px`;
-            element.style.top = `${y}px`;
-            element.classList.add('overlay');
-        }
+
 
         // Función para manejar mensajes recibidos
         function handleMessage(event) {
@@ -155,13 +166,16 @@
                 let position = getPosition(data.position);
 
                 if (data.src.endsWith('.mp4') || data.fileType.startsWith('video/')) {
-                    addVideo(data, position,data.options);
+                    addVideo(data, position, data.options);
                 } else if (data.src.endsWith('.png') || data.fileType.startsWith('image/')) {
-                    addImage(data, position,data.options);
+                    if (options) {
+                        showUserpicture(data, predictNextPosition(), data.options);
+                        return;
+                    }
+                    addImage(data, position, data.options);
                 } else if (data.src.endsWith('.mp3') || data.fileType.startsWith('audio/')) {
-                    addAudio(data, position,data.options);
-                }
-                else {
+                    addAudio(data, position, data.options);
+                } else {
                     const div = document.createElement('div');
                     div.textContent = 'Unsupported file type';
                     setPosition(div, position);
@@ -173,23 +187,49 @@
                 }
             }
         }
+
+        // Función para crear y añadir una imagen de usuario
         function showUserpicture(data, position, options) {
-            const img = document.createElement('img');
+            if (options.check === false) {
+                return;
+            }
             let duracion = options.duracion * 1000;
+
+            if (duracion <= 1000) {
+                duracion = 5000;
+            }
+            if (options.texto && options.texto.trim() !== '') {
+                const div = document.createElement('div');
+                div.textContent = options.texto;
+                div.style.color = 'white';
+                div.style.fontSize = '1.5rem';
+                div.style.zIndex = '11';
+
+                setPosition(div, position);
+                container.appendChild(div);
+
+                setTimeout(() => {
+                    container.removeChild(div);
+                }, duracion);
+            }
+            const img = document.createElement('img');
             img.src = data.src;
             img.style.maxWidth = '100%';
             img.style.maxHeight = '400px';
 
-            if (duracion <= 1000) {
-                duracion = 5000
-            }
             setPosition(img, position);
+            img.style.position = 'absolute';
+            img.style.zIndex = '10';
+            img.classList.add('overlay');
             container.appendChild(img);
+
             setTimeout(() => {
                 container.removeChild(img);
             }, duracion);
+
             console.log('duracion', duracion);
         }
+
         window.api.onShowMessage((event, message) => {
             console.log(message);
         });

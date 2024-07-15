@@ -15,18 +15,21 @@ const api = {
     createOverlayWindow: async () => {
         return await ipcRenderer.invoke('create-overlay-window');
     },
-    sendOverlayData: async (eventType, data) => {
-        return await ipcRenderer.invoke('send-overlay-data', { eventType, data });
+    sendOverlayData: async (eventType, data, options) => {
+        return await ipcRenderer.invoke('send-overlay-data', { eventType, data, options });
     },
     onOverlayEvent: (callback) => ipcRenderer.on('overlay-event', callback),
     onShowMessage: (callback) => ipcRenderer.on('show-message', callback),
     sendlibraryData: (callback) => ipcRenderer.invoke('send-library-data', { eventType, data }),
 
-    createBot: (options) => ipcRenderer.invoke('create-bot', options),
+    createBot: (options, keyLOGIN) => ipcRenderer.invoke('create-bot', options, keyLOGIN), // Asegúrate de pasar keyLOGIN aquí
     sendChatMessage: (message) => ipcRenderer.invoke('send-chat-message', message),
     onBotEvent: (callback) => ipcRenderer.on('bot-event', callback),
     createClientOsc: () => ipcRenderer.invoke('create-client-osc'),
     sendOscMessage: (message) => ipcRenderer.invoke('send-osc-message', message),
+    botStatus: () => ipcRenderer.invoke('bot-status'),
+    update: (message) => ipcRenderer.invoke('update', message),
+    searchSong: (query) => ipcRenderer.invoke('search-song', query)
     // onOscEvent: (callback) => ipcRenderer.on('osc-event', callback),
 }
 
@@ -44,6 +47,5 @@ window.addEventListener('DOMContentLoaded', () => {
 window.addOverlayEvent = (eventType, data) => {
     ipcRenderer.invoke('create-overlay-window', { eventType, data });
 };
-
 contextBridge.exposeInMainWorld("api", api);
 

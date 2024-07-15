@@ -1,0 +1,23 @@
+{
+    "default": {
+        "Seguidores": "Seguidores",
+        "Likes": "Likes",
+        "Diamantes": "Diamantes",
+        "Compartir": "Compartir",
+        "Comentarios": "Comentarios"
+    },
+    "english": {
+        "Seguidores": "Followers",
+        "Likes": "Likes",
+        "Diamantes": "Diamonds",
+        "Compartir": "Share",
+        "Comentarios": "Comments"
+    },
+    "spanish": {
+        "Seguidores": "Seguidores",
+        "Likes": "Likes",
+        "Diamantes": "Diamantes",
+        "Compartir": "Compartir",
+        "Comentarios": "Comentarios"
+    }
+}

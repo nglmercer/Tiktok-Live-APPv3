@@ -4,7 +4,7 @@ body {
   font-size: 1.5em;
   cursor: auto;
   width: 99%;
-  height: 99%;
+  height: 95% !important;
   overflow: hidden;
   background: #1c1d1c;
   color: white !important;
@@ -51,6 +51,7 @@ body {
 
 .divmenu {
   position: relative;
+  height: 90%;
   grid-area: menu; /* Asignar área 'menu' */
   /* background-color: rgb(230, 0, 0); */
   transition: width 0.3s; /* Transición suave para el cambio de ancho */
@@ -113,9 +114,10 @@ body {
 
 .tabs-menu {
   width: 5rem;
-  position: relative;
-  gap: 0.5rem;
   overflow-x: hidden;
+  height: 100%;
+
+
   transition: all 1s; /* Animación suave para el cambio de ancho */
 }
 .tabs-menu:hover{
@@ -123,6 +125,8 @@ body {
   .menu-button {
     display: block;
   }
+
+
 }
 
 #menu-toggle {
@@ -150,8 +154,10 @@ body {
 span {
   font-size: 1rem;
 }
-.tab {
+.tabs{
   background-color: rgba(245, 245, 245, 0.253);
+  position: relative;
+  height: 4rem;
   border: 1px solid #ccc;
   border-radius: 0.3rem;
   align-items: center;
@@ -166,16 +172,22 @@ span {
   .text {
     display: none;
   }
+  a {
+    color: rgb(110, 110, 110);
+    font-size: medium;
+    position: absolute;
+    text-justify: auto;
+  }
 }
 
-.indicator {
+/* .indicator {
   height: 2px;
   background: #007bff;
   position: absolute;
   bottom: 0;
   transition: top 0.3s, height 0.3s;
-}
-.tab:hover {
+} */
+.tabs:hover {
   background: #dddddd8c;
   transition: all 0.9s;
   display: flex;
@@ -184,6 +196,11 @@ span {
   }
   .icon {
     display: flex;
+  }
+  a {
+    position: relative;
+    color: rgb(255, 255, 255);
+    font-size: large;
   }
 }
 .tab-content {
@@ -196,35 +213,39 @@ span {
 .tab-content.active {
   display: block;
 }
-.tab.active {
+.tabs.active {
   background: rgba(255, 255, 255, 0.822);
-  color: black;
+  color: rgb(129, 129, 129);
   border-left: 2px solid #007bff;
+  a {
+    position: absolute;
+    left: 50%;
+    color: #007bff;
+  }
 }
 textarea {
-  field-sizing: content;
   max-height: 1600px;
   width: 90%;
-  min-width: 50%;
+  min-height: 100px;
   background-color: #000000d1;
-  font-family: Arial, Helvetica, sans-serif;
   font-size: 0.6em;
-  color: white;
-  font-weight: bolder;
 }
 button {
   box-sizing: content-box;
   min-height: 35px;
-  border: 1px solid #51cd4d71;
-  border-radius: 6px;
-  background-color: #108641;
   transition: background-color 0.3s ease-in-out;
   /* margin: auto; */
   padding: 5px;
   margin-block: 5px;
   margin-inline: 5px;
+  border-radius: 6px;
+
 }
-button:hover {
+.custombutton,.play-button {
+  border: 1px solid #51cd4d71;
+  background-color: #108641;
+}
+.custombutton:hover,.play-button:hover {
   background-color: #4b9948c9;
 }
 
@@ -297,13 +318,14 @@ input[type="button"]:hover {
   width: 400px;
 }
 .data-table {
+  margin: 0.5rem;
   border: 1px solid white;
-  border-radius: 10px;
     tr {
-      border: 1px solid rgba(255, 255, 255, 0.438);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      max-width: 3rem;
     }
     td {
-      border: 1px solid rgba(255, 255, 255, 0.301);
+      border: 1px solid rgba(255, 255, 255, 0.3);
       padding-inline: 4px;
     }
 }
@@ -532,8 +554,6 @@ button:hover {
 .deleteButton {
   background-color: red;
   box-sizing: content-box;
-  min-height: 30px;
-  min-width: 30px;
   border: 1px solid #e7000071;
 }
 .deleteButton:hover {
@@ -631,8 +651,13 @@ audio {
 .modal-fade {
   display: none;
 }
+
+/* .sugerencia para label color rojo*/
 .sugerencia {
   background-color: red;
+}
+label.sugerencia {
+  color: red;
 }
 .sugerencia:checked ~ .sugerencia-content {
   display: block;
@@ -667,7 +692,6 @@ audio {
               opacity 1s cubic-bezier(0.4, 0, 0.2, 1), 
               box-shadow 1s cubic-bezier(0.4, 0, 0.2, 1), 
               translate 1s cubic-bezier(0.4, 0, 0.2, 1);
-  background-color: lightblue;
   padding: 20px;
   text-align: center;
 }

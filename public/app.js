@@ -1,46 +1,75 @@
-// This will use the demo backend if you open index.html locally via file://, otherwise your server will be used
-// Verifica si la aplicación se está ejecutando localmente o en un servidor remoto
+import { minecraftlive, Minecraftlivedefault } from './indexdb.js';
+// import { replaceVariables } from './functions/replaceVariables.js';
+import { fetchSimplifiedState } from './functions/simplifiedState.js';
+import { searchSong, playNextInQueue } from './functions/YoutubeApi.js';
+import { eventmanager } from './renderer.js';
 let backendUrl = "http://localhost:8081"
-
-const log = new Proxy({
-    hidden: [],
-    list: {},
-    all: false,
-}, {
-    get: (obj, props) => {
-        if (props === "get") {
-            setTimeout(() => {
-                console.warn(Object.keys(obj.list)); 
-                return Object.keys(obj.list);
-            }, 100);
-        }
-        if (obj.hidden.includes(props) || obj.all) {
-            return () => false;
-        }
-        obj.list[props] = "";
-        return (...args) => {
-            console.log(`[${props}] =>`, ...args); 
-            return true;
-        };
-    },
-    set: (obj, props, value) => {
-        if (props === "hidden") { 
-            obj.hidden.push(...value);
-        }
-        if (props === "all") { 
-            obj.all = value; 
-        }
-        return true;
+let websocket = null;
+let timeouttime = 3000;
+let maxAttempts = 5;
+let Attemptsconnection = 0;
+function connectwebsocket() {
+    if (websocket) return; // Already connected
+    if (Attemptsconnection >= Attemptsconnection) return; 
+    websocket = new WebSocket("ws://localhost:21213/");
+    Attemptsconnection++;
+    websocket.onopen = function () {
+        document.getElementById("stateText").innerHTML = "Connected tikfinity";
+        Attemptsconnection = 0;
     }
-});
+ 
+    websocket.onclose = function () {
+        document.getElementById("stateText").innerHTML = "Disconnected";
+        websocket = null;
+        // setTimeout(connectwebsocket, 4000); // Schedule a reconnect attempt
+    }
 
+    websocket.onerror = function () {
+        document.getElementById("stateText").innerHTML = "Connection Failed";
+        websocket = null;
+        setTimeout(connectwebsocket, 4000); // Schedule a reconnect attempt
+    }
+
+    websocket.onmessage = function (event) {
+        let parsedData = JSON.parse(event.data); // Parse the JSON data
+        let eventype = parsedData.event;
+        let data = parsedData.data;
+        switch (eventype) {
+            case "chat":
+                handlechat(data);
+                break;
+            case "share":
+                console.log("share", data);
+                break;
+            case "likes":
+                handlelike(data);
+                break;
+            case "like":
+                handlelike(data);
+                console.log("like", data);
+                break;
+            case "follow":
+                console.log("follow", data);
+                break;
+            case "gift":
+                handlegift('gift', data);
+                console.log("gift", data);
+                break;
+            default:
+                sendToServer(eventype, data);
+                minecraftlive(eventype, data);
+                console.log("default", data);
+                break;
+        }
+    }
+}
+setTimeout(connectwebsocket, 3000);
 // Crea la conexión al servidor Socket.IO con la URL obtenida
 let connection = new TikTokIOConnection(backendUrl);
 
 let viewerCount = 0;
 let likeCount = 0;
 let diamondsCount = 0;
-let previousLikeCount = 0;
 
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
@@ -56,50 +85,34 @@ $(document).ready(() => {
     if (window.settings.username) connect();
 })
 
-let isConnected = false;
-let currentRoomId = null;
-let currentUniqueId = null;
 
 function connect() {
+    if (Attemptsconnection >= Attemptsconnection) return; 
     let uniqueId = window.settings.username || $('#uniqueIdInput').val();
     if (uniqueId !== '') {
         $('#stateText').text('Connecting...');
-        
-        connection.connect(uniqueId, {
+        Attemptsconnection++;
+connection.connect(uniqueId, {
             processInitialData: true,
             enableExtendedGiftInfo: true,
             enableWebsocketUpgrade: true,
             requestPollingIntervalMs: 2000,
-            clientParams: {
-                "app_language": "en-US",
-                "device_platform": "web"
-            },
-            requestOptions: {
-                timeout: 5000
-            },
-            websocketHeaders: {
-                'User-Agent': '5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36'
-            }
         }).then(state => {
-            log.console(`Connected to roomId ${state.roomId} upgraded ${state.upgradedToWebsocket}`, state);
-            log.console(`Available Gifts:`, state.availableGifts);
-            
-            // Función para cargar los datos desde el localStorage
+            Attemptsconnection = 0;
+            console.log(`Connected to roomId ${state.roomId} upgraded ${state.upgradedToWebsocket}`, state);
+            console.log(`Available Gifts:`, state.availableGifts);
+        // Función para cargar los datos desde el localStorage
             availableGiftsimage(state);
-            
-            // Enviar al servidor la información de la conexión establecida
+        // Enviar al servidor la información de la conexión establecida
             sendToServer('connected', uniqueId);
-            
-            // Restablecer estadísticas
+        // Restablecer estadísticas
             viewerCount = 0;
             likeCount = 0;
             diamondsCount = 0;
             updateRoomStats();
-            
-            // Generar enlace de perfil de usuario
+        // Generar enlace de perfil de usuario
             const userProfileLink = generateUsernameLink({ uniqueId });
-            
-            // Si hay una imagen de portada de la sala, mostrarla junto con el enlace del perfil de usuario
+        // Si hay una imagen de portada de la sala, mostrarla junto con el enlace del perfil de usuario
             if (state.roomInfo.cover) {
                 const userProfileImage = `<img src="${state.roomInfo.cover.url_list[1]}" alt="${uniqueId}" width="50" height="50">`;
                 const userProfileContainer = `
@@ -123,9 +136,9 @@ function connect() {
             console.error("Error in connection:", errorMessage);
             // Mostrar el  error en la interfaz de usuario
             $('#stateText').text(errorMessage);
-            let timeouttime = 10000 + updateRoomStats();
             setTimeout(() => {
                 connect();
+                connectwebsocket(); // Schedule a reconnect attempt
             }, timeouttime);
         });
     } else {
@@ -137,7 +150,6 @@ var voiceSelect = document.createElement('select');
 
 const jsonFilePath = './datosjson/simplifiedStates.json';
 const jsonVoicelist = './datosjson/voicelist.json';
-const jsonFilterWords = './datosjson/filterwords.json';
 async function fetchvoicelist() {
     try {
         const response = await fetch(jsonVoicelist);
@@ -153,23 +165,7 @@ async function fetchvoicelist() {
         return null;
     }
 }
-let customfilterWords = [];
-async function fetchFilterWords() {
-    try {
-        const response = await fetch(jsonFilterWords);
-        if (!response.ok) {
-            throw new Error(`Error fetching JSON file: ${response.statusText}`);
-        }
-        const data = await response.json();
-        console.log('Fetched JSON voicelist:', data);
-        filterWords = data.palabras;
-        return data;
-    }
-         catch (error) {
-        console.error('Error fetching JSON:', error);
-        return null;
-    }
-}
+
 setTimeout(async () => {
     fetchvoicelist().then(data => {
 
@@ -178,34 +174,11 @@ setTimeout(async () => {
             option.text = key;
             option.value = data[key];
             voiceSelect.appendChild(option);
+            // console.log(key, data[key]);
         });
     });
-    fetchFilterWords()
-    console.log(customfilterWords);
+    // fetchFilterWords()
 }, 1000);
-async function fetchSimplifiedState() {
-    try {
-        const response = await fetch(jsonFilePath);
-        if (!response.ok) {
-            throw new Error(`Error fetching JSON file: ${response.statusText}`);
-        }
-        const data = await response.json();
-        console.log('Fetched JSON data:', data);
-
-        // Verifica si data[0] es un array y crea una copia si es necesario
-        const availableGifts = Array.isArray(data[0]?.availableGifts) ? [...data[0].availableGifts] : [];
-
-        const simplifiedState = {
-            availableGifts: availableGifts,
-            // Puedes agregar más campos si es necesario
-        };
-        
-        return simplifiedState; // Devuelve el objeto creado
-    } catch (error) {
-        console.error('Error fetching JSON:', error);
-        return null;
-    }
-}
 
 fetchSimplifiedState().then(data => {
     if (data) {
@@ -281,6 +254,7 @@ function addDownloadButton() {
 
     const downloadButton = document.createElement('button');
     downloadButton.textContent = 'Descargar JSON';
+    downloadButton.className = "custombutton";
     downloadButton.onclick = downloadJson;
 
     buttonContainer.appendChild(downloadButton);
@@ -297,45 +271,6 @@ function downloadJson() {
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
-}
-
-
-class Groups {
-    static start() {
-        popup_groups.querySelector("[name=close]").onclick = e => Groups.hide();
-        popup_groups.onclick = e => { e.target === e.currentTarget && Groups.hide() };
-        alerts_groups.onclick = e => Groups.display(config.alerts.groups, alerts_groups);
-        tts_groups.onclick = e => Groups.display(config.tts.groups, tts_groups);
-        Groups.update();
-    }
-
-    static update() {
-        [config.alerts.groups, config.tts.groups].forEach(e => e.forEach(x => {
-            if (!globalSimplifiedStates.includes(x))
-                globalSimplifiedStates.push(x);
-        }));
-        group_list.innerHTML = globalSimplifiedStates.map((e, i) => "<label><input type=checkbox name=" + e + ">" + e + "</label>").join("");
-    }
-
-    static display(input) {
-        group_list.querySelectorAll("input").forEach(e => {
-            e.checked = globalSimplifiedStates.includes(e.name);
-            e.onchange = (e => {
-                array_toggle(globalSimplifiedStates, e.target.name);
-                input.value = globalSimplifiedStates.join(", ");
-                Config.save();
-            });
-        });
-        popup_groups.classList.remove("hide");
-        document.addEventListener('keydown', Groups.hide);
-    }
-
-    static hide(e) {
-        if (e && e.keyCode !== 27)
-            return;
-        popup_groups.classList.add("hide");
-        document.removeEventListener('keydown', Groups.hide);
-    }
 }
 
 // Cargar los datos del localStorage al cargar la página
@@ -360,7 +295,19 @@ function sanitize(text) {
 }
 
 function updateRoomStats() {
-    $('#roomStats').html(`Espectadores: <b>${viewerCount.toLocaleString()}</b><br>Likes: <b>${likeCount.toLocaleString()}</b><br>Diamantes: <b>${diamondsCount.toLocaleString()}</b>`);
+    $('#roomStats').html(`<div class="stats stats-vertical lg:stats-horizontal shadow">
+    <div class="stat">
+    <div class="stat-title text-sm">Espectadores</div>
+    <div class="stat-value text-sm">${viewerCount.toLocaleString()}</div>
+  </div>
+  <div class="stat">
+  <div class="stat-title text-sm">Likes</div>
+  <div class="stat-value text-sm">${likeCount.toLocaleString()}</div>
+</div>
+<div class="stat">
+<div class="stat-title text-sm">Diamantes</div>
+<div class="stat-value text-sm">${diamondsCount.toLocaleString()}</div>
+</div>`);
     return diamondsCount;
 }
 
@@ -372,17 +319,32 @@ function generateUsernameLink(data) {
 function isPendingStreak(data) {
     return data.giftType === 1 && !data.repeatEnd;
 }
-/**addChatItem
- * Add a new message to the chat container
- */
+
 let lastMessage = "";
 let lastNickname = "";
 setTimeout(()=>{
-    if (localStorage.getItem('lastChatItemdata')) {
-        evalBadge(JSON.parse(localStorage.getItem('lastChatItemdata')));
+    if (localStorage.getItem('lastChatItem')) {
+        const datachatitem = JSON.parse(localStorage.getItem('lastChatItem'));
+        const message = datachatitem.comment;
+        const userData = {
+            uniqueId: "12345",
+            allUsers: false,
+            followRole: 0,
+            isModerator: false,
+            isNewGifter: false,
+            isSubscriber: false,
+            teamMemberLevel: 2,
+            topGifterRank: 3,
+        };
+if (localStorage.getItem('lastLike')) {
+    
+
+}
+    console.log(evalBadge(userData));
+// console.log(evalBadge(userData));
+addChatItem('blue', datachatitem, message);
     }
-},1000);
-    console.log(JSON.parse(localStorage.getItem('lastChatItemdata')));
+},3000);
     console.log(JSON.parse(localStorage.getItem('lastChatItem')));
     window.signal = () => {}
     let signalmessage = new Proxy({ value: 0 }, {
@@ -395,271 +357,245 @@ setTimeout(()=>{
             return target[prop];
         }
     });
-    function leerMensajes(text) {
+    function sendleertext(text) {
         signalmessage.value = text;
     }
     function evalBadge(data) {
         const checkboxes = document.querySelectorAll('.card-content input[type="checkbox"]');
         let values = {};
+    
+        // Recolectar el estado de los checkboxes y inputs adicionales
         checkboxes.forEach(checkbox => {
-            values[checkbox.id] = checkbox.checked;
+            const relatedInput = document.getElementById(`${checkbox.id}-value`);
+            if (relatedInput) {
+                values[checkbox.id] = {
+                    checked: checkbox.checked,
+                    value: relatedInput.value
+                };
+            } else {
+                values[checkbox.id] = checkbox.checked;
+            }
         });
-
-        if (data.uniqueId) {
-            console.log(data.uniqueId,"data uniqueId evalBadge",values);
-            Object.entries(values).forEach(([key, value]) => {
-                // console.log(key,value);
-                if (key === "isModerator" && data.isModerator === value) {
-                    console.log(data.isModerator,key,value);
-                    if (value===true) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else
-                if (key === "isSubscriber" && data.isSubscriber === value) {
-                    console.log(data.isNewGifter,key,value);
-                    if (value===true) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                } else
-                if (key === "allUsers") {
-                    console.log("retornamos true y no hacemos nada",key,value);
+    
+        console.log("values", values);
+        console.log(data.uniqueId, "data uniqueId evalBadge", values);
+    
+        // Evaluar si el usuario cumple al menos uno de los criterios
+        for (const [key, value] of Object.entries(values)) {
+            if (values.allUsers === true) {
+                console.log("allUsers retornamos true y no hacemos nada", values.allUsers);
+                return true;
+            }
+            
+            if (typeof value === 'object' && data[key] !== undefined )  {
+                // Verificar si el valor es un objeto con un campo "checked" y "value"
+                if (value.checked && ((typeof data[key] === 'number' && data[key] > 0) || (typeof data[key] === 'boolean' && data[key]))) {
+                    console.log(`Condition met for ${key} with value ${data[key]} and additional value ${value.value}`);
                     return true;
                 }
-            });
+            } else if (value === true && ((typeof data[key] === 'boolean' && data[key]) || (typeof data[key] === 'number' && data[key] > 0))) {
+                console.log(`Condition met for ${key} with value ${data[key]}`);
+                return true;
+            }
         }
-
-    }
-
-
-function addChatItem(color, data, text, summarize) {
-    localStorage.setItem('lastChatItem', JSON.stringify(data));
-    localStorage.setItem('lastChatItemdata', JSON.stringify(data));
-    let container = location && location.href ? (location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer')) : $('.chatcontainer');
-    if (container.find('div').length > 500) {
-        container.find('div').slice(0, 200).remove();
-    }
-    const userpointsInput = document.getElementById('users-points');
-    const userlevel = document.getElementById('users-level');
-    let userlevelCheckbox = document.getElementById('userlevelCheckbox');
-    const levelValue = userlevel.value;
-    const parsedLevelValue = parseInt(levelValue);
-    const inputValue = userpointsInput.value;
-    const parsedValue = parseInt(inputValue);
-    if (!userPoints[data.nickname]) {
-    if (!isNaN(parsedValue)) {
-        // Si es un número válido, sumarlo al puntaje del usuario
-        userPoints[data.nickname] = parsedValue * 2;
-      } else {
-        // Si no es un número válido, utilizar el valor por defecto de 5
-        userPoints[data.nickname] = 10;
-      }
-    }
-
-    if (userlevelCheckbox.checked) {
-        userPoints[data.nickname] += 1 * parsedLevelValue;
-        log.levelCheckbox("añadir puntos por nivel", data.nickname, parsedLevelValue, userPoints[data.nickname]);
-    }
-    // Modificación para eliminar o reemplazar los caracteres especiales
-    container.find('.temporary').remove();;
-
-    container.append(`
-        <div class=${summarize ? 'temporary' : 'static'}>
-            <img class="miniprofilepicture" src="${data.profilePictureUrl}">
-            <span>
-                <b>${generateUsernameLink(data)}:</b> 
-                <span style="color:${color}">${sanitize(text)}</span>
-
-            </span>
-        </div>
-    `);
-    container.stop();
-    container.animate({
-        scrollTop: container[0].scrollHeight
-    }, 400);
     
-    let filterWordsInput = document.getElementById('filter-words').value;
-    let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
-    let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
-    filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
-    let lowerCaseText = text && text.toLowerCase() && text.replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
-    let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
-//    if (sendsoundCheckbox.checked) {}
-    
-
-    for (let word of customfilterWords) {
-        if (word && lowerCaseText.includes(word.toLowerCase())) {
-            if (userPoints[data.nickname] <= 0) {
-                //log.console('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
-                return;
-            } 
-            if (userPoints[data.nickname] >= 1) {
-                userPoints[data.nickname]--;
-                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-                return;
-            }
-            if (userPoints[data.nickname] >= 30) {
-                //userPoints[data.nickname]--;
-                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-            }
-        }
+        return false;
     }
-
-    for (let word of filterWords) {
-        if (word && lowerCaseText.includes(word.toLowerCase())) {
-            if (userPoints[data.nickname] <= 2) {
-                //log.console('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
-                return;
-            } 
-            if (userPoints[data.nickname] >= 2) {
-                userPoints[data.nickname]--;
-                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-                return;
-            }
-            if (userPoints[data.nickname] >= 30) {
-                userPoints[data.nickname]--;
-                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-            }
-        }
-    }
-
-    const specialChars = /[#$%^&*()/,.?":{}|<>]/;
-    const startsWithSpecialChar = specialChars.test(text.charAt(0));
-    const messagePrefix = startsWithSpecialChar ? "!" : "";
-    const messageSuffix = summarize ? "" : ` ${text}`;
-    let cleanedText = text;
-    if (startsWithSpecialChar) {
-        cleanedText = text.replace(/[@#$%^&*()/,.?":{}|<>]/, ""); // Elimina o reemplaza los caracteres especiales al comienzo del texto con "!"
-    }
-    cleanedText = text.replace(/[#$%^&*/,.":{}|<>]/, "");
-    let emojiRegex = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/ug;
-    let emojis = text && text.match(emojiRegex);
-    if (emojis) {
-        let emojiCounts = {};
-        for (let emoji of emojis) {
-            if (emoji in emojiCounts) {
-                emojiCounts[emoji]++;
+    function returnbadge(badge,valor,data) {
+        Object.entries(data).forEach(([key, value]) => {
+            if (key === badge) {
+                valor = value;
             } else {
-                emojiCounts[emoji] = 1;
+                valor = false;
             }
-
-            if (emojiCounts[emoji] >= 2) {
-                return;
-            }
+        });
+        return valor;
+    };
+    
+    function addEventsItem(eventType, data) {
+        let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.eventscontainer');
+        
+        if (container.find('div').length > 200) {
+            container.find('div').slice(0, 100).remove();
+        }
+    
+        const profilePictureUrl = isValidUrl(data.profilePictureUrl) ? data.profilePictureUrl : 'url_de_imagen_por_defecto';
+        const colormessage = getEventColor(eventType);
+    
+        container.append(generateEventHTML(eventType, data.uniqueId, profilePictureUrl, colormessage));
+    
+        if (eventType === 'welcome') {
+            setTimeout(() => {
+                container.find('.event.temporal').remove();
+            }, 10000);
+        }
+    
+        container.stop();
+        container.animate({
+            scrollTop: container[0].scrollHeight
+        }, 800);
+    }
+    function generateEventHTML(eventType, uniqueId, profilePictureUrl, colormessage) {
+        return `
+            <div class="event${eventType === 'welcome' ? ' temporal' : ''}">
+                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
+                <span style="color:${colormessage}">${uniqueId} ${getEventMessage(eventType)}</span>
+            </div>
+        `;
+    }
+    
+    function getEventMessage(eventType) {
+        switch (eventType) {
+            case 'welcome':
+                return 'ha sido bienvenido!';
+            case 'share':
+                return 'ha compartido!';
+            case 'likes':
+                return 'ha dado un me gusta!';
+            case 'follow':
+                return 'ha seguido!';
+            default:
+                return `tipo de evento: ${eventType}!`;
         }
     }
-    const message = messagePrefix + (cleanedText.length > 60 ? `${data.nickname} dice ${messageSuffix}` : cleanedText);
-    let nickname = data.nickname;
     
-    if (message === lastMessage) {
-        return;
-    }
-    
-    // Comparar mensajes basados en longitud y similitud de caracteres
-    if (Math.abs(message.length - lastMessage.length) <= 2) {
-        const messageSet = new Set(message);
-        const lastMessageSet = new Set(lastMessage);
-        const intersection = new Set([...messageSet].filter(x => lastMessageSet.has(x)));
-        const uniqueCharsDiff = Math.abs(messageSet.size - lastMessageSet.size);
-        if (uniqueCharsDiff <= 2 && intersection.size >= message.length - 2) {
-            log.lastMessage('Mensajes similares encontrados.',message);
+    function getEventColor(eventType) {
+        switch (eventType) {
+            case 'welcome':
+                return 'white';
+            case 'share':
+                return 'gold';
+            case 'likes':
+                return 'blue';
+            case 'follow':
+                return 'gold';
+            default:
+                return 'green';
         }
     }
+    let counsforskip = 0;
+function addChatItem(color, data, text, summarize) {
+        const wordsfilterwords = JSON.parse(localStorage.getItem('filterWords')) || [];
+        const filteruserswhite = JSON.parse(localStorage.getItem('filterUsers')) || [];
+        console.log(filteruserswhite,wordsfilterwords);
+        let lowerCaseText = data.comment?.toLowerCase().replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
+        lowerCaseText = lowerCaseText.toString().replaceAll('“', '"').replaceAll('”', '"');
+        localStorage.setItem('lastChatItem', JSON.stringify(data));
     
-    // Filtrar mensajes de usuarios con pocos puntos
-    
-    lastMessage = message;
-    const regex = /(.)\1{7,}/g;
-    const matches = lowerCaseText.match(regex);
-    
-    if (matches && matches.length > 0) {
-        log.matches(`Se encontraron repeticiones de 1, 2 o 3 caracteres seguidamente más de 8 veces.`);
-        return;
-    }
-    let nameuser = data.uniqueId; 
-    let filterUsersInput = document.getElementById('filter-users').value;
-    let lowerCaseUser = nameuser.toLowerCase();
-    let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
-    if (filterUsers.includes(lowerCaseUser)) {
-        log.filterUsers("usuario de WhiteList", lowerCaseUser);
-        enviarCommandID('chat', message);
-        leerMensajes(message);
-        enviarMensaje(message);
-        return;
-    }
+        const container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer');
+        if (container.find('div').length > 500) {
+            container.find('div').slice(0, 200).remove();
+        }
 
-      
-    for (let word of customfilterWords) {
-        if (word && lowerCaseText.includes(word.toLowerCase())) {
+        let message = data.comment.toString().toLowerCase();
+        const nickname = data.nickname;
+        let nameuser = data.uniqueId; 
+        const userpointsInput = document.getElementById('users-points');
+        const userlevel = document.getElementById('users-level');
+        const userlevelCheckbox = document.getElementById('userlevelCheckbox');
+        const levelValue = parseInt(userlevel.value);
+        const parsedValue = parseInt(userpointsInput.value);
+        let sendDataCheckbox = document.getElementById('sendDataCheckbox');
+        let userpointsCheckbox = document.getElementById('userpointsCheckbox');
+        let messagelenght3 = document.getElementById('messagelenght3');
+        let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
+        let prefixusermessage = document.getElementById('prefixusermessage').value;
+        let readUserMessage = document.getElementById('readUserMessage');
+        if (!userPoints[data.nickname]) {
+            userPoints[data.nickname] = !isNaN(parsedValue) ? parsedValue * 2 : 10;
+        }
+        if (userlevelCheckbox.checked) {
+            userPoints[data.nickname] += levelValue;
+            console.log("Añadir puntos por nivel", data.nickname, levelValue, userPoints[data.nickname]);
+        }
+        container.find('.temporary').remove();
+        container.append(`
+            <div class=${summarize ? 'temporary' : 'static'}>
+                <img class="miniprofilepicture" src="${data.profilePictureUrl}">
+                <span>
+                    <b>${generateUsernameLink(data)}:</b> 
+                    <span style="color:${color}">${sanitize(text)}</span>
+                </span>
+            </div>
+        `);
+    
+        container.stop().animate({
+            scrollTop: container[0].scrollHeight
+        }, 400);
+    
+
+        if (filteruserswhite.length > 0) {
+            for (let user of filteruserswhite) {
+                if (user && data.uniqueId.includes(user.toLowerCase())) {
+                    sendleertext(message);
+                    console.log(`${data.nickname} filtrado por usuario: ${user}`);
+                    return;
+                }
+            }
+        }
+        if (evalBadge(data) === false) {
+            return;
+        }
+        if (wordsfilterwords.length > 0) {
+            for (let word of wordsfilterwords) {
+                if (word && lowerCaseText.includes(word.toLowerCase())) {
+                    console.log(`${data.nickname} filtrado por palabra: ${lowerCaseText}`);
+                    return;
+                }
+            }
+        }
+        let votesforskip = Number(viewerCount) / 10;
+        message.toLowerCase();
+        if (message.startsWith("!play") || message.startsWith("/play") || message.startsWith("play")) {
+            const query = message.replace("!play", "").replace("/play", "").replace("play", "");
+            console.log("query", query);
+            searchSong(query);
+            if (votesforskip > votesforskip) {
+                console.log("skip");
+                playNextInQueue();
+            }
+            return;
+        }
+        if (message.startsWith("!skip") || message.startsWith("/skip") || message.startsWith("skip")) {
+            counsforskip++;
+            if (votesforskip > votesforskip) {
+                console.log("skip");
+                playNextInQueue();
+            }
+            return;
+        }
+        if (message === lastMessage) {
+            return;
+        }
+        lastMessage = message;
+        if (userpointsCheckbox.checked) {
             if (userPoints[data.nickname] <= 0) {
-                userPoints[data.nickname]--;
-                //log.console('Usuario con 0 puntos,:', data.nickname, userPoints[data.nickname]);
-                return;
-            } 
-            if (userPoints[data.nickname] >= 1) {
-                userPoints[data.nickname]--;
-                //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
                 return;
             }
         }
-    }
 
-    for (let word of filterWords) {
-        if (word && lowerCaseText.includes(word.toLowerCase())) {
-            log.filterWords(message + 'filterwords__dirname=');
-        return;  
-        }
-    }
-
-    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
-    
-    let userpointsCheckbox = document.getElementById('userpointsCheckbox');
-    let messagelenght3 = document.getElementById('messagelenght3');
-
-    if (userpointsCheckbox.checked) {
-        //log.console(userpointsCheckbox)
-        if (userPoints[data.nickname] <= 0) {
-            //log.console('Usuario con 0 puntos,userpointsCheckbox:', data.nickname, userPoints[data.nickname]);
-            return;
-        }
-    }
-/*     if (data.comment) {
-        log.comment("usuario y commentario", data);
-    } */
-    if (text.length <= 7 && messagelenght3.checked) {
-        if (userPoints[data.nickname] <= 0) {
-            //log.console('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
-            return;
-        }
-    }
     if (text.length <= 3 && messagelenght3.checked) {
             return;
     }
+    console.log(data)
     if (sendDataCheckbox.checked) {
-        if (startsWithSpecialChar) {
             if (userPoints[data.nickname] <= 4) {
-                log.sendDataCheckbox('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
+                console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
             }
-        }
-        enviarMensaje(message);
     }
 
-    let prefixusermessage = document.getElementById('prefixusermessage').value;
-    let readUserMessage = document.getElementById('readUserMessage');
+
     if (color === "#CDA434"){
-        log.followchatdata(`${message}`);
-        leerMensajes(message);
+        console.log('followchatdata', `${message}`);
+        sendleertext(message);
         return;
     }
     
     if (readUserMessage.checked) {
-        messagewithuser = nameuser + prefixusermessage + message;
-        leerMensajes(messagewithuser);
+        let messagewithuser = nameuser + prefixusermessage + message;
+        sendleertext(messagewithuser);
     } else {
-        leerMensajes(message);
+        sendleertext(message);
     }
     if (nickname !== lastNickname) {
         if (!isNaN(parsedValue)) {
@@ -669,27 +605,15 @@ function addChatItem(color, data, text, summarize) {
             // Si no es un número válido, utilizar el valor por defecto de 5
             userPoints[data.nickname] += 2;
           }
-        log.nicknamePoints(`el usuario ${data.nickname}tiene mas puntos`,userPoints[data.nickname]);
+        console.log('nicknamePoints', `el usuario ${data.nickname}tiene mas puntos`,userPoints[data.nickname]);
     }
     if (sendsoundCheckbox.checked) {
         if (nickname !== lastNickname) {
-            
-        }
+    }
         userPoints[data.nickname]--;
         lastNickname = nickname
     }
 
-    if (sendDataCheckbox.checked) {
-        if (userPoints[data.nickname] <= 3) {
-            //log.console('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
-            return;
-        }
-        if (nickname !== lastNickname) {
-            userPoints[data.nickname] -= 1;
-            enviarCommandID( 'chat', message);
-    /* */        lastNickname = nickname
-        }
-    }
 }
 
 function isValidUrl(string) {
@@ -705,6 +629,10 @@ function isValidUrl(string) {
 let userStats = {};
 
 connection.on('like', (data) => {
+    handlelike(data);
+});
+function handlelike(data) {
+    localStorage.setItem('lastLike', JSON.stringify(data));
     if (typeof data.totalLikeCount === 'number') {
         likeCount = data.totalLikeCount;
         updateRoomStats();
@@ -717,52 +645,35 @@ connection.on('like', (data) => {
     // Increment user's like count and total like count
     userStats[data.uniqueId].likes += data.likeCount;
     userStats[data.uniqueId].totalLikes += data.likeCount;
-
+    addEventsItem('likes', data);
+    sendToServer('likes', data);
+    // console.log("likes", data.likeCount, data);
     // Check if user's like count has reached the milestone
-    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
-    while (sendDataCheckbox.checked && userStats[data.uniqueId].likes >= userStats[data.uniqueId].milestone && userStats[data.uniqueId].milestone <= 500) {
-        const milestoneLikes = `${userStats[data.uniqueId].milestone}LIKES`;
-
-        log.console('Milestone Likes:', milestoneLikes);
-        enviarCommandID( 'likes', `${userStats[data.uniqueId].milestone}LIKES`);
-
+    while (userStats[data.uniqueId].likes >= userStats[data.uniqueId].milestone && userStats[data.uniqueId].milestone <= 500) {
         // Send data or data.uniqueId and $ likes
-        addOverlayEvent('likes', data, `${userStats[data.uniqueId].milestone} likes`, 'blue', false, 1);
-        handleEvent2('likes', data);
+        Minecraftlivedefault('likes', data);
+        
         userStats[data.uniqueId].likes -= userStats[data.uniqueId].milestone; // Deduct milestone likes from user's like count
-        userStats[data.uniqueId].milestone += 50; // Increase the milestone
+        userStats[data.uniqueId].milestone += 25; // Increase the milestone
         userPoints[data.nickname] + 15;
         userPoints[data.nickname] += 15;
         if (userStats[data.uniqueId].milestone > 300) {
-            userStats[data.uniqueId].milestone = 50; // Reset the milestone
+            userStats[data.uniqueId].milestone = 25; // Reset the milestone
         }
     }
-});
-
-// let overlaypage = false;
-// document.addEventListener('DOMContentLoaded', function() {
-//     document.getElementById('overlayForm').addEventListener('submit', function(event) {
-//         event.preventDefault();
-//         const url = document.getElementById('urlInput').value;
-//         const width = "100%";
-//         const height = "100%";
-//         addOverlayEvent('Newiframe', { url, width, height });        
-//     });
-    
-// });
-
-
-function addOverlayEvent(eventType, data) {
-        let overlayOff = document.getElementById('overlayOff');
-        if (overlayOff.checked) {
-            let overlayPage = null;
-            if (!overlayPage || overlayPage.closed) {
-                overlayPage = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,alwaysOnTop=true,nodeIntegration=no');
-                }
-            const event = new CustomEvent('pageAB', { detail: { eventType, indexData: data }});
-            overlayPage.dispatchEvent(event);
-        }
 }
+
+// function addOverlayEvent(eventType, data) {
+//         let overlayOff = document.getElementById('overlayOff');
+//         if (overlayOff.checked) {
+//             let overlayPage = null;
+//             if (!overlayPage || overlayPage.closed) {
+//                 overlayPage = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,alwaysOnTop=true,nodeIntegration=no');
+//                 }
+//             const event = new CustomEvent('pageAB', { detail: { eventType, indexData: data }});
+//             overlayPage.dispatchEvent(event);
+//         }
+// }
 
 //        pageB = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,nodeIntegration=no');
 //        pageB = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=true,transparent=false,nodeIntegration=no');
@@ -823,56 +734,7 @@ function addGiftItem(data) {
         scrollTop: container[0].scrollHeight
     }, 800);
 }
-function addEventsItem(eventType, data) {
-    let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.eventscontainer');
-    if (container.find('div').length > 200) {
-        container.find('div').slice(0, 100).remove();
-    }
-    // -- Evento
-    const profilePictureUrl = isValidUrl(data.profilePictureUrl) ? data.profilePictureUrl : 'url_de_imagen_por_defecto';
 
-    if (eventType === 'welcome') {
-        container.append(`
-            <div class="event">
-                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
-                <span>${data.uniqueId} ha sido bienvenido!</span>
-            </div>
-        `);
-    } else if (eventType === 'share') {
-        container.append(`
-            <div class="event">
-                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
-                <span>${data.uniqueId} ha compartido!</span>
-            </div>
-        `);
-    } else if (eventType === 'follow') {
-        container.append(`
-            <div class="event">
-                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
-                <span>${data.uniqueId} ha seguido!</span>
-            </div>
-        `);
-    } else if (eventType === 'likes') {
-        container.append(`
-            <div class="event">
-                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
-                <span>${data.uniqueId} ha dado un me gusta!</span>
-            </div>
-        `);
-    } else {
-        container.append(`
-            <div class="event">
-                <img class="profile-picture" src="${profilePictureUrl}" alt="Profile Picture">
-                <span>${data.uniqueId} tipo de evento: ${eventType}!</span>
-            </div>
-        `);
-    }
-    
-    container.stop();
-    container.animate({
-        scrollTop: container[0].scrollHeight
-    }, 800);
-}
 // viewer stats
 connection.on('roomUser', (data) => {
     if (typeof data.viewerCount === 'number') {
@@ -885,7 +747,6 @@ connection.on('roomUser', (data) => {
 let joinMsgDelay = 0;
 // Member join
 connection.on('member', (data) => {
-
     if (window.settings.showJoins === "0") return;
 
     let addDelay = 250;
@@ -897,17 +758,16 @@ connection.on('member', (data) => {
     setTimeout(() => {
         joinMsgDelay -= addDelay;
         addEventsItem('welcome', data, 'welcome', true);
-        addOverlayEvent('welcome', data);
-        message = data.uniqueId;
-        handleEvent2('welcome', data, message, null, data);
+        let message = data.uniqueId;
+        Minecraftlivedefault('welcome', data, message, null, data);
     }, joinMsgDelay);
 })
-let processedMessages = {};
-let lastComments = [];
-let lastTenMessages = [];
 let userPoints = {};
 
 connection.on('chat', (data) => {
+    handlechat(data);
+});
+function handlechat(data) {
     const userpointsInput = document.getElementById('users-points');
 
     const inputValue = userpointsInput.value;
@@ -920,44 +780,27 @@ connection.on('chat', (data) => {
             // Si no es un número válido, utilizar el valor por defecto de 5
             userPoints[data.nickname] = 10;
         }
-        //log.console("puntos asignados",data.nickname,userPoints[data.nickname]);
+        //console.log("puntos asignados",data.nickname,userPoints[data.nickname]);
     }
     let message = data.comment; 
     let nameuser = data.uniqueId; 
-    let filterWordsInput = document.getElementById('filter-words').value;
-    let filterWords = (filterWordsInput.match(/\/(.*?)\//g) || []).map(word => word.slice(1, -1));
-    let remainingWords = filterWordsInput.replace(/\/(.*?)\//g, '');
-    filterWords = filterWords.concat(remainingWords.split(/\s/).filter(Boolean));
-    let lowerCaseText = message.toLowerCase();
     let filterUsersInput = document.getElementById('filter-users').value;
     let lowerCaseUser = nameuser.toLowerCase();
     let filterUsers = filterUsersInput.toLowerCase().split(/\s+/);
-    addOverlayEvent('chat', data);
 
     if (filterUsers.includes(lowerCaseUser)) {
-        log.console("WhiteList", lowerCaseUser);
+        console.log("WhiteList", lowerCaseUser);
         addChatItem('', data, message);
         sendToServer('chat', data);
-        handleEvent2('chat', data);
+        Minecraftlivedefault('chat', data);
         return;
       }
-    for (let word of filterWords) {
-        if (word && lowerCaseText.includes(word.toLowerCase())) {
-            userPoints[data.nickname] -= 1;
-            
-        }
-        if (userPoints[data.nickname] >= 1) {
-            userPoints[data.nickname] -= 1;
-            //log.console('Puntos del usuario después de la deducción:', data.nickname, userPoints[data.nickname]);
-        } 
-    }
-
 
     if (window.settings.showChats === "0") return;
 
     addChatItem('', data, message);
     sendToServer('chat', data);
-    handleEvent2('chat', data);
+    Minecraftlivedefault('chat', data);
 
     if (message === lastMessage) {
         return;
@@ -971,62 +814,47 @@ connection.on('chat', (data) => {
     }
 
     data.ultimoTiempo = tiempoActual;
-    return data.nickname;
-});
+}
 
 // New gift received
 connection.on('gift', (data) => {
+    handlegift(data);
+    // const audioGiftdata = loadData();
+    // const eventData2 = audioGiftdata.find(data1 => data1.eventName === data.giftName);
+    // if (eventData2) {
+    //     const audioPath = eventData2.audioPath; // Obtener el audioPath del objeto encontrado
+    //     const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
+    //     audioElement.play(); // Reproducir el audio
+    //   } 
+
+})
+function handlegift(data) {
     if (!userPoints[data.nickname]) {
         userPoints[data.nickname] = 10; // Asignar 10 puntos por defecto
     } else if (userPoints[data.nickname] >= 1) {
         userPoints[data.nickname] += 10;
         userPoints[data.nickname] + 10;
-        //log.console('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
+        //console.log('Puntos aumentados:', data.nickname, userPoints[data.nickname]);
     }
-    if (sendDataCheckbox.checked) {
-    enviarCommandID( 'gift', data)/* */;
-    }
-    addOverlayEvent('gift',data, data.giftPictureUrl, 'red', true, data.repeatCount);
-    handleEvent('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
+    minecraftlive('gift', data);
 
     if (!isPendingStreak(data) && data.diamondCount > 0) {
         diamondsCount += (data.diamondCount * data.repeatCount);
         let readGiftEvent = document.getElementById('readGiftEvent');
         let prefixGiftEvent = document.getElementById('prefixGiftEvent').value; 
         if (readGiftEvent.checked && data.giftName) {
-            readGiftText = `${data.uniqueId} ${prefixGiftEvent} ${data.repeatCount} ${data.giftName}`
-            // log.readGiftEvent(data.uniqueId + prefixGiftEvent + data.giftName);
-            leerMensajes(readGiftText);
-            
-        }
-        log.isPendingStreak(data.uniqueId + prefixGiftEvent + data.giftName,"data repeatcount si terminoooooo",true,data.repeatCount);
+            let readGiftText = `${data.uniqueId} ${prefixGiftEvent} ${data.repeatCount} ${data.giftName}`
+            sendleertext(readGiftText);
+    }
+        console.log('isPendingStreak', data.uniqueId + prefixGiftEvent + data.giftName,"data repeatcount si terminoooooo",true,data.repeatCount);
         userPoints[data.nickname] + data.diamondCount;
         updateRoomStats();
-        if (data.repeatCount === 1) {
-            sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
-        }
     }
-    if ( data.repeatCount >= 2) {
-        sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
-    }
-    // if(!data.repeatEnd && data.diamondCount >= 2){
-    //     sendToServer('gift', data, `${data.uniqueId}:${data.giftName}x${data.repeatCount} `);
-    //     log.isPendingStreak(data.uniqueId + prefixGiftEvent + data.giftName,"data repeatcount no terminoooooo",false,data.repeatCount);
-    // }
-    userGiftname = data.giftName;
+    sendToServer('gift', data);
+
     if (window.settings.showGifts === "0") return;
     addGiftItem(data);
-    const audioGiftdata = loadData();
-    const eventData2 = audioGiftdata.find(data1 => data1.eventName === userGiftname);
-    if (eventData2) {
-        const audioPath = eventData2.audioPath; // Obtener el audioPath del objeto encontrado
-        const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
-        audioElement.play(); // Reproducir el audio
-      } 
-
-})
-document.addEventListener('DOMContentLoaded', function() {
-})    
+}
 
 $(document).ready(() => {
     const EventNameInput = document.getElementById("test-event");
@@ -1044,7 +872,7 @@ $(document).ready(() => {
 function TESTsound(eventName) {
     const audioData1 = loadData();
     audioData1.forEach((data) => {
-        log.console(data.audioPath, data.audioName, data.eventName, data.volume, data.enable);
+        console.log(data.audioPath, data.audioName, data.eventName, data.volume, data.enable);
     });
     const eventData1 = audioData1.find(data1 => data1.eventName === eventName);
     if (eventData1) {
@@ -1068,37 +896,29 @@ connection.on('social', (data) => {
     if (window.settings.showFollows === "0") return;
     let color;
     let message;
+    let lastfollow = localStorage.setItem('lastfollow', JSON.stringify(data));
     let sendDataCheckbox = document.getElementById('sendDataCheckbox');
     let prefixuserfollow = document.getElementById('prefixuserfollow').value || "te sige";
     if (data.displayType.includes('follow')) {
         color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
         message = `${data.nickname} ${prefixuserfollow}`;
-
-        if (sendDataCheckbox.checked) {
-            if (!seguidores.has(data.nickname)) {
-                enviarCommandID( 'follow', data);
- /* */          handleEvent2('follow', data);
-                sendToServer('follow', data);
-                addOverlayEvent('follow', data);
-                log.followsocial(`${data.nickname} ${prefixuserfollow}`);
-                seguidores.add(data.nickname);
-                // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
-                setTimeout(() => {
-                    seguidores.delete(data.nickname);
-                }, 60000); // 5 minutos
-            }
+        Minecraftlivedefault('follow', data);
+        sendToServer('follow', data);
+        if (!seguidores.has(data.nickname)) {
+            console.log('followsocial', `${data.nickname} ${prefixuserfollow}`);
+            seguidores.add(data.nickname);
+            // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
+            setTimeout(() => {
+                seguidores.delete(data.nickname);
+            }, 60000); // 5 minutos
         }
         addEventsItem("follow", data);
 
     } else if (data.displayType.includes('share')) {
         color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
         message = `${data.nickname} compartió el directo`;
-        handleEvent2('share', data);
+        Minecraftlivedefault('share', data);
         sendToServer('share', data);
-        addOverlayEvent('share', data);
-        if (sendDataCheckbox.checked) {
-            enviarCommandID( 'share', data);
-        }
         addEventsItem("share", data);
     } else {
         color = '#CDA434'; // Color por defecto
@@ -1118,7 +938,7 @@ connection.on('streamEnd', () => {
             connect(window.settings.username);
         }, 30000);
     }
-    message = 'Transmisión terminada.';
+    let message = 'Transmisión terminada.';
 
     // Send data to server
     sendToServer('streamEnd', message);
@@ -1148,20 +968,15 @@ connection.on('questionNew', data => {
     });
 });
 /*
-const battleBar = document.getElementById('battle-bar');
-const user1 = document.getElementById('user-1');
-const user2 = document.getElementById('user-2');
-const battleStatus = document.getElementById('battle-status');
-
 connection.on('linkMicBattle', (data) => {
-log.console(`New Battle: ${data.battleUsers[0].uniqueId} VS ${data.battleUsers[1].uniqueId}`,data);
+console.log(`New Battle: ${data.battleUsers[0].uniqueId} VS ${data.battleUsers[1].uniqueId}`,data);
 /*user1.querySelector('.username').textContent = data.battleUsers[0].uniqueId;
 user2.querySelector('.username').textContent = data.battleUsers[1].uniqueId;
 battleStatus.textContent = 'Battle in Progress'
 });
 
 connection.on('linkMicArmies', (data) => {
-log.console('linkMicArmies', data);
+console.log('linkMicArmies', data);
 user1.querySelector('.points').textContent = data.battleArmies[0].points;
 user2.querySelector('.points').textContent = data.battleArmies[1].points;
 if (data.battleStatus === 1) {
@@ -1173,154 +988,31 @@ if (data.battleStatus === 1) {
 
   
 connection.on('liveIntro', (msg) => {
-    log.liveIntro('User Details:', msg.description);
-    log.liveIntro('Nickname:', msg.nickname);
-    log.liveIntro('Unique ID:', msg.uniqueId);
-    log.liveIntro(msg)
+    console.log('User Details:', msg.description);
+    console.log('Nickname:', msg.nickname);
+    console.log('Unique ID:', msg.uniqueId);
+    console.log(msg)
 });
 connection.on('Disconnected', (msg) => {
     connect();
 });
 connection.on('emote', (data) => {
-    log.emote(`${data.uniqueId} emote!`);
-    log.emote('emote received', data);
+    console.log(`${data.uniqueId} emote!`);
+    console.log('emote received', data);
+    addChatItem('blue', data, data.comment);
 })
 connection.on('envelope', data => {
-    log.envelope('Unique ID:', data.uniqueId);
-    log.envelope('Coins:', data.coins);
+    console.log('Unique ID:', data.uniqueId);
+    console.log('Coins:', data.coins);
     addEventsItem('envelope',data)
-    fetchAudio(`${data.uniqueId} envio cofre de ${data.coins} monedas para ${data.canOpen} personas`);
-    log.envelope('envelope:', data);
+    sendleertext(`${data.uniqueId} envio cofre de ${data.coins} monedas para ${data.canOpen} personas`);
+    console.log('envelope:', data);
 });
 
 connection.on('subscribe', (data) => {
-    log.console(`${data.uniqueId} subscribe!`);
+    console.log(`${data.uniqueId} subscribe!`);
+    addEventsItem('subscribe', data);
 })
-let comandosConNombres = null;
-
-async function obtenerPaginaDeComandos() {
-    if (comandosConNombres) {
-        // Si ya tenemos la lista de comandos, simplemente la devolvemos
-        return comandosConNombres;
-    }
-
-    const listaComandos = [];
-    const pageSize = 100;
-    let skip = 0;
-
-    try {
-        const response = await fetch(`http://localhost:8911/api/commands?skip=${skip}&pageSize=${pageSize}`);
-        const data = await response.json();
-
-        if (!Array.isArray(data)) {
-            throw new Error('La respuesta no contiene un array de comandos');
-        }
-
-        const comandos = data;
-        listaComandos.push(...comandos);
-
-        if (comandos.length === pageSize) {
-            skip += pageSize;
-            // Recursivamente obtenemos más comandos si es necesario
-            return obtenerPaginaDeComandos();
-        } else {
-            listaComandos.forEach(cmd => {
-                if (!cmd || cmd < 1) {
-                    console.error('Comando ignorado:', cmd);
-                    return;
-                }
-            });
-
-            const MAX_COMMANDS = 100;
-            const comandosLimitados = listaComandos.slice(0, MAX_COMMANDS);
-            
-            // Crear una lista de objetos con el ID y el nombre de cada comando
-            comandosConNombres = comandosLimitados.map(cmd => ({
-                commandId: cmd.ID,
-                commandName: cmd.Name,
-                Type: cmd.Type,
-                IsEnabled: cmd.IsEnabled,
-                Unlocked: cmd.Unlocked,
-                GroupName: cmd.GroupName
-            }));
-
-            // Almacenar la lista de comandos obtenida
-            return comandosConNombres;
-        }
-    } catch (error) {
-        console.error('Error al obtener la página de comandos:', error);
-        throw error;
-    }
-}
-
-let ultimoEnvio = 0;
-
-async function enviarCommandID(eventType, data) {
-    let Command;
-    if (eventType === "gift") {
-        Command = data.giftName;
-    } else if (eventType === "likes" || eventType === "chat") {
-        Command = data;
-    } else if (eventType === "follow") {
-        Command = "FOLLOW";
-    } else if (eventType === "share") {
-        Command = "share";
-    }
-
-    // Obtener la lista de comandos si aún no la tenemos
-    comandosConNombres = comandosConNombres || await obtenerPaginaDeComandos();
-
-    log.console('Lista de comandos recibida:', comandosConNombres);
-
-    // Buscar el comando correspondiente al commandName
-    const comandoEncontrado = comandosConNombres.find(comando => {
-        const commandNameParts = comando.commandName.toLowerCase().split(' ');
-        return commandNameParts.includes(Command.toLowerCase());
-    });
-
-    // Verificar si se encontró el comando
-    if (comandoEncontrado) {
-        const tiempoActual = Date.now();
-        const tiempoDiferencia = tiempoActual - ultimoEnvio;
-        const tiempoRestante = Math.max(0, 5000 - tiempoDiferencia); // 5000 ms = 5 segundos
-
-        setTimeout(() => {
-            fetch(`http://localhost:8911/api/commands/${comandoEncontrado.commandId}`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    id: comandoEncontrado.commandId,
-                    name: comandoEncontrado.commandName,
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                log.console('Comando enviado:', comandoEncontrado.commandName);
-                ultimoEnvio = Date.now();
-            })
-            .catch(error => {
-                console.error('Error al enviar el comando:', error, comandoEncontrado.commandId);
-            });
-        }, tiempoRestante);
-    } else {
-        console.error('No se encontró un comando con el nombre:', Command);
-    }
-}
-
-
-var audio, chatbox, button, channelInput, audioqueue, isPlaying, add, client, skip;
-
-const TTS_API_ENDPOINT = 'https://api.streamelements.com/kappa/v2/speech?'; // unprotected API - use with caution
-const PRONOUN_API_ENDPOINT = 'https://pronouns.alejo.io/api/users/';
-const maxMsgInChat = 2 * 10;
-const DESCENDING = true; // newest on top
-const VOICE_PREFIX = '&';
-const pronoun_DB = {}; // username -> pronound_id
-const FEM_PRONOUNS = ['sheher', 'shethey'];
 
 // appendvoicelist voicelistarray
 // const VOICE_LIST_ALT = Object.keys(VOICE_LIST).map(k => VOICE_LIST[k]);
@@ -1329,217 +1021,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
     voiceSelectContainer.appendChild(voiceSelect);
 
     // Inicializar Select2
-    $(voiceSelect).select2(); 
+    $(voiceSelect).select2();
     $(voiceSelect).on('change', function() {
         const selectedValue = $(this).val();
-        fetchAudio(selectedValue);
     });
+    console.log(voiceSelect.value);
 });
-
-let isReading = false;
-let cache = [];
-let lastText = "";
 let lastComment = '';
-let lastCommentTime = 0;
 
-
-function enviarMensaje(message) {
-
-    // Enviar el mensaje
-    fetch("http://localhost:8911/api/v2/chat/message", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ "Message": message, "Platform": "Twitch", "SendAsStreamer": true })
-        })
-        .then(function(response) {
-            if (response.ok) {}
-        })
-        .catch(function(error) {
-            console.error('Error al enviar el mensaje:', error);
-        });
-
-    lastComment = message;
-    lastCommentTime = Date.now();
-}
-class Queue {
-    constructor() {
-        this.items = [];
-    }
-
-    enqueue(element) {
-        this.items.push(element);
-    }
-
-    dequeue() {
-        if (this.isEmpty()) {
-            return "Underflow";
-        }
-        return this.items.shift();
-    }
-
-    isEmpty() {
-        return this.items.length === 0;
-    }
-}
-
-// function leerMensajes(text) {
-//     // if (text && !isReading) {
-//     //     fetchAudio(text).then(audioUrl => {
-//     //         if (audioUrl) {
-//     //             audioqueue.enqueue(audioUrl);
-//     //             if (!isPlaying) kickstartPlayer();
-//     //         }
-//     //     });
-//     // }
-
-// }
-
-let audioQueue = [];
-let lastReadText = null;
-let audioMap = {};
-let audioKeys = [];
-
-function calculatePercentageOfAlphabets(text) {
-    let alphabetCount = 0;
-    for (let i = 0; i < text.length; i++) {
-        if (/^[a-z]$/i.test(text[i])) {
-            alphabetCount++;
-        }
-    }
-    return (alphabetCount / text.length) * 100;
-}
-
-async function fetchAudio(txt) {
-    try {
-        // Si el texto es igual al último texto leído, simplemente retornar
-        if (txt === lastReadText) {
-            return;
-        }
-
-        // Actualizar el último texto leído
-        lastReadText = txt;
-
-        // Si el audio ya existe en el mapa, usarlo
-        if (audioMap[txt]) {
-            return audioMap[txt];
-        }
-
-        // Si el audio no existe en el mapa, solicitar un nuevo audio
-        const resp = await fetch(TTS_API_ENDPOINT + makeParameters({ voice: selectedVoice, text: txt }));
-        if (resp.status !== 200) {
-            console.error("Mensaje incorrecto");
-            return;
-        }
-
-        const blob = await resp.blob();
-        const blobUrl = URL.createObjectURL(blob);
-
-        // Agregar el nuevo audio al mapa
-        audioMap[txt] = blobUrl;
-        audioKeys.push(txt);
-
-        return blobUrl;
-    } catch (error) {
-        console.error("Error fetchaudio:", error);
-    }
-}
-
-function makeParameters(params) {
-    return Object.keys(params)
-        .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
-        .join('&');
-}
-
-function skipAudio() {
-    audio.pause();
-    audio.currentTime = 0;
-
-    // If the queue is not empty, dequeue the next audio and start playing it
-    if (!audioqueue.isEmpty()) {
-        audio.src = audioqueue.dequeue();
-        audio.load(); // Cargar el audio
-        audio.play(); // Reproducir el audio
-    } else {
-        // Si no hay más elementos en la cola, simplemente restablece el estado de reproducción
-        isPlaying = false;
-    }
-}
-
-function kickstartPlayer() {
-    // If the queue is empty, do nothing
-    if (audioqueue.isEmpty()) {
-        isPlaying = false;
-        return;
-    }
-
-    // Dequeue the first text from the queue and fetch its audio
-    isPlaying = true;
-    const audioUrl = audioqueue.dequeue();
-    audio.src = audioUrl;
-    audio.load();
-    audio.play().catch(() => {
-        // If there is an error while playing the audio, try to play the next audio in the queue
-        kickstartPlayer();
-    });
-
-    // When the audio ends, try to play the next audio in the queue
-    audio.onended = function() {
-        kickstartPlayer();
-    };
-}
-// Crear una base de datos IndexedDB
-
-
-// Reproducir un audio
-function playAudio(audioData1) {
-    let audio = new Audio(audioData1);
-    audio.play();
-}
-
-
-function isValidUrl(string) {
-    try {
-        new URL(string);
-    } catch (_) {
-        return false;
-    }
-
-    return true;
-}
-
-// Función para formatear cada opción en el dropdown de Select2
-function formatGiftOption(gift) {
-    if (!gift.id) {
-        return gift.text;
-    }
-
-    return $('<span><img src="' + gift.imageUrl + '" class="thumbnail-img" /> ' + gift.text + '</span>');
-}
-
-
-
-function testHandleEvent() {
-    var eventType = document.getElementById('eventType').value;
-
-    if (eventType === 'gift') {
-        var dataInput = document.getElementById('data').value;
-        let data = { giftName: dataInput };
-        handleEvent(eventType, data);
-        handleSound(eventType, data);
-    } else {
-        var data = document.getElementById('data').value;
-        handleEvent2(eventType, data);
-        handleSound(eventType, data)
-    }
-}
-const sentData = new Set(); // Conjunto para almacenar los datos enviados
-
-let commandList = {};
-let lastCommand = null;
-let currentPlayerIndex = 0;
-let playerName = localStorage.getItem('playerName');
 window.señal = ()=>{}
 let elemento = new Proxy({ value: 0, data: {} }, {
     set: (target, propiedad, value) => {
@@ -1552,145 +1041,176 @@ let elemento = new Proxy({ value: 0, data: {} }, {
     }
 });
 
-let commandCounter = 0; // Variable de control de contador
-const maxRepeatCount = 50; // Valor máximo para repeatCount
-// let inforequest = getinfoindexdb("gifts");
-// function getinfoindexdb(storeName) {
-// const transaction = db.transaction([storeName], "readonly");
-// const objectStore = transaction.objectStore(storeName);
-
-// const request = objectStore.getAll();
-
-// request.onsuccess = (event) => {
-//     console.log(event,"event-displayEvents");
-// }
-// request.onerror = (event) => {
-//     console.error("Display error: ", event.target.errorCode);
-// };
-//  return request;
-// } 
-// console.log(inforequest);
-function handleEvent(eventType, data, msg, likes) {
-    let MinecraftLivetoggle = document.getElementById("MinecraftLive")
-
-    //log.console(MinecraftLivetoggle.checked);
-    if (!MinecraftLivetoggle.checked) {
-        return;
-    }
-
-    // Obtener los datos de los eventos del localStorage
-    const commandListInput = localStorage.getItem('events');
-    const commandList = JSON.parse(commandListInput);
-    const giftName = data.giftName.toLowerCase(); // Normaliza el nombre del regalo
-
-    let foundGift = commandList.gift.default.find(gift => gift.name.toLowerCase() === giftName);
-    log.console(data.gifName,giftName);
-    if (!foundGift) {
-        // Si no se encontró un regalo específico, usar el regalo predeterminado
-        foundGift = commandList.gift.default.find(gift => gift.name.toLowerCase() === 'default');
-    }
-
-    if (foundGift) {
-        const eventCommands = foundGift.commands.split('\n');
-
-        eventCommands.forEach(command => {
-            const replacedCommand = replaceVariables(command, data, likes);
-            sendReplacedCommand(replacedCommand);
-            log.console(replacedCommand);
-        });
-    } else {
-        log.console("No se encontró un regalo correspondiente para:", data.giftName);
-    }
-}
-
-
-// Función para reemplazar variables en los comandos
-
-const escapeMinecraftCommand = (command) => {
-    // Escape only double quotes, not backslashes (unchanged)
-    return command.replace(/"/g, '\\"');
-  };
-  
-  // Función para reemplazar variables en los comandos
-  const replaceVariables = (command, data, likes) => {
-    log.console(command);
-    // Reemplazar variables en el comando (unchanged)
-    let replacedCommand = command
-      .replace(/uniqueId/g, data.uniqueId || '')
-      .replace(/nickname/g, data.nickname || '')
-      .replace(/comment/g, data.comment || '')
-      .replace(/{milestoneLikes}/g, likes || '')
-      .replace(/{likes}/g, likes || '')
-      .replace(/message/g, data.comment || '')
-      .replace(/giftName/g, data.giftName || '')
-      .replace(/repeatCount/g, data.repeatCount || '')
-      .replace(/playername/g, playerName || '');
-  
-    // Convertir el comando a minúsculas
-    replacedCommand = replacedCommand.toLowerCase();
-  
-    // Remove all backslashes (proceed with caution!)
-    replacedCommand = replacedCommand.replace(/\\/g, '');
-  
-    //log.console(replacedCommand);
-    return replacedCommand;
-  };
-  
-
-function handleEvent2(eventType, data, msg, likes) {
-    let MinecraftLivetoggle = document.getElementById("MinecraftLive")
-
-    //log.console(MinecraftLivetoggle.checked);
-    if (!MinecraftLivetoggle.checked) {
-        return;
-    }
-    // Obtener la lista de comandos del localStorage
-    const commandjsonlist = localStorage.getItem('commandjsonlist');
-    const commandjson = JSON.parse(commandjsonlist);
-
-    if (eventType === 'gift') {
-        return;
-    }
-    // Verificar si se encontró la lista de comandos
-    if (commandjson) {
-        // Verificar si el eventType tiene un comando predeterminado
-        if (commandjson[eventType] && commandjson[eventType].default) {
-            const defaultCommand = commandjson[eventType].default;
-
-            // Ejecutar el comando predeterminado
-            defaultCommand.forEach(command => {
-                const replacedCommand = replaceVariables(command, data, likes);
-                sendReplacedCommand(replacedCommand);
-                log.console(replacedCommand);
-            });
-        } else {
-            console.error(`No se encontraron comandos predeterminados para el evento "${eventType}"`);
-        }
-    } else {
-        console.error(`No se encontraron datos válidos en el localStorage`);
-    }
-}
-
-
-function getChatCommands() {
-    let eventCommands = [];
-    let userCommands = localStorage.getItem('userCommands');
-
-    // Obtener comandos personalizados del usuario
-    if (userCommands) {
-        eventCommands = JSON.parse(userCommands);
-    }
-
-    return eventCommands;
-}
-
-
-function sendReplacedCommand(replacedCommand) {
+async function sendReplacedCommand(replacedCommand) {
     window.api.sendChatMessage(replacedCommand);
-}
+    console.log("sendreplacedcommand",replacedCommand); 
+        document.getElementById('lastcomandsended').innerHTML = replacedCommand;
+        await wsManager.sendCommand(replacedCommand);
+        console.log(replacedCommand);
+    }
+function showModal(title, content) {
+    const modal = document.getElementById('my_modal_2');
+    const modalTitle = document.getElementById('modal-title');
+    const modalContent = document.getElementById('modal-content');
 
-async function sendToServer(eventType, data, color, msg, message) {
+    modalTitle.innerText = title;
+    modalContent.innerText = content;
+
+    modal.showModal();
+}
+document.cookie = "x-servertap-key=change_me"; // Cambia esto por tu clave de autenticación si es necesario
+// let ws;
+// let reconnectInterval = 5000; // Intervalo de reconexión en milisegundos
+// let reconnectAttempts = 0;
+// let maxReconnectAttempts = 10;
+class WebSocketManager {
+    constructor(maxReconnectAttempts = 10, reconnectInterval = 5000) {
+        this.maxReconnectAttempts = maxReconnectAttempts;
+        this.reconnectInterval = reconnectInterval;
+        this.reconnectAttempts = 0;
+        this.ws = null;
+    }
+
+    connect(wsurl) {
+        this.ws = new WebSocket(wsurl);
+
+        this.ws.onopen = () => {
+            console.log('Opened connection');
+            document.getElementById('output').innerText = 'Opened connection';
+            this.ws.send(`/say conectado `);
+            this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+        };
+
+        this.ws.onmessage = (event) => {
+            console.log('Message from server:', event.data);
+            // document.getElementById('output').innerText += '\n' + event.data.replace(/\n/g, '<br>');
+        };
+
+        this.ws.onerror = (error) => {
+            console.log('WebSocket Error:', error);
+            document.getElementById('output').innerText += '\nWebSocket Error: ' + error.message;
+        };
+
+        this.ws.onclose = () => {
+            console.log('Closed connection');
+            document.getElementById('output').innerText += '\nClosed connection';
+
+            if (this.reconnectAttempts < this.maxReconnectAttempts) {
+                this.reconnectAttempts++;
+                console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+                document.getElementById('output').innerText += `\nAttempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`;
+                setTimeout(() => this.connect(), this.reconnectInterval);
+            } else {
+                console.log('Max reconnect attempts reached. Giving up.');
+                document.getElementById('output').innerText += '\nMax reconnect attempts reached. Giving up.';
+            }
+        };
+    }
+
+    async sendCommand(command) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(command);
+            console.log("Command sent:", command);
+        } else {
+            await this.waitForConnection();
+            this.ws.send(command);
+            console.log("Command sent after reconnecting:", command);
+        }
+        document.getElementById('lastcomandsended').innerText = command;
+    }
+
+    async waitForConnection() {
+        while (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+}
+// function wsconsole() {
+
+//     function connect() {
+//         ws = new WebSocket('ws://localhost:4567/v1/ws/console');
+
+//         ws.onopen = function() {
+//             console.log('Opened connection');
+//             document.getElementById('output').innerText = 'Opened connection';
+//             ws.send(`/say ${reconnectAttempts}/${maxReconnectAttempts} intentos de reconexión`);
+//             reconnectAttempts = 0; // Resetear los intentos de reconexión al conectar con éxito
+//         };
+
+//         ws.onmessage = function(event) {
+//             console.log('Message from server:', event.data);
+//             // document.getElementById('output').innerText += '\n' + event.data.replaceAll('\n', '<br>');
+//         };
+
+//         ws.onerror = function(error) {
+//             console.log('WebSocket Error:', error);
+//             document.getElementById('output').innerText += '\nWebSocket Error: ' + error.message;
+//         };
+
+//         ws.onclose = function() {
+//             console.log('Closed connection');
+//             document.getElementById('output').innerText += '\nClosed connection';
+
+//             if (reconnectAttempts < maxReconnectAttempts) {
+//                 reconnectAttempts++;
+//                 console.log(`Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`);
+//                 document.getElementById('output').innerText += `\nAttempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})...`;
+//                 setTimeout(connect, reconnectInterval);
+//             } else {
+//                 console.log('Max reconnect attempts reached. Giving up.');
+//                 document.getElementById('output').innerText += '\nMax reconnect attempts reached. Giving up.';
+//             }
+//         };
+//     }
+//     setTimeout(connect, 500);
+// }
+const wsManager = new WebSocketManager('ws://localhost:4567/v1/ws/console');
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('testConnection').addEventListener('click', function(event) {
+        event.preventDefault(); // Evita el comportamiento predeterminado del botón
+    
+        const ip = document.getElementById('ip').value;
+        const port = document.getElementById('port').value;
+        const password = document.getElementById('password').value;
+    
+        const formData = {
+            ip: ip,
+            port: port,
+            password: password
+        };
+    
+        console.log('Form Data:', formData);
+        fetch(`http://${ip}:${port}/v1/server`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'key': `${password}` // Cambia esto por tu clave de autenticación si es necesario
+            },
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok ' + response.statusText);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Server status:', data);
+            showModal('Server Status', JSON.stringify(data, null, 2)); // Usar showModal para mostrar los datos
+            wsManager.connect(`ws://${ip}:${port}/v1/ws/console`);
+        })
+        .catch(error => {
+            console.error('There has been a problem with your fetch operation:', error);
+            showModal('Error', 'Error: ' + error.message); // Usar showModal para mostrar el error
+        });
+    });
+})    
+async function sendToServer(eventType, data) {
+    if (data.comment === lastComment) {
+        return;
+    }
+    lastComment = data.comment; 
     let objet = {eventType, data};
+    eventmanager(eventType, data);
     /// aqui enviamos a eventos eventmanager
     elemento.value = objet;
     fetch(`${backendUrl}/api/receive1`, {
@@ -1698,11 +1218,11 @@ async function sendToServer(eventType, data, color, msg, message) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ eventType, data, color, msg, message }),
+        body: JSON.stringify({ eventType, data}),
       })
       .then(response => response.json())
       .then(data => {
-        //log.console(data); // Maneja la respuesta del servidor si es necesario
+        //console.log(data); // Maneja la respuesta del servidor si es necesario
       })
       .catch(error => {
         console.error('Error:', error);
@@ -1711,25 +1231,5 @@ async function sendToServer(eventType, data, color, msg, message) {
 
 window.onload = async function() {
     loadRowsOnPageLoad(tableBody);
-    try {
-        audio = document.getElementById("audio");
-        skip = document.getElementById("skip-button");
-        isPlaying = false;
-        audioqueue = new Queue();
-
-        if (skip) {
-            skip.onclick = skipAudio;
-        } else {
-            console.error("Error: skip-button is undefined");
-        }
-
-        if (audio) {
-            audio.addEventListener("ended", kickstartPlayer);
-        } else {
-            console.error("Error: audio is undefined");
-        }
-
-    } catch (error) {
-        console.error("Error:", error);
-    }
 };
+export { sendReplacedCommand };

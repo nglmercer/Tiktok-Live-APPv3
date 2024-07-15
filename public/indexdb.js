@@ -1,14 +1,22 @@
-let db;
-const request = indexedDB.open("eventDatabase", 1);
+import { sendReplacedCommand } from './app.js';
+import { replaceVariables } from './functions/replaceVariables.js';
 
-document.getElementById("addgift-button").addEventListener("click", function() {
-    addEvent("gifts");
+let db;
+let indexedavailableGifts = [];
+const request = indexedDB.open("eventDatabase", 2); // Incrementa la versión de la base de datos
+
+document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("addgift-button").addEventListener("click", () => addEvent("gift"));
+    document.getElementById("addchat-button").addEventListener("click", () => addEvent("chat"));
+    document.getElementById("addlikes-button").addEventListener("click", () => addEvent("likes"));
+    document.getElementById("testHandleevent").addEventListener("click", testHandleEvent123);
+    setTimeout(loadOptionsGift1, 1000);
 });
 
 request.onupgradeneeded = (event) => {
     db = event.target.result;
 
-    const stores = ["gifts", "chat", "follows", "subscribes"];
+    const stores = ["gift", "chat", "likes"];
     stores.forEach(store => {
         if (!db.objectStoreNames.contains(store)) {
             db.createObjectStore(store, { keyPath: "id", autoIncrement: true });
@@ -18,53 +26,57 @@ request.onupgradeneeded = (event) => {
 
 request.onsuccess = (event) => {
     db = event.target.result;
-    displayEvents("gifts");
-    // displayEvents("chat");
-    // displayEvents("follows");
-    // displayEvents("subscribes");
+    displayEvents("gift");
+    displayEvents("chat");
+    displayEvents("likes");
 };
 
 request.onerror = (event) => {
     console.error("Database error: ", event.target.errorCode);
 };
 
-const optionsgiftdb = () => {
+function optionsgiftdb() {
     const result = window.globalSimplifiedStates;
     return result;
 };
 
-const indexdboptionsgift = optionsgiftdb();
-console.log('indexdboptionsgift', indexdboptionsgift);
-const indexedavailableGifts = indexdboptionsgift[0].availableGifts || []; // Asegúrate de que availableGifts esté definido y sea un array
-
-const selectInputgifts = document.getElementById("gifts-title");
-indexedavailableGifts.forEach(gift => {
-    const optionElement = document.createElement('option');
-    optionElement.textContent = gift.name;
-    optionElement.value = gift.name;
-    selectInputgifts.appendChild(optionElement);
-});
+function loadOptionsGift1() {
+    const indexdboptionsgift = optionsgiftdb();
+    console.log('indexdboptionsgift', indexdboptionsgift);
+    indexedavailableGifts = indexdboptionsgift[0].availableGifts || [];
+    const selectInputgifts = document.getElementById("gift-title");
+    indexedavailableGifts.forEach(gift => {
+        const optionElement = document.createElement('option');
+        optionElement.textContent = gift.name;
+        optionElement.value = gift.name;
+        selectInputgifts.appendChild(optionElement);
+    });
+}
 
 function addEvent(storeName) {
-    const selectInput = document.getElementById(`${storeName}-title`);
-    const descriptionInput = document.getElementById(`${storeName}-description`);
+    let eventTitle, eventDescription;
 
-    const eventTitle = selectInput.value;
-    const eventDescription = descriptionInput.value;
+    if (storeName === "gift") {
+        eventTitle = document.getElementById(`${storeName}-title`).value;
+    } else {
+        eventTitle = document.getElementById(`${storeName}-title`).value;
+    }
+
+    eventDescription = document.getElementById(`${storeName}-description`).value;
 
     if (eventTitle === "" || eventDescription === "") {
         alert("Ingrese tanto un título como una descripción.");
         return;
     }
-
+    console.log(storeName);
     const transaction = db.transaction([storeName], "readwrite");
     const objectStore = transaction.objectStore(storeName);
 
     const request = objectStore.add({ title: eventTitle, description: eventDescription });
 
     request.onsuccess = () => {
-        selectInput.value = "";
-        descriptionInput.value = "";
+        document.getElementById(`${storeName}-title`).value = "";
+        document.getElementById(`${storeName}-description`).value = "";
         displayEvents(storeName);
     };
 
@@ -123,12 +135,6 @@ function displayEvents(storeName) {
     request.onsuccess = (event) => {
         const eventList = document.getElementById(`${storeName}-list`);
         eventList.innerHTML = "";
-        const tittleencontrartest = "Rose";
-        event.target.result.forEach((eventItem) => {
-            if (eventItem.title === tittleencontrartest) {
-                console.log("ENCONTROOOOOOOOOOOOOOOOOOOOOOOOOOOOO",eventItem);
-            }
-        });
         console.log(event.target.result);
         event.target.result.forEach((eventItem) => {
             const listItem = document.createElement("li");
@@ -154,21 +160,24 @@ function displayEvents(storeName) {
                 saveButton.style.display = 'inline-block';
             };
 
-            const titleInput = document.createElement("select");
+            let titleInput;
+            if (storeName === "gift") {
+                titleInput = document.createElement("select");
+                indexedavailableGifts.forEach(gift => {
+                    const optionElement = document.createElement('option');
+                    optionElement.textContent = gift.name;
+                    optionElement.value = gift.name;
+                    titleInput.appendChild(optionElement);
+                });
+            } else {
+                titleInput = document.createElement("input");
+                titleInput.type = storeName === "likes" ? "number" : "text";
+            }
             titleInput.style.display = 'none';
-            titleInput.style.width = '100%';
-
-            // Rellenar el select con las opciones disponibles
-            indexedavailableGifts.forEach(gift => {
-                const optionElement = document.createElement('option');
-                optionElement.textContent = gift.name;
-                optionElement.value = gift.name;
-                titleInput.appendChild(optionElement);
-            });
-
-            titleInput.value = eventItem.title; // Seleccionar el valor actual
+            titleInput.value = eventItem.title;
 
             const descriptionInput = document.createElement("textarea");
+            descriptionInput.className = "textarea textarea-primary";
             descriptionInput.value = eventItem.description;
             descriptionInput.style.display = 'none';
 
@@ -201,98 +210,161 @@ function displayEvents(storeName) {
         console.error(`Display ${storeName} error: `, event.target.errorCode);
     };
 }
-document.getElementById("testHandleevent").addEventListener("click", function() {
-    testHandleEvent123();
-});
+
 function testHandleEvent123() {
-  var eventType = document.getElementById('eventType').value;
-
-  if (eventType === 'gift') {
-      var dataInput = document.getElementById('data').value;
-      let data = { giftName: dataInput };
-      minecraftlive(eventType, data);
-  } else {
-      var data = document.getElementById('data').value;
-      handleEvent2(eventType, data);
-  }
+    const eventType = document.getElementById('eventType').value;
+    const data = getTestData(eventType);
+    minecraftlive(eventType, data);
 }
-function minecraftlive(eventype, data) {
-  if (eventype !== 'gift') {
-      return;
-  }
-  let MinecraftLivetoggle = document.getElementById("MinecraftLive")
 
-  //log.console(MinecraftLivetoggle.checked);
-  if (!MinecraftLivetoggle.checked) {
-      return;
-  }
-  const transaction = db.transaction(("gifts"), "readonly");
-  const objectStore = transaction.objectStore("gifts");
-
-  const request = objectStore.getAll();
-  request.onsuccess = (event) => {
-  // Obtener los datos de los eventos del localStorage
-  const commandList =  event.target.result  
-  const giftName = data.giftName; // Normaliza el nombre del regalo
-
-  commandList.forEach((eventItem) => {
-    if (eventItem.title === giftName) {
-        console.log("ENCONTROOOOOOOOOOOOOOOOOOOOOOOOOOOOO",eventItem);
-        const eventCommands = eventItem.description.split('\n');
-        eventCommands.forEach(command => {
-          const replacedCommand = replaceVariables123(command, data, likes);
-          sendReplacedCommand(replacedCommand);
-          log.console(replacedCommand);
-      });
-    } else if (eventItem.title === "default") {
-          const eventCommands = eventItem.description.split('\n');
-          eventCommands.forEach(command => {
-            const replacedCommand = replaceVariables123(command, data, likes);
-            sendReplacedCommand(replacedCommand);
-            log.console(replacedCommand);
-        });
-      } else {      
-        console.log("NO ENCONTRO",eventItem,"y no default");
+function getTestData(eventType) {
+    const dataInput = document.getElementById('data').value;
+    switch (eventType) {
+        case 'gift':
+            return { giftName: dataInput };
+        case 'chat':
+            return { comment: dataInput };
+        case 'likes':
+            return { likeCount: dataInput };
+        default:
+            return null;
     }
-    
-
-  });
-
-}
-request.onerror = (event) => {
-  console.error("Display error: ", event.target.errorCode);
-};
 }
 
+function getMinecraftcheckbox() {
+    const MinecraftLivetoggle = document.getElementById("MinecraftLive");
+    return MinecraftLivetoggle.checked;
+}
+export function Minecraftlivedefault(eventType, data) {
+    if (!getMinecraftcheckbox()) return;
 
-// Función para reemplazar variables en los comandos
+    const commandjsonlist = localStorage.getItem('commandjsonlist');
+    const commandjson = JSON.parse(commandjsonlist);
 
-const escapeMinecraftCommand123 = (command) => {
-  // Escape only double quotes, not backslashes (unchanged)
-  return command.replace(/"/g, '\\"');
-};
+    if (commandjson && commandjson[eventType] && commandjson[eventType].default) {
+        const defaultCommand = commandjson[eventType].default;
+        defaultCommand.forEach(command => {
+            const replacedCommand = replaceVariables(command, data);
+            sendReplacedCommand(replacedCommand);
+            console.log(replacedCommand);
+        });
+    } else {
+        console.error(`No se encontraron comandos predeterminados para el evento "${eventType}"`);
+    }
+}
 
-// Función para reemplazar variables en los comandos
-const replaceVariables123 = (command, data, likes) => {
-  log.console(command);
-  // Reemplazar variables en el comando (unchanged)
-  let replacedCommand = command
-    .replace(/uniqueId/g, data.uniqueId || '')
-    .replace(/nickname/g, data.nickname || '')
-    .replace(/comment/g, data.comment || '')
-    .replace(/{milestoneLikes}/g, likes || '')
-    .replace(/{likes}/g, likes || '')
-    .replace(/message/g, data.comment || '')
-    .replace(/giftName/g, data.giftName || '')
-    .replace(/repeatCount/g, data.repeatCount || '')
-    .replace(/playername/g, playerName || '');
+export function minecraftlive(eventType, data) {
+    const MinecraftLivetoggle = getMinecraftcheckbox();
 
-  // Convertir el comando a minúsculas
-  replacedCommand = replacedCommand.toLowerCase();
+    if (!MinecraftLivetoggle) {
+        return;
+    }
 
-  // Remove all backslashes (proceed with caution!)
-  replacedCommand = replacedCommand.replace(/\\/g, '');
+    const transaction = db.transaction([eventType], "readonly");
+    const objectStore = transaction.objectStore(eventType);
+    const request = objectStore.getAll();
 
-  //log.console(replacedCommand);
-  return replacedCommand;
-};
+    request.onsuccess = (event) => {
+        const results = event.target.result;
+        console.log(results);
+
+        let foundMatch = false;
+
+        results.forEach(result => {
+            if (eventType === 'gift' && result.title === data.giftName) {
+                const eventCommands = result.description.split('\n');
+                ProcessMinecraftCommands(eventCommands, data);
+                foundMatch = true;
+            } else if (eventType === 'chat' && result.title === data.comment) {
+                const eventCommands = result.description.split('\n');
+                ProcessMinecraftCommands(eventCommands, data);
+                foundMatch = true;
+            } else if (eventType === 'likes' && result.title >= data.likeCount) {
+                const eventCommands = result.description.split('\n');
+                ProcessMinecraftCommands(eventCommands, data);
+                foundMatch = true;
+            }
+        });
+
+        if (!foundMatch) {
+            console.log("Minecraftlivedefault");
+            Minecraftlivedefault(eventType, data);
+        }
+    };
+
+    request.onerror = (event) => {
+        console.error("Display error: ", event.target.errorCode, request);
+        Minecraftlivedefault(eventType, data);
+    };
+}
+
+function ProcessMinecraftCommands(eventCommands, data) {
+    eventCommands.forEach(command => {
+        if (!command) return;
+        const replacedCommand = replaceVariables(command, data);
+        sendReplacedCommand(replacedCommand);
+        console.log(replacedCommand);
+    });
+}
+document.getElementById("add-event-button").addEventListener("click", () => addEventFromTextarea());
+function parseGiftEvent(data) {
+    const lines = data.split('\n');
+    const storeName = document.getElementById("event-store-name").value;
+    const events = [];
+
+    let currentEvent = null;
+
+    lines.forEach(line => {
+        line = line.trim();
+        if (line.includes(':') && !line.startsWith('/')) {
+            if (currentEvent) {
+                events.push(currentEvent);
+            }
+            const [title, ...commands] = line.split(':');
+            currentEvent = {
+                title: title.trim(),
+                commands: commands.join(':').trim().split('\n')
+                    .map(command => command.trim())
+                    .filter(command => command !== '')
+            };
+        } else if (line.startsWith('/')) {
+            if (currentEvent) {
+                currentEvent.commands.push(line.trim());
+            }
+        }
+    });
+
+    if (currentEvent) {
+        events.push(currentEvent);
+    }
+
+    return { storeName, events };
+}
+
+function addEventFromTextarea() {
+    const eventData = document.getElementById("event-data").value;
+
+    if (!eventData) {
+        alert("Ingrese datos de eventos.");
+        return;
+    }
+
+    const { storeName, events } = parseGiftEvent(eventData);
+
+    events.forEach(event => {
+        const transaction = db.transaction([storeName], 'readwrite');
+        const objectStore = transaction.objectStore(storeName);
+
+        const request = objectStore.add({ title: event.title, description: event.commands.join('\n') });
+
+        request.onsuccess = () => {
+            displayEvents(storeName);
+        };
+
+        request.onerror = (event) => {
+            console.error(`Agregar ${storeName}, error: `, event.target.errorCode);
+        };
+    });
+
+    document.getElementById("event-data").value = "";
+}

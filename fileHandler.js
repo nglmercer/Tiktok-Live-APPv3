@@ -106,12 +106,13 @@ const getFileById = (fileId) => {
     // Asegúrate de que fileId es un número
     const fileIdNumber = Number(fileId);
     if (isNaN(fileIdNumber)) {
-        throw new Error(`Invalid file id: ${fileId}`);
+        // throw new Error(`Invalid file id: ${fileId}`);
+        return null;
     }
     const file = fileData.find(file => file.index === fileIdNumber);
     
-    console.log('file', file, "fileid", fileIdNumber);
-    console.log('fileData', fileData);
+    // console.log('file', file, "fileid", fileIdNumber);
+    // console.log('fileData', fileData);
 
     if (!file) {
         throw new Error(`File with id ${fileId} not found`);
@@ -131,7 +132,7 @@ const getFileByname = (fileIdname) => {
     // Asegúrate de que fileId es un número
     const file = fileData.find(file => file.name === fileIdname);
     
-    console.log('file', file, "fileid", fileIdname);
+    // console.log('file', file, "fileid", fileIdname);
     // console.log('fileData', fileData);
 
     if (!file) {
