@@ -114,93 +114,6 @@ function setupLocalStorage(inputElement, storageKey, callback) {
 
     });
 }
-const jsonFilterWords = './datosjson/filterwords.json';
-let customfilterWords = [];
-
-async function fetchFilterWords() {
-    try {
-        const response = await fetch(jsonFilterWords);
-        if (!response.ok) {
-            throw new Error(`Error fetching JSON file: ${response.statusText}`);
-        }
-        const data = await response.json();
-        console.log('Fetched JSON voicelist:', data);
-        customfilterWords = data.palabras;
-        return customfilterWords;
-    } catch (error) {
-        console.error('Error fetching JSON:', error);
-        return [];
-    }
-}
-function initializeFilterComponent(inputId, buttonId, containerId, storageKey, loadButtonId = null) {
-    const input = document.getElementById(inputId);
-    const addButton = document.getElementById(buttonId);
-    const container = document.getElementById(containerId);
-    const loadButton = loadButtonId ? document.getElementById(loadButtonId) : null;
-
-    let items = JSON.parse(localStorage.getItem(storageKey)) || [];
-
-    function saveItems() {
-        localStorage.setItem(storageKey, JSON.stringify(items));
-    }
-
-    function createItemElement(item) {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'border p-1 flex justify-between items-center';
-
-        const itemText = document.createElement('span');
-        itemText.textContent = item;
-
-        const closeButton = document.createElement('button');
-        closeButton.textContent = 'X';
-        closeButton.className = 'bg-red-500 text-white px-2 py-1 ml-2';
-        closeButton.onclick = () => {
-            container.removeChild(itemDiv);
-            items = items.filter(i => i !== item);
-            saveItems();
-        };
-
-        itemDiv.appendChild(itemText);
-        itemDiv.appendChild(closeButton);
-
-        return itemDiv;
-    }
-
-    function renderItems() {
-        container.innerHTML = '';
-        items.forEach(item => {
-            const itemElement = createItemElement(item);
-            container.appendChild(itemElement);
-        });
-    }
-
-    addButton.onclick = () => {
-        const newItem = input.value.trim();
-        if (newItem && !items.includes(newItem)) {
-            items.push(newItem);
-            saveItems();
-            const itemElement = createItemElement(newItem);
-            container.appendChild(itemElement);
-            input.value = '';
-        }
-    };
-
-    if (loadButton) {
-        loadButton.onclick = async () => {
-            const knownFilters = await fetchFilterWords();
-            knownFilters.forEach(item => {
-                if (!items.includes(item)) {
-                    items.push(item);
-                    const itemElement = createItemElement(item);
-                    container.appendChild(itemElement);
-                }
-            });
-            saveItems();
-        };
-    }
-
-    renderItems();
-}
 
 document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('input', function(event) {
@@ -209,88 +122,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     aplicarEstado();
-    initializeFilterComponent('filter-words', 'addfilter-words', 'containerfilter-words', 'filterWords', 'load-known-filters');
-    initializeFilterComponent('filter-users', 'addfilter-users', 'containerfilter-users', 'filterUsers');
-    // Minecraft formlive data minecraftlive
-    const form = document.getElementById('createBotForm');
-    const keyBOTInput = document.getElementById('keyBOT');
-    const keySERVERInput = document.getElementById('keySERVER');
-    
-    // Cargar datos guardados del formulario si existen
-    if (localStorage.getItem('botFormData')) {
-        const formData = JSON.parse(localStorage.getItem('botFormData'));
-        keyBOTInput.value = formData.keyBOT;
-        keySERVERInput.value = formData.keySERVER;
-    }
-    
-    // Escuchar el evento de envío del formulario
-    form.addEventListener('submit', function(event) {
-        event.preventDefault(); // Evitar que se envíe el formulario
-    
-        // Obtener el valor del campo "keySERVER"
-        const keySERVER = keySERVERInput.value;
-    
-        // Extraer el número de puerto utilizando split(':')
-        const serverParts = keySERVER.split(':');
-        const serverAddress = serverParts[0];
-        const serverPort = serverParts[1] || ''; // Si no hay puerto, asignar una cadena vacía
-    
-        // Guardar los datos en el localStorage
-        const formData = {
-            keyBOT: keyBOTInput.value,
-            keySERVER: keySERVER,
-            serverPort: serverPort
-        };
-        localStorage.setItem('botFormData', JSON.stringify(formData));
-    
-        // Enviar el número de puerto como parámetro adicional
-        console.log('Dirección del servidor:', serverAddress);
-        console.log('Puerto del servidor:', serverPort);
-    });
-    const uniqueIdInput = document.getElementById('uniqueIdInput');
-    const connectButton = document.getElementById('connectButton');
-
-    // Load the last entered value from localStorage
-    const uniqueId = localStorage.getItem('uniqueId');
-    if (uniqueId) {
-        uniqueIdInput.value = uniqueId;
-    }
-
-    if (connectButton) {
-        connectButton.addEventListener('click', () => {
-            const currentValue = uniqueIdInput.value;
-            if (currentValue) {
-                // Store the current value in localStorage
-                localStorage.setItem('uniqueId', currentValue);
-            }
-        });
-    }
-
-    const filterWordsInput = document.getElementById('filter-words');
-    setupLocalStorage(filterWordsInput, 'lastFilterWords');
-    filterWordsInput.addEventListener('change', function(event) {
-        const currentValue = filterWordsInput.value;
-        if (currentValue) {
-            localStorage.setItem('lastFilterWords', currentValue);
-        }
-        console.log('Valor actualizado:', currentValue);
-    });
-    const filterUsersInput = document.getElementById('filter-users');
-    setupLocalStorage(filterUsersInput, 'lastfilterUsers');
-    const userpointsInput = document.getElementById('users-points');
-    setupLocalStorage(userpointsInput, 'userpoints');
-    // Cargar el comando inicial guardado
-    const initCommandInput = document.getElementById('InitcommandInput');
-    setupLocalStorage(document.getElementById('InitcommandInput'), 'Initcommand');
-    setupLocalStorage(document.getElementById('playerNameInput'), 'playerName');
-    
-    // Cargar el nombre del jugador guardado
-    const playerNameInput = document.getElementById('playerNameInput');
-    
     document.getElementById('saveAllChanges').addEventListener('click', saveAllChanges1);
-
 });
 function saveAllChanges1() {
+                    
     const commandjsonlist = {};
     
     const types = ['chat', 'follow', 'likes', 'share', 'welcome', 'envelope', 'subscribe', 'gift'];
@@ -299,19 +134,19 @@ function saveAllChanges1() {
       const commands = document.getElementById(`${type}commands`).value.trim();
     
       if (commands !== "") {
-        commandjsonlist[type] = {
-          "default": commands.split('\n')
-        };
+          commandjsonlist[type] = {
+              "default": commands.split('\n')
+          };
       } else {
-        commandjsonlist[type] = {
-          "default": []
-        };
+          commandjsonlist[type] = {
+              "default": []
+          };
       }
     });
     
     localStorage.setItem('commandjsonlist', JSON.stringify(commandjsonlist));
-  
+
     // Muestra los datos guardados en la consola
     console.log('Datos almacenados en el localStorage:');
     console.log(commandjsonlist);
-  }
+    }

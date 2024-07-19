@@ -28,7 +28,7 @@ let audioKeys = [];
 let isPlaying = false;
 let audio = document.getElementById('audio');
 
-async function fetchAudio(txt, voice) {
+async function fetchAudio(txt) {
     try {
         if (txt === lastReadText) {
             return;
@@ -41,7 +41,7 @@ async function fetchAudio(txt, voice) {
         }
 
         const params = new URLSearchParams({
-            voice: voice || getVoiceFromVoiceSelect(),
+            voice: getVoiceFromVoiceSelect(),
             text: txt
         });
 
@@ -109,14 +109,15 @@ function kickstartPlayer() {
     };
 }
 
-function leerMensajes(text, voice) {
+function leerMensajes(text) {
+    console.log('leerMensajes', text);
     if (text) {
-        fetchAudio(text, voice).then(audioUrl => {
+        fetchAudio(text).then(audioUrl => {
             if (audioUrl) {
                 audioQueue.enqueue(audioUrl);
                 if (!isPlaying) {
                     isPlaying = true;
-                    playNextAudio();
+                    kickstartPlayer();
                 }
             }
         });
@@ -129,6 +130,7 @@ export class TTS {
     }
 
     speak(message) {
+        console.log('TTS speak', message);
         const utterance = new SpeechSynthesisUtterance(message);
         utterance.volume = document.querySelector('#volume').value;
 

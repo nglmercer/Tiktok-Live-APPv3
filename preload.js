@@ -23,6 +23,7 @@ const api = {
     sendlibraryData: (callback) => ipcRenderer.invoke('send-library-data', { eventType, data }),
 
     createBot: (options, keyLOGIN) => ipcRenderer.invoke('create-bot', options, keyLOGIN), // Asegúrate de pasar keyLOGIN aquí
+    createRconClient: (options, keyLOGIN) => ipcRenderer.invoke('create-rconclient', options, keyLOGIN),
     sendChatMessage: (message) => ipcRenderer.invoke('send-chat-message', message),
     onBotEvent: (callback) => ipcRenderer.on('bot-event', callback),
     createClientOsc: () => ipcRenderer.invoke('create-client-osc'),

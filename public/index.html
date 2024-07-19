@@ -44,9 +44,13 @@ meta
     <style>
 
         select {
-            background-color: #c4c4c4;
+            background-color: #29292900;
+            border: 2px solid #2c18e6;
         }
-
+        select:focus {
+            background-color: rgba(0, 0, 0, 0.308);
+            color: black;
+        }
     </style>
 </head>
 <body class="font-sans font-bold text-white text-xl mt-10 w-full bg-gray-900 flex flex-col">
@@ -299,7 +303,7 @@ meta
                         </div>
                         <div class="card">
                             puntos iniciales del canal
-                            <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-600 w-20">
+                            <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-700 w-20">
                             <label class="cyberpunk-checkbox-label">sin puntos no lee
                             <input type="checkbox" class="cyberpunk-checkbox" id="userpointsCheckbox" checked>
                             </label>
@@ -307,21 +311,19 @@ meta
                 
                             <label class="cyberpunk-checkbox-label">añadir puntos x lvl   
                             <input type="checkbox" class="cyberpunk-checkbox" id="userlevelCheckbox" checked>
-                                         <input type="number" id="users-level" value="20" max="50" min="0" class="bg-slate-600 w-20">
+                                         <input type="number" id="users-level" value="20" max="50" min="0" class="bg-slate-700 w-20">
                         </label>
                         </div>
                     </div>
 
                 </div>
                 <div class="containerbox">
-                    <input type="text" id="testvoice">
-                    <button class="custombutton" id="testvoicebtn">testvoice</button>
 
+                    <div id="customCommandContainer"></div>
+                    <input id="chatInput" type="text">
+                    <button id="sendButton">Enviar</button>
                             
                 </div>
-                
-
-    
             </div>
             <div id="tab2" class="tab-content">
                 <div class="containerbox">
@@ -338,7 +340,7 @@ meta
                             <label>Comando Inicial de BOT:</label>
                             <input type="text" id="InitcommandInput" placeholder="login">
                             </div>
-                        <div class="collapse collapse-arrow bg-base-200 hover:bg-slate-800">
+                        <div class="collapse collapse-plus bg-slate-900 border-cyan-700 border-4 hover:bg-slate-700">
                             <input type="radio" id="acordiondefaultcheck" name="my-accordion-2" checked="checked" />
                             <div class="collapse-title text-xl font-medium">Minecraft bot server</div>
                             <div class="collapse-content">
@@ -357,7 +359,26 @@ meta
                                   </form>
                             </div>
                           </div>
-                          <div class="collapse collapse-arrow bg-base-200 hover:bg-slate-800">
+                          <div class="collapse collapse-plus bg-slate-900 border-cyan-700 border-4 hover:bg-slate-700">
+                            <input type="radio" id="acordiondefaultnocheck1" name="my-accordion-2" />
+                            <div class="collapse-title text-xl font-medium">Rcon server minecraft</div>
+                            <div class="collapse-content">
+                                <h1 class="text-xl font-bold mb-4">Rcon server and port</h1>
+                                
+                            <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
+                                <label for="Rconip" >IP</label>
+                                <input type="text" id="Rconip" value="209.222.98.146">
+                                <label for="Rconport" >Port</label>
+                                <input type="text" id="Rconport" value="25795">
+                                <label for="Rconpassword" >Password</label>
+                                <input type="text" id="Rconpassword" value="hello">
+                            
+                            </div>
+                            <button class="btn btn-primary" id="Rconconnect">Connectar</button>
+                            </div>
+                            
+                        </div>
+                        <div class="collapse collapse-plus bg-slate-900 border-cyan-700 border-4 hover:bg-slate-700">
                             <input type="radio" id="acordiondefaultnocheck" name="my-accordion-2" />
                             <div class="collapse-title text-xl font-medium">Minecraft plugin server</div>
                             <div class="collapse-content">
@@ -459,7 +480,7 @@ meta
                         <br>
                         repeatCount      por  de   REPETICIONES EN GIFT                 
                     </div> -->
-                    <details class="collapse bg-blue-950">
+                    <details class="collapse border-2 border-blue-500  bg-blue-950 hover:bg-blue-900">
                         <summary class="collapse-title text-xl font-medium">Click Aqui para que puedas editar tus comandos para el chat seguidores cada vez que dan like y comparten
                             tambien son los comandos por defecto de LIKES GIFT Y CHAT si no se encuentra ningun comando personalizado
                         </summary>
@@ -513,7 +534,7 @@ meta
                       <select id="gift-title" class="select select-info w-full"></select>
                       <textarea id="gift-description" class="textarea textarea-info w-full" placeholder="comandos de minecraft"></textarea>
                       <button id="addgift-button" class="custombutton bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300">Add Gift</button>
-                      <div class="collapse bg-base-200">
+                      <div class="collapse border-2 border-blue-500  bg-blue-950 hover:bg-blue-900">
                         <input type="radio" name="my-accordion-commandos" checked="checked" />
                         <div class="collapse-title text-xl font-medium">Click ver y editar gift-list</div>
                         <div class="collapse-content">
@@ -526,7 +547,7 @@ meta
                       <input type="text" id="chat-title" class="input input-bordered w-full" placeholder="chat Title">
                       <textarea id="chat-description" class="textarea textarea-info w-full" placeholder="Comment Description"></textarea>
                       <button id="addchat-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300">Add Chat</button>
-                      <div class="collapse bg-base-200">
+                      <div class="collapse border-2 border-blue-500  bg-blue-950 hover:bg-blue-900">
                         <input type="radio" name="my-accordion-commandos" />
                         <div class="collapse-title text-xl font-medium">Click ver y editar chat-list</div>
                         <div class="collapse-content">
@@ -539,7 +560,7 @@ meta
                       <textarea id="likes-description" class="textarea textarea-info w-full" placeholder="likes Description"></textarea>
                       <button id="addlikes-button" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-300">Add Likes</button>
                       
-                      <div class="collapse bg-base-200">
+                      <div class="collapse border-2 border-blue-500  bg-blue-950 hover:bg-blue-900">
                         <input type="radio" name="my-accordion-commandos" />
                         <div class="collapse-title text-xl font-medium">Click ver y editar likes-list</div>
                         <div class="collapse-content">
@@ -548,7 +569,7 @@ meta
                       </div>
                       <h2>Aqui puedes agregar comandos de eventos de minecraft con un solo texto</h2>
 
-                      <div class="collapse bg-blue-950">
+                      <div class="collapse border-2 border-blue-500  bg-blue-950 hover:bg-blue-900">
                         <input type="radio" name="my-accordion-commandos" />
                         <div class="collapse-title text-xl font-medium">Parsero de comandos</div>
                         <div class="collapse-content">
@@ -558,134 +579,92 @@ meta
                         </div>
                       </div>
 
-                      <label for="eventType" class="text-red-600 font-bold text-4xl"> Test comando:</label><div> 
+                      <label for="eventType" class="m-4 text-red-600 font-bold text-4xl"> Test comando:</label><div> 
                         <input type="text" id="eventType" placeholder="Evento a testear" value="gift">
                         <label for="data"></label>
                         <input type="text" id="data" placeholder="Default">
-                        <button class="custombutton" id="testHandleevent" >Test comando</button>
+                        <button class="m-4 custombutton" id="testHandleevent" >Test comando</button>
                     <div id="lastcomandsended"></div> 
                       </div>
-                      <div class="container mx-auto p-4">
-                        <h1 class="text-2xl font-bold mb-4">Generador de Comandos de Minecraft</h1>
+
+                    <div class="collapse border-2 border-blue-500  bg-blue-950 hover:bg-blue-900">
+                        <input type="radio" name="my-accordion-commandos" checked="checked" />
+                        <div class="collapse-title text-xl font-medium">Generador de Comandos de Minecraft</div>
+                        <div class="collapse-content">
+                            <div class="container mx-auto p-4">
+                                <h1 class="text-2xl font-bold mb-4">Generador de Comandos de Minecraft</h1>
+                                
+                                <div class="form-group mb-4">
+                                    <label for="playerName" class="block font-semibold">Nombre del Jugador:</label>
+                                    <input type="text" id="playerName" class="border p-2 w-full" placeholder="Introduce tu nombre">
+                                </div>
+                                
+                                <div class="form-group mb-4">
+                                    <label for="action" class="block font-semibold">Acción:</label>
+                                    <select id="action" class="border p-2 w-full">
+                                        <option value="summon">Summon</option>
+                                        <option value="give">Give</option>
+                                        <option value="title">Title</option>
+                                        <option value="subtitle">Subtitle</option>
+                                        <option value="tellraw">Tellraw</option>
+                                        <option value="actionbar">Actionbar</option>
+                                        <option value="setblock">setblock</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group mb-4" id="mobTypeGroup">
+                                    <label for="mobType" class="block font-semibold">Tipo de Mob:</label>
+                                    <select id="mobType" class="border p-2 w-full"></select>
+                                </div>
+                                
+                                <div class="form-group mb-4" id="mobOptionsGroup" style="display: none;">
+                                    <label for="mobOptions" class="block font-semibold">Opciones de Mob:</label>
+                                    <input type="text" id="mobOptions" class="border p-2 w-full" placeholder="key:value,key:value">
+                                </div>
+                                
+                                <div class="form-group mb-4" id="itemTypeGroup" style="display: none;">
+                                    <label for="itemType" class="block font-semibold">Tipo de Item:</label>
+                                    <select id="itemType" class="border p-2 w-full"></select>
+                                </div>
+                                
+                                <div class="form-group mb-4" id="setblockGroup" style="display: none;">
+                                    <label for="setblock" class="block font-semibold">Tipo de Item:</label>
+                                    <select id="setblock" class="border p-2 w-full"></select>
+                                </div>
                         
-                        <div class="form-group mb-4">
-                            <label for="playerName" class="block font-semibold">Nombre del Jugador:</label>
-                            <input type="text" id="playerName" class="border p-2 w-full" placeholder="Introduce tu nombre">
+                                <div class="form-group mb-4" id="messageGroup" style="display: none;">
+                                    <label for="message" class="block font-semibold">Mensaje:</label>
+                                    <input type="text" id="message" class="border p-2 w-full" placeholder="Introduce tu mensaje">
+                                </div>
+                                
+                                <div class="form-group mb-4" id="messageOptionsGroup" style="display: none;">
+                                    <label for="messageOptions" class="block font-semibold">Opciones de Mensaje:</label>
+                                    <input type="text" id="messageOptions" class="border p-2 w-full" placeholder="key:value,key:value">
+                                </div>
+                                
+                                <button id="generateCommand" class="btn btn-primary">Generar Comando</button>
+                                
+                                <div id="outputcommand" class="mt-4"></div>
+                            </div>
+                            <div id="mine_content"></div>
                         </div>
-                        
-                        <div class="form-group mb-4">
-                            <label for="action" class="block font-semibold">Acción:</label>
-                            <select id="action" class="border p-2 w-full">
-                                <option value="summon">Summon</option>
-                                <option value="give">Give</option>
-                                <option value="title">Title</option>
-                                <option value="subtitle">Subtitle</option>
-                                <option value="tellraw">Tellraw</option>
-                                <option value="actionbar">Actionbar</option>
-                                <option value="setblock">setblock</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group mb-4" id="mobTypeGroup">
-                            <label for="mobType" class="block font-semibold">Tipo de Mob:</label>
-                            <select id="mobType" class="border p-2 w-full"></select>
-                        </div>
-                        
-                        <div class="form-group mb-4" id="mobOptionsGroup" style="display: none;">
-                            <label for="mobOptions" class="block font-semibold">Opciones de Mob:</label>
-                            <input type="text" id="mobOptions" class="border p-2 w-full" placeholder="key:value,key:value">
-                        </div>
-                        
-                        <div class="form-group mb-4" id="itemTypeGroup" style="display: none;">
-                            <label for="itemType" class="block font-semibold">Tipo de Item:</label>
-                            <select id="itemType" class="border p-2 w-full"></select>
-                        </div>
-                        
-                        <div class="form-group mb-4" id="setblockGroup" style="display: none;">
-                            <label for="setblock" class="block font-semibold">Tipo de Item:</label>
-                            <select id="setblock" class="border p-2 w-full"></select>
-                        </div>
-                
-                        <div class="form-group mb-4" id="messageGroup" style="display: none;">
-                            <label for="message" class="block font-semibold">Mensaje:</label>
-                            <input type="text" id="message" class="border p-2 w-full" placeholder="Introduce tu mensaje">
-                        </div>
-                        
-                        <div class="form-group mb-4" id="messageOptionsGroup" style="display: none;">
-                            <label for="messageOptions" class="block font-semibold">Opciones de Mensaje:</label>
-                            <input type="text" id="messageOptions" class="border p-2 w-full" placeholder="key:value,key:value">
-                        </div>
-                        
-                        <button id="generateCommand" class="btn btn-primary">Generar Comando</button>
-                        
-                        <div id="outputcommand" class="mt-4"></div>
-                    </div>
-                    <div id="mine_content"></div>
+                      </div>
             </div>
             </div>
             <div id="tab3" class="tab-content">
                 <div class="containerbox">
-                <label class="cyberpunk-checkbox-label">
-                    <input class="cyberpunk-checkbox"  id="sendsoundCheckbox" type="checkbox" checked>
-        
-                    <div class="checkmark">Sonidos</div>
-            </label>
-            <div class="container mx-auto p-4">
-                <h1 class="text-2xl font-bold mb-4">Audio Table</h1>
-                <label for="addButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Add New Event</label>
-                <input type="checkbox" id="addButton" class="hidden">
-                <div class="modal-fade" id="audioModal" tabindex="-1" role="dialog" aria-labelledby="audioModalLabel" aria-hidden="true">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <div class="modal-header bg-gray-900 text-white">
-                                <h5 class="modal-title" id="audioModalLabel">Select Audio from MyInstants</h5>
-                                <button type="button" class="deleteButton" data-dismiss="modal" aria-label="Close">
-                                </button>
-                            </div>
-                            <div class="modal-body bg-gray-900 text-white">
-                                <!-- Search bar -->
-                                <input type="text" id="searchBox" class="form-control mb-4" placeholder="Search for audio...">
-                                <button id="searchButton" class="btn btn-primary">Search</button>
-                                <!-- Audio list will be displayed here -->
-                                <div id="audioList"></div>
-                            </div>
-                        </div>
+                    <h1>YT Music Search</h1>
+                    <div id="search-container">
+                        <input type="text" id="searchInput" placeholder="Search for songs...">
+                        <button id="searchButtonYT">Search</button>
                     </div>
-                </div>
-                
-                <button id="testButton" class="custombutton" type="button">Test</button>
-                <input type="text" id="test-event" class="py-1 px-2 rounded-sm">    
-                
-                <table class="table-auto w-full mt-4 border">
-                <thead>
-                    <tr>
-                    <th>Action</th>
-                    <th>Volume</th>
-                    <th>Enable</th>
-                    <th>Event Name</th>
-                    <th>Sound Effect</th>
-                    <th>Delete</th>
-                    </tr>
-                </thead>
-                <tbody id="audioTableBody">
-                    <!-- Table rows will be added here -->
-                </tbody>
-                </table>
-            </div>
-            <!-- Modal for selecting audio -->
-            <script>
-                document.addEventListener('click', function(event) {
-                    const modal = document.querySelector('.modal-fade');
-                    const addButton = document.getElementById('addButton');
                     
-                    // Si el modal está visible y se hace clic fuera del contenido del modal, ocúltalo
-                    if (addButton.checked && !modal.contains(event.target) && event.target !== addButton) {
-                        addButton.checked = false;
-                    }
-                });
-                
-            </script>
-            </div>
+                    <div id="ytmusic-container"></div>
+                    <div id="player-container"></div>
+                    <button id="skipButton" class="btn btn-secondary">Skip</button>
+                    <div id="playlist-container"></div>
+                </div>
+
             </div>
             <div id="tab4" class="tab-content">
                 <div class="containerbox">       
@@ -709,14 +688,12 @@ meta
         
                 </div>
                 <div class="containerbox">
+                    ----------------------------------------------FIN-----------
                     <div class="modalhtml"></div>
             
                     <button id="open" style="display: none;">open</button>
                     <button id="close" style="display: none;">close</button>
                     
-                    <div class="inputFields">
-                        <input id="channel" type="text" placeholder="Twitch channel" ><button id="channel-button" value="GOOO" type="button" class="btn btn-primary">GOOO</button>
-                    </div>
                     <div id="chatbox"></div>
                     </div>
             </div>
@@ -739,18 +716,9 @@ meta
                 <button id="importDBButton">Importar Base de Datos</button>
                 </div>
                 <div class="containerbox">
-                    <h1>YT Music Search</h1>
-                    <div id="search-container">
-                        <input type="text" id="searchInput" placeholder="Search for songs...">
-                        <button id="searchButtonYT">Search</button>
+                    <div class="center-element">
+                        URL OVERLAY MENSAJES EVENTOS Y GIFTS http://localhost:8081/overlay/overlay.html
                     </div>
-                    
-                    <div id="ytmusic-container"></div>
-                    <div id="player-container"></div>
-                    <button id="skipButton" class="btn btn-secondary">Skip</button>
-                    <div id="playlist-container"></div>
-                </div>
-                <div class="containerbox">
                     <label class="cyberpunk-checkbox-label">
                         <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
                         mixitupAlerts
@@ -801,13 +769,14 @@ meta
             </div>
         </div>
         <div class="divfooter">
-            <div id="roomStats"></div>    
             <audio id="audio" controls autoplay>
             </audio>
             <audio id="soundPlayer" type="audio/mp3"></audio>
             <input id="skip-button" type="button" class="btn btn-primary" value="SKIP"> </button>
 
             <div id="durationDisplay"></div>
+            <div id="roomStats"></div>    
+
         </div>
     </div>
 
@@ -856,6 +825,6 @@ meta
       
       </script>
 </body>
-<script src="script.js"></script>
+<!-- <script src="script.js"></script> -->
 
 </html>

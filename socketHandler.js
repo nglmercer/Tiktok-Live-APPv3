@@ -81,7 +81,8 @@ tiktokConnectionWrapper.connection.on('gift', msg => {
     socket.emit('gift', msg);overlayNamespace.emit('gift', msg);});
 
 tiktokConnectionWrapper.connection.on('social', msg => {
-    socket.emit('social', msg);overlayNamespace.emit('social', msg);});
+    socket.emit('social', msg);
+    overlayNamespace.emit('social', msg);});
 
 tiktokConnectionWrapper.connection.on('like', msg => {
     socket.emit('like', msg);overlayNamespace.emit('like', msg);});

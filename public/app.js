@@ -2,74 +2,18 @@ import { minecraftlive, Minecraftlivedefault } from './indexdb.js';
 // import { replaceVariables } from './functions/replaceVariables.js';
 import { fetchSimplifiedState } from './functions/simplifiedState.js';
 import { searchSong, playNextInQueue } from './functions/YoutubeApi.js';
-import { eventmanager } from './renderer.js';
+import { eventmanager, handleleermensaje } from './renderer.js';
+import { createCustomCommandComponent, getCustomCommandComponent } from "./utils/Commandshtml.js";
+import { saveLastData, getLastData, simulateWithLastData } from './functions/datamanager.js';
+import { handleAvailableGifts, getAvailableGifts } from './functions/giftmanager.js';
+import { connectWebsocket, connectTikTok } from './connections/connection.js';
+import { initializeFilterComponent, addFilterItemToGroup } from './utils/filters.js';
 let backendUrl = "http://localhost:8081"
-let websocket = null;
-let timeouttime = 3000;
-let maxAttempts = 5;
-let Attemptsconnection = 0;
-function connectwebsocket() {
-    if (websocket) return; // Already connected
-    if (Attemptsconnection >= Attemptsconnection) return; 
-    websocket = new WebSocket("ws://localhost:21213/");
-    Attemptsconnection++;
-    websocket.onopen = function () {
-        document.getElementById("stateText").innerHTML = "Connected tikfinity";
-        Attemptsconnection = 0;
-    }
- 
-    websocket.onclose = function () {
-        document.getElementById("stateText").innerHTML = "Disconnected";
-        websocket = null;
-        // setTimeout(connectwebsocket, 4000); // Schedule a reconnect attempt
-    }
-
-    websocket.onerror = function () {
-        document.getElementById("stateText").innerHTML = "Connection Failed";
-        websocket = null;
-        setTimeout(connectwebsocket, 4000); // Schedule a reconnect attempt
-    }
-
-    websocket.onmessage = function (event) {
-        let parsedData = JSON.parse(event.data); // Parse the JSON data
-        let eventype = parsedData.event;
-        let data = parsedData.data;
-        switch (eventype) {
-            case "chat":
-                handlechat(data);
-                break;
-            case "share":
-                console.log("share", data);
-                break;
-            case "likes":
-                handlelike(data);
-                break;
-            case "like":
-                handlelike(data);
-                console.log("like", data);
-                break;
-            case "follow":
-                console.log("follow", data);
-                break;
-            case "gift":
-                handlegift('gift', data);
-                console.log("gift", data);
-                break;
-            default:
-                sendToServer(eventype, data);
-                minecraftlive(eventype, data);
-                console.log("default", data);
-                break;
-        }
-    }
-}
-setTimeout(connectwebsocket, 3000);
-// Crea la conexión al servidor Socket.IO con la URL obtenida
-let connection = new TikTokIOConnection(backendUrl);
-
+let timeouttime = 5000;
 let viewerCount = 0;
 let likeCount = 0;
 let diamondsCount = 0;
+let connection = new TikTokIOConnection(backendUrl);
 
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
@@ -83,72 +27,106 @@ $(document).ready(() => {
     });
 
     if (window.settings.username) connect();
-})
+    initializeFilterComponent('filter-words', 'addfilter-words', 'containerfilter-words', 'filterWords', 'load-known-filters');
+    initializeFilterComponent('filter-users', 'addfilter-users', 'containerfilter-users', 'filterUsers');
+    setTimeout(initializeApp, 2000);
+});
 
-
+function initializeApp() {
+    connectWebsocket(handleWebsocketMessage);
+    // loadVoiceList();
+    // loadLastGift();
+    fetchSimplifiedState();
+    fetchvoicelist().then(data => {
+        Object.keys(data).forEach(function(key) {
+            var option = document.createElement('option');
+            option.text = key;
+            option.value = data[key];
+            voiceSelect.appendChild(option);
+        });
+    });
+    const simplifiedStateJson = localStorage.getItem('simplifiedState');
+    if (simplifiedStateJson) {
+        const state = JSON.parse(simplifiedStateJson);
+        console.log("Recibe state localstorage", state);
+        handleAvailableGifts(state);
+    }
+}
+let uniqueId = null;
 function connect() {
-    if (Attemptsconnection >= Attemptsconnection) return; 
-    let uniqueId = window.settings.username || $('#uniqueIdInput').val();
+    uniqueId = window.settings.username || $('#uniqueIdInput').val();
     if (uniqueId !== '') {
         $('#stateText').text('Connecting...');
-        Attemptsconnection++;
-connection.connect(uniqueId, {
-            processInitialData: true,
-            enableExtendedGiftInfo: true,
-            enableWebsocketUpgrade: true,
-            requestPollingIntervalMs: 2000,
-        }).then(state => {
-            Attemptsconnection = 0;
-            console.log(`Connected to roomId ${state.roomId} upgraded ${state.upgradedToWebsocket}`, state);
-            console.log(`Available Gifts:`, state.availableGifts);
-        // Función para cargar los datos desde el localStorage
-            availableGiftsimage(state);
-        // Enviar al servidor la información de la conexión establecida
-            sendToServer('connected', uniqueId);
-        // Restablecer estadísticas
-            viewerCount = 0;
-            likeCount = 0;
-            diamondsCount = 0;
-            updateRoomStats();
-        // Generar enlace de perfil de usuario
-            const userProfileLink = generateUsernameLink({ uniqueId });
-        // Si hay una imagen de portada de la sala, mostrarla junto con el enlace del perfil de usuario
-            if (state.roomInfo.cover) {
-                const userProfileImage = `<img src="${state.roomInfo.cover.url_list[1]}" alt="${uniqueId}" width="50" height="50">`;
-                const userProfileContainer = `
-                    <div class="user-profile-container">
-                        <div class="user-profile-image">${userProfileImage}</div>
-                        <div class="user-profile-link">${userProfileLink}</div>
-                    </div>
-                `;
-                $('#stateText').html(userProfileContainer);
-            } else {
-                const userProfileContainer = `
-                <div class="user-profile-container">
-                    <div class="user-profile-image">Conectado</div>
-                    <div class="user-profile-link">${userProfileLink}</div>
-                </div>
-            `;
-            $('#stateText').html(userProfileContainer);
-            }
-        }).catch(errorMessage => {
-            // Manejar el error en caso de que falle la conexión
-            console.error("Error in connection:", errorMessage);
-            // Mostrar el  error en la interfaz de usuario
-            $('#stateText').text(errorMessage);
-            setTimeout(() => {
-                connect();
-                connectwebsocket(); // Schedule a reconnect attempt
-            }, timeouttime);
-        });
+        connectTikTok(uniqueId, handleConnectionSuccess, handleConnectionError);
     } else {
-        // Mostrar una alerta si no se proporciona un nombre de usuario
-        alert('No username entered');
+        $('#stateText').text('coloque un nombre de usuario');
+    }
+}
+function handleConnectionSuccess(state) {
+    console.log(`Connected to roomId ${state.roomId} upgraded ${state.upgradedToWebsocket}`, state);
+    console.log(`Available Gifts:`, state.availableGifts);
+    handleAvailableGifts(state);
+    sendToServer('connected', uniqueId);
+    updateUserProfile(state, uniqueId);
+    updateRoomStats();
+}
+function handleConnectionError(errorMessage) {
+    console.error("Error in connection:", errorMessage);
+    $('#stateText').text(errorMessage);
+    setTimeout(connect, timeouttime);
+}
+function handleWebsocketMessage(event) {
+    let parsedData = JSON.parse(event.data);
+    let eventype = parsedData.event;
+    let data = parsedData.data;
+    switch (eventype) {
+        case "chat":
+            handlechat(data);
+            break;
+        case "share":
+            handleshare(data);
+            break;
+        case "social":
+            handlesocial(data);
+            break;
+        case "likes":
+        case "like":
+            handlelike(data);
+            break;
+        case "follow":
+            handlefollow(data);
+            break;
+        case "gift":
+            handlegift('gift', data);
+            break;
+        default:
+            sendToServer(eventype, data);
+            minecraftlive(eventype, data);
+            break;
+    }
+}
+function updateUserProfile(state, uniqueId) {
+    const userProfileLink = generateUsernameLink({ uniqueId });
+    if (state.roomInfo.cover) {
+        const userProfileImage = `<img src="${state.roomInfo.cover.url_list[1]}" alt="${uniqueId}" width="50" height="50">`;
+        const userProfileContainer = `
+            <div class="user-profile-container">
+                <div class="user-profile-image">${userProfileImage}</div>
+                <div class="user-profile-link">${userProfileLink}</div>
+            </div>
+        `;
+        $('#stateText').html(userProfileContainer);
+    } else {
+        const userProfileContainer = `
+            <div class="user-profile-container">
+                <div class="user-profile-image">Conectado</div>
+                <div class="user-profile-link">${userProfileLink}</div>
+            </div>
+        `;
+        $('#stateText').html(userProfileContainer);
     }
 }
 var voiceSelect = document.createElement('select');
-
-const jsonFilePath = './datosjson/simplifiedStates.json';
 const jsonVoicelist = './datosjson/voicelist.json';
 async function fetchvoicelist() {
     try {
@@ -165,126 +143,6 @@ async function fetchvoicelist() {
         return null;
     }
 }
-
-setTimeout(async () => {
-    fetchvoicelist().then(data => {
-
-        Object.keys(data).forEach(function(key) {
-            var option = document.createElement('option');
-            option.text = key;
-            option.value = data[key];
-            voiceSelect.appendChild(option);
-            // console.log(key, data[key]);
-        });
-    });
-    // fetchFilterWords()
-}, 1000);
-
-fetchSimplifiedState().then(data => {
-    if (data) {
-        // Usa los datos como desees
-        console.log('Fetched simplified state:', data);
-        globalSimplifiedStates.push(data);
-    }
-});
-
-let globalSimplifiedStates = [];
-window.globalSimplifiedStates = globalSimplifiedStates;
-
-function availableGiftsimage(state) {
-    const giftImages = {};
-    if (!state || !state.availableGifts) {
-        const savedStateJson = localStorage.getItem('simplifiedState');
-        const savedState = JSON.parse(savedStateJson);
-        if (savedState && savedState.availableGifts) {
-            state = savedState;
-        }
-    }
-    
-    const container = document.getElementById('giftContainer');
-    container.innerHTML = '';
-    state.availableGifts.sort((a, b) => a.diamond_count - b.diamond_count);
-
-    state.availableGifts.map(gift => {
-        const giftName = gift.name;
-        const imageUrl = gift.image.url_list[1];
-        giftImages[giftName] = imageUrl;
-
-        const giftBox = document.createElement('div');
-        giftBox.classList.add('gift-box');
-
-        const giftImage = document.createElement('img');
-        giftImage.src = imageUrl;
-        giftImage.alt = giftName;
-        giftBox.appendChild(giftImage);
-
-        const giftNameText = document.createElement('p');
-        const foundGift = state.availableGifts.find(gift => gift.name.toLowerCase() === giftName.toLowerCase());
-        if (foundGift) {
-            giftNameText.textContent = `${foundGift.name} ${foundGift.diamond_count}🌟`;
-        }
-        giftBox.appendChild(giftNameText);
-
-        container.appendChild(giftBox);
-    });
-
-    const simplifiedState = {
-        availableGifts: state.availableGifts.map(gift => ({
-            name: gift.name,
-            diamondcost: gift.diamond_count,
-            giftId: gift.id,
-            imageUrl: gift.image.url_list[1]
-        }))
-    };
-
-    globalSimplifiedStates.push(simplifiedState);
-
-    const simplifiedStateJson = JSON.stringify(state);
-    localStorage.setItem('simplifiedState', simplifiedStateJson);
-
-    // Añadir el botón de descarga si no existe
-    addDownloadButton();
-
-    return giftImages;
-}
-
-function addDownloadButton() {
-    const buttonContainer = document.getElementById('downloadButtonContainer');
-    buttonContainer.innerHTML = '';
-
-    const downloadButton = document.createElement('button');
-    downloadButton.textContent = 'Descargar JSON';
-    downloadButton.className = "custombutton";
-    downloadButton.onclick = downloadJson;
-
-    buttonContainer.appendChild(downloadButton);
-}
-
-function downloadJson() {
-    const dataStr = JSON.stringify(globalSimplifiedStates, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-
-    const downloadLink = document.createElement('a');
-    downloadLink.href = url;
-    downloadLink.download = 'simplifiedStates.json';
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-}
-
-// Cargar los datos del localStorage al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    const simplifiedStateJson = localStorage.getItem('simplifiedState');
-    if (simplifiedStateJson) {
-        const state = JSON.parse(simplifiedStateJson);
-        console.log("Recibe state localstorage", state);
-        availableGiftsimage(state);
-    }
-});
-
-
-
 // Prevent Cross site scripting (XSS)
 function sanitize(text) {
     if (text) { // Verifica si la entrada no es undefined
@@ -295,18 +153,18 @@ function sanitize(text) {
 }
 
 function updateRoomStats() {
-    $('#roomStats').html(`<div class="stats stats-vertical lg:stats-horizontal shadow">
+    $('#roomStats').html(`<div class="stats stats-horizontal lg:stats-horizontal shadow">
     <div class="stat">
     <div class="stat-title text-sm">Espectadores</div>
-    <div class="stat-value text-sm">${viewerCount.toLocaleString()}</div>
+    <div class="stat-value text-sm">${viewerCount}</div>
   </div>
   <div class="stat">
   <div class="stat-title text-sm">Likes</div>
-  <div class="stat-value text-sm">${likeCount.toLocaleString()}</div>
+  <div class="stat-value text-sm">${likeCount}</div>
 </div>
 <div class="stat">
 <div class="stat-title text-sm">Diamantes</div>
-<div class="stat-value text-sm">${diamondsCount.toLocaleString()}</div>
+<div class="stat-value text-sm">${diamondsCount}</div>
 </div>`);
     return diamondsCount;
 }
@@ -321,44 +179,21 @@ function isPendingStreak(data) {
 }
 
 let lastMessage = "";
-let lastNickname = "";
-setTimeout(()=>{
-    if (localStorage.getItem('lastChatItem')) {
-        const datachatitem = JSON.parse(localStorage.getItem('lastChatItem'));
-        const message = datachatitem.comment;
-        const userData = {
-            uniqueId: "12345",
-            allUsers: false,
-            followRole: 0,
-            isModerator: false,
-            isNewGifter: false,
-            isSubscriber: false,
-            teamMemberLevel: 2,
-            topGifterRank: 3,
-        };
-if (localStorage.getItem('lastLike')) {
-    
-
-}
-    console.log(evalBadge(userData));
-// console.log(evalBadge(userData));
-addChatItem('blue', datachatitem, message);
-    }
-},3000);
-    console.log(JSON.parse(localStorage.getItem('lastChatItem')));
-    window.signal = () => {}
-    let signalmessage = new Proxy({ value: 0 }, {
-        set: (target, prop, value) => {
-            target[prop] = value;
-            signal(target[prop])
-            return true;
-        },
-        get: (target, prop) => {
-            return target[prop];
-        }
-    });
+    // window.signal = () => {}
+    // let signalmessage = new Proxy({ value: 0 }, {
+    //     set: (target, prop, value) => {
+    //         target[prop] = value;
+    //         signal(target[prop])
+    //         return true;
+    //     },
+    //     get: (target, prop) => {
+    //         return target[prop];
+    //     }
+    // });
     function sendleertext(text) {
-        signalmessage.value = text;
+        handleleermensaje(text);
+        console.log('sendleertext', text);
+        // signalmessage.value = text;
     }
     function evalBadge(data) {
         const checkboxes = document.querySelectorAll('.card-content input[type="checkbox"]');
@@ -377,8 +212,8 @@ addChatItem('blue', datachatitem, message);
             }
         });
     
-        console.log("values", values);
-        console.log(data.uniqueId, "data uniqueId evalBadge", values);
+        console.log("evalBadge values", values);
+        console.log(data.uniqueId, "uniqueId evalBadge", values);
     
         // Evaluar si el usuario cumple al menos uno de los criterios
         for (const [key, value] of Object.entries(values)) {
@@ -401,16 +236,6 @@ addChatItem('blue', datachatitem, message);
     
         return false;
     }
-    function returnbadge(badge,valor,data) {
-        Object.entries(data).forEach(([key, value]) => {
-            if (key === badge) {
-                valor = value;
-            } else {
-                valor = false;
-            }
-        });
-        return valor;
-    };
     
     function addEventsItem(eventType, data) {
         let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.eventscontainer');
@@ -419,7 +244,7 @@ addChatItem('blue', datachatitem, message);
             container.find('div').slice(0, 100).remove();
         }
     
-        const profilePictureUrl = isValidUrl(data.profilePictureUrl) ? data.profilePictureUrl : 'url_de_imagen_por_defecto';
+        const profilePictureUrl = data.profilePictureUrl;
         const colormessage = getEventColor(eventType);
     
         container.append(generateEventHTML(eventType, data.uniqueId, profilePictureUrl, colormessage));
@@ -474,20 +299,57 @@ addChatItem('blue', datachatitem, message);
         }
     }
     let counsforskip = 0;
+    let customCommandHandler;
+    function addFilterWord(word) {
+        addFilterItemToGroup('filter-words', 'containerfilter-words', 'filterWords', word);
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const customFunctions = {
+            leerMensaje: handleleermensaje,
+            songrequest: searchSong,
+            nextsong: playNextInQueue,
+            filtrarpalabras: addFilterWord
+        };
+    
+        // Crear el componente solo si no existe
+        if (!customCommandHandler) {
+            customCommandHandler = createCustomCommandComponent('customCommandContainer', 'customCommands', customFunctions);
+        }
+    
+        // Configurar el procesador de comandos
+        const chatInput = document.getElementById('chatInput');
+        const sendButton = document.getElementById('sendButton');
+        // siempre es chat y el valor es chatInput.value chattext
+        if (sendButton) {
+            sendButton.onclick = () => {
+                const chatText = chatInput.value;
+                commandchatsend(chatText);
+                chatInput.value = '';
+            };
+        }
+
+    });
+    function commandchatsend(comando) {
+        const customCommandComponent = getCustomCommandComponent();
+        if (customCommandComponent && customCommandComponent.existCommand(comando)) {
+            customCommandComponent.commandChatSend(comando);
+            return true;
+        } else {
+            return false;
+        }
+    }
 function addChatItem(color, data, text, summarize) {
         const wordsfilterwords = JSON.parse(localStorage.getItem('filterWords')) || [];
         const filteruserswhite = JSON.parse(localStorage.getItem('filterUsers')) || [];
         console.log(filteruserswhite,wordsfilterwords);
         let lowerCaseText = data.comment?.toLowerCase().replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
-        lowerCaseText = lowerCaseText.toString().replaceAll('“', '"').replaceAll('”', '"');
         localStorage.setItem('lastChatItem', JSON.stringify(data));
     
         const container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer');
         if (container.find('div').length > 500) {
             container.find('div').slice(0, 200).remove();
         }
-
-        let message = data.comment.toString().toLowerCase();
+        let message = data.comment;
         const nickname = data.nickname;
         let nameuser = data.uniqueId; 
         const userpointsInput = document.getElementById('users-points');
@@ -498,7 +360,6 @@ function addChatItem(color, data, text, summarize) {
         let sendDataCheckbox = document.getElementById('sendDataCheckbox');
         let userpointsCheckbox = document.getElementById('userpointsCheckbox');
         let messagelenght3 = document.getElementById('messagelenght3');
-        let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
         let prefixusermessage = document.getElementById('prefixusermessage').value;
         let readUserMessage = document.getElementById('readUserMessage');
         if (!userPoints[data.nickname]) {
@@ -522,50 +383,33 @@ function addChatItem(color, data, text, summarize) {
         container.stop().animate({
             scrollTop: container[0].scrollHeight
         }, 400);
-    
-
-        if (filteruserswhite.length > 0) {
-            for (let user of filteruserswhite) {
-                if (user && data.uniqueId.includes(user.toLowerCase())) {
-                    sendleertext(message);
-                    console.log(`${data.nickname} filtrado por usuario: ${user}`);
-                    return;
-                }
-            }
+        console.log("evalBadge",evalBadge(data))
+        // if (filteruserswhite.length > 0) {
+        //     for (let user of filteruserswhite) {
+        //         if (user && data.uniqueId.includes(user.toLowerCase())) {
+        //             sendleertext(message);
+        //             console.log(`${data.nickname} filtrado por usuario: ${user}`);
+        //             return;
+        //         }
+        //     }
+        // }
+        if (typeof message !== 'string') {
+            return; // Si no es una cadena, sale de la función
         }
-        if (evalBadge(data) === false) {
+        if (!evalBadge(data)) {
+            console.log("evalBadge",false, data)
             return;
         }
-        if (wordsfilterwords.length > 0) {
-            for (let word of wordsfilterwords) {
-                if (word && lowerCaseText.includes(word.toLowerCase())) {
-                    console.log(`${data.nickname} filtrado por palabra: ${lowerCaseText}`);
-                    return;
-                }
-            }
+        if (evalmessagecontainsfilter(lowerCaseText)) {
+            console.log("evalmessagecontainsfilter",evalmessagecontainsfilter(lowerCaseText), data)
+            return;
         }
-        let votesforskip = Number(viewerCount) / 10;
         message.toLowerCase();
-        if (message.startsWith("!play") || message.startsWith("/play") || message.startsWith("play")) {
-            const query = message.replace("!play", "").replace("/play", "").replace("play", "");
-            console.log("query", query);
-            searchSong(query);
-            if (votesforskip > votesforskip) {
-                console.log("skip");
-                playNextInQueue();
-            }
-            return;
-        }
-        if (message.startsWith("!skip") || message.startsWith("/skip") || message.startsWith("skip")) {
-            counsforskip++;
-            if (votesforskip > votesforskip) {
-                console.log("skip");
-                playNextInQueue();
-            }
-            return;
-        }
         if (message === lastMessage) {
             return;
+        }
+        if (commandchatsend(message)) {
+                return;
         }
         lastMessage = message;
         if (userpointsCheckbox.checked) {
@@ -577,50 +421,31 @@ function addChatItem(color, data, text, summarize) {
     if (text.length <= 3 && messagelenght3.checked) {
             return;
     }
-    console.log(data)
-    if (sendDataCheckbox.checked) {
-            if (userPoints[data.nickname] <= 4) {
-                console.log('Usuario con 0 puntos, mensaje omitido:', data.nickname, userPoints[data.nickname]);
-            }
-    }
-
-
-    if (color === "#CDA434"){
-        console.log('followchatdata', `${message}`);
-        sendleertext(message);
-        return;
-    }
-    
     if (readUserMessage.checked) {
         let messagewithuser = nameuser + prefixusermessage + message;
         sendleertext(messagewithuser);
     } else {
         sendleertext(message);
     }
-    if (nickname !== lastNickname) {
-        if (!isNaN(parsedValue)) {
-            // Si es un número válido, sumarlo al puntaje del usuario
-            userPoints[data.nickname] += parsedValue;
-          } else {
-            // Si no es un número válido, utilizar el valor por defecto de 5
-            userPoints[data.nickname] += 2;
-          }
-        console.log('nicknamePoints', `el usuario ${data.nickname}tiene mas puntos`,userPoints[data.nickname]);
-    }
-    if (sendsoundCheckbox.checked) {
-        if (nickname !== lastNickname) {
-    }
-        userPoints[data.nickname]--;
-        lastNickname = nickname
-    }
-
 }
+function evalmessagecontainsfilter(text) {
+    const filterWords = JSON.parse(localStorage.getItem('filterWords')) || [];
+    if (filterWords.length === 0) return false;
 
+    const lowerCaseText = text.toLowerCase();
+    return filterWords.some(word => {
+        word = word.toLowerCase();
+        if (lowerCaseText.includes(word)){
+            console.log(`${word} filtrado por palabra: ${lowerCaseText}`);
+        }
+        return lowerCaseText.includes(word);
+    });
+}
 function isValidUrl(string) {
     try {
         new URL(string);
     } catch (_) {
-        return false;
+        return string;
     }
 
     return true;
@@ -662,37 +487,21 @@ function handlelike(data) {
         }
     }
 }
-
-// function addOverlayEvent(eventType, data) {
-//         let overlayOff = document.getElementById('overlayOff');
-//         if (overlayOff.checked) {
-//             let overlayPage = null;
-//             if (!overlayPage || overlayPage.closed) {
-//                 overlayPage = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,alwaysOnTop=true,nodeIntegration=no');
-//                 }
-//             const event = new CustomEvent('pageAB', { detail: { eventType, indexData: data }});
-//             overlayPage.dispatchEvent(event);
-//         }
-// }
-
-//        pageB = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=false,transparent=true,nodeIntegration=no');
-//        pageB = window.open('index2.html', 'transparent', 'width=auto,height=auto,frame=true,transparent=false,nodeIntegration=no');
-console.log(JSON.parse(localStorage.getItem('lastGiftItem')));
+console.log("lastGiftItem", JSON.parse(localStorage.getItem('lastGiftItem')));
 function addGiftItem(data) {
-    localStorage.setItem('lastGiftItem', JSON.stringify(data));
     let container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.giftcontainer');
     if (container.find('div').length > 200) {
         container.find('div').slice(0, 100).remove();
     }
 
-    let streakId = data.userId.toString() + '_' + data.giftId;
+    let streakId = data.userId + '_' + data.giftId;
     let totalDiamonds = data.diamondCount * data.repeatCount;
     let giftIconSize = 150; // Tamaño base del icono del regalo
     if (totalDiamonds > 100) {
         giftIconSize += totalDiamonds; // Aumenta el tamaño del icono del regalo en 1 píxel por cada diamante
     }
-    const profilePictureUrl = isValidUrl(data.profilePictureUrl) ? data.profilePictureUrl : 'url_de_imagen_por_defecto';
-    const giftPictureUrl = isValidUrl(data.giftPictureUrl) ? data.giftPictureUrl : 'url_de_imagen_por_defecto';
+    const profilePictureUrl = data.profilePictureUrl;
+    const giftPictureUrl = data.giftPictureUrl;
 
     let html = `
       <div data-streakid=${isPendingStreak(data) ? streakId : ''}>
@@ -704,7 +513,7 @@ function addGiftItem(data) {
                       <tr>
                           <td><img class="gifticon" src="${giftPictureUrl}" style="width: ${giftIconSize}px; height: ${giftIconSize}px;"></td>
                           <td>
-                              <span><b style="${isPendingStreak(data) ? 'color:red' : ''}">x${data.repeatCount.toLocaleString()} : ${(data.diamondCount * data.repeatCount).toLocaleString()} Diamantes </b><span><br>
+                              <span><b style="${isPendingStreak(data) ? 'color:red' : ''}">x${data.repeatCount} : ${(data.diamondCount * data.repeatCount)} Diamantes </b><span><br>
                           </td>
                       </tr>
                   </table>
@@ -719,15 +528,6 @@ function addGiftItem(data) {
         existingStreakItem.replaceWith(html);
     } else {
         container.append(html);
-    }
-
-
-    let sendsoundCheckbox = document.getElementById('sendsoundCheckbox');
-
-    if (sendsoundCheckbox.checked) {
-        for (let i = 0; i < data.repeatCount; i++) {
-
-        }
     }
     container.stop();
     container.animate({
@@ -801,11 +601,10 @@ function handlechat(data) {
     addChatItem('', data, message);
     sendToServer('chat', data);
     Minecraftlivedefault('chat', data);
-
     if (message === lastMessage) {
         return;
     }
-
+    chattocommand(data);
     lastMessage = message;
     let tiempoActual = Math.floor(Date.now() / 1000);
 
@@ -815,20 +614,17 @@ function handlechat(data) {
 
     data.ultimoTiempo = tiempoActual;
 }
-
+function chattocommand(data) {
+    let message = data.comment;
+    
+}
 // New gift received
 connection.on('gift', (data) => {
     handlegift(data);
-    // const audioGiftdata = loadData();
-    // const eventData2 = audioGiftdata.find(data1 => data1.eventName === data.giftName);
-    // if (eventData2) {
-    //     const audioPath = eventData2.audioPath; // Obtener el audioPath del objeto encontrado
-    //     const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
-    //     audioElement.play(); // Reproducir el audio
-    //   } 
-
 })
+
 function handlegift(data) {
+    localStorage.setItem('lastGiftItem', JSON.stringify(data));
     if (!userPoints[data.nickname]) {
         userPoints[data.nickname] = 10; // Asignar 10 puntos por defecto
     } else if (userPoints[data.nickname] >= 1) {
@@ -856,82 +652,50 @@ function handlegift(data) {
     addGiftItem(data);
 }
 
-$(document).ready(() => {
-    const EventNameInput = document.getElementById("test-event");
-    const TestButton = document.getElementById("testButton");
-
-    if (TestButton) {
-        TestButton.onclick = function() {
-            TESTsound(EventNameInput.value.trim());
-        };
-        // Simular clic en el botón TestButton al cargar el documento
-        $(TestButton).click();
-    }
-});
-
-function TESTsound(eventName) {
-    const audioData1 = loadData();
-    audioData1.forEach((data) => {
-        console.log(data.audioPath, data.audioName, data.eventName, data.volume, data.enable);
-    });
-    const eventData1 = audioData1.find(data1 => data1.eventName === eventName);
-    if (eventData1) {
-        const audioPath = eventData1.audioPath; // Obtener el audioPath del objeto encontrado
-        const audioElement = new Audio(audioPath); // Crear un nuevo elemento de audio
-        audioElement.play(); // Reproducir el audio
-      } 
-
-}
-
-function loadData1() {
-    const storedData = localStorage.getItem("audioData");
-    return storedData ? JSON.parse(storedData) : [];
-}
-
-
 // share, follow
 let seguidores = new Set();
 
 connection.on('social', (data) => {
+    handlesocial(data);
+});
+function handlesocial(data) {
+    console.log("social", data);
     if (window.settings.showFollows === "0") return;
-    let color;
-    let message;
     let lastfollow = localStorage.setItem('lastfollow', JSON.stringify(data));
-    let sendDataCheckbox = document.getElementById('sendDataCheckbox');
-    let prefixuserfollow = document.getElementById('prefixuserfollow').value || "te sige";
+    console.log("follow", data);
     if (data.displayType.includes('follow')) {
-        color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
-        message = `${data.nickname} ${prefixuserfollow}`;
-        Minecraftlivedefault('follow', data);
-        sendToServer('follow', data);
-        if (!seguidores.has(data.nickname)) {
-            console.log('followsocial', `${data.nickname} ${prefixuserfollow}`);
-            seguidores.add(data.nickname);
-            // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
-            setTimeout(() => {
-                seguidores.delete(data.nickname);
-            }, 60000); // 5 minutos
-        }
-        addEventsItem("follow", data);
+        handlefollow(data);
 
     } else if (data.displayType.includes('share')) {
-        color = '#CDA434'; // Cambia esto al color que quieras para las comparticiones
-        message = `${data.nickname} compartió el directo`;
-        Minecraftlivedefault('share', data);
-        sendToServer('share', data);
-        addEventsItem("share", data);
-    } else {
-        color = '#CDA434'; // Color por defecto
-        message = data.label.replace('{0:user}', '');
+        handleshare(data);
     }
-
-    sendToServer('social', data, null, color, message);
-});
-
+    sendToServer('social', data);
+}
+function handlefollow(data) {
+    let prefixuserfollow = document.getElementById('prefixuserfollow').value || "te sige";
+    let color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
+    let message = `${data.nickname} ${prefixuserfollow}`;
+    Minecraftlivedefault('follow', data);
+    sendToServer('follow', data);
+    if (!seguidores.has(data.nickname)) {
+        console.log('followsocial', `${data.nickname} ${prefixuserfollow}`);
+        seguidores.add(data.nickname);
+        // Establecer un temporizador para eliminar data.uniqueId de seguidores después de 5 minutos
+        setTimeout(() => {
+            seguidores.delete(data.nickname);
+        }, 60000); // 5 minutos
+    }
+    addEventsItem("follow", data);
+}
+function handleshare(data) {
+    let color = '#CDA434'; // Color por defecto
+    let message = `${data.nickname} compartió el directo`;
+    Minecraftlivedefault('share', data);
+    sendToServer('share', data);
+    addEventsItem("share", data);
+}
 connection.on('streamEnd', () => {
-
     $('#stateText').text('Transmisión terminada.');
-
     // schedule next try if obs username set
     if (window.settings.username) {
         setTimeout(() => {
@@ -1013,20 +777,6 @@ connection.on('subscribe', (data) => {
     console.log(`${data.uniqueId} subscribe!`);
     addEventsItem('subscribe', data);
 })
-
-// appendvoicelist voicelistarray
-// const VOICE_LIST_ALT = Object.keys(VOICE_LIST).map(k => VOICE_LIST[k]);
-document.addEventListener('DOMContentLoaded', (event) => {
-    var voiceSelectContainer = document.getElementById('voiceSelectContainer');
-    voiceSelectContainer.appendChild(voiceSelect);
-
-    // Inicializar Select2
-    $(voiceSelect).select2();
-    $(voiceSelect).on('change', function() {
-        const selectedValue = $(this).val();
-    });
-    console.log(voiceSelect.value);
-});
 let lastComment = '';
 
 window.señal = ()=>{}
@@ -1048,6 +798,7 @@ async function sendReplacedCommand(replacedCommand) {
         await wsManager.sendCommand(replacedCommand);
         console.log(replacedCommand);
     }
+    
 function showModal(title, content) {
     const modal = document.getElementById('my_modal_2');
     const modalTitle = document.getElementById('modal-title');
@@ -1203,6 +954,26 @@ document.addEventListener('DOMContentLoaded', function() {
             showModal('Error', 'Error: ' + error.message); // Usar showModal para mostrar el error
         });
     });
+    document.getElementById('Rconconnect').addEventListener('click', async function(event) {
+        event.preventDefault(); // Evita el comportamiento predeterminado del botón
+        const Rconip = document.getElementById('Rconip').value;
+        const Rconport = document.getElementById('Rconport').value;
+        const Rconpassword = document.getElementById('Rconpassword').value;
+        const keyLOGIN = document.getElementById('InitcommandInput').value.trim();
+
+        console.log('Rconconnect', Rconip, Rconport, Rconpassword);
+        const options = { ip: Rconip, password: Rconpassword, port: Rconport };
+        const result = await window.api.createRconClient(options, keyLOGIN);
+        if (result.success) {
+          console.log('Bot created successfully');
+          resultMessage.textContent = 'Bot creado y conectado';
+          resultMessage.style.color = 'green';
+        } else {
+          console.error('Failed to create bot');
+          resultMessage.textContent = 'Error al crear el bot';
+          resultMessage.style.color = 'red';
+        }
+    });
 })    
 async function sendToServer(eventType, data) {
     if (data.comment === lastComment) {
@@ -1232,4 +1003,4 @@ async function sendToServer(eventType, data) {
 window.onload = async function() {
     loadRowsOnPageLoad(tableBody);
 };
-export { sendReplacedCommand };
+export { sendReplacedCommand, connection };

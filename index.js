@@ -19,8 +19,8 @@ class MinecraftRCON {
       this.client = new RCONClient(host, password, port);
       this.connected = false; // Variable para rastrear el estado de la conexión
   }
-
   async connect() {
+    console.log("RconClient", this.host, this.password, this.port);
       try {
           await this.client.connect();
           this.connected = true;
@@ -486,39 +486,62 @@ class BotManager {
 }
 
 const botManager = new BotManager();
-const rcon = new MinecraftRCON('209.222.98.146', 'hello', 25795);
+let rcon = null;
+// const rcon = new MinecraftRCON('209.222.98.146', 'hello', 25575);
 
 
 ipcMain.handle('create-bot', (event, options, keyLOGIN) => {
   console.log("createbot", event, options, keyLOGIN); // Asegúrate de que keyLOGIN se imprime aquí
-  // botManager.createBot(event, options, keyLOGIN);
+  botManager.createBot(event, options, keyLOGIN);
+
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      if (botManager.bot && botManager.bot.chat) {
+        resolve({ success: true });
+      } else {
+        resolve({ success: true, error: 'Bot not created' });
+      }
+      // if (rcon.isConnected()) {
+      //   resolve({ success: true });
+      // } else {
+      //   resolve({ success: false, error: 'Bot not created' });
+      // }
+    }, 1000);
+  });
+});
+ipcMain.handle('create-rconclient', (event, options, keyLOGIN) => {
+  console.log("create-rconclient", options.ip, options.password, options.port);
+  rcon = new MinecraftRCON(options.ip, options.password, options.port);
   rcon.connect();
   rcon.setupListeners();
   return new Promise((resolve) => {
     setTimeout(() => {
-      // if (botManager.bot && botManager.bot.chat) {
-      //   resolve({ success: true });
-      // } else {
-      //   resolve({ success: true, error: 'Bot not created' });
-      // }
       if (rcon.isConnected()) {
         resolve({ success: true });
+        rcon.executeCommand(`say ${keyLOGIN}`);
       } else {
-        resolve({ success: false, error: 'Bot not created' });
+        resolve({ success: false, error: 'Rcon not created' });
       }
     }, 1000);
   });
 });
-
 ipcMain.handle('send-chat-message', (event, message) => {
   const command = message.replace(/^\/?/, '');
-  rcon.executeCommand(command);
-
-  return botManager.sendMessage(message);
+  if (rcon) {
+    return rcon.executeCommand(command);
+  } else {
+    return botManager.sendMessage(message);
+  }
 });
 
 ipcMain.handle('bot-status', () => {
-  return rcon.isConnected();
+  let status = null;
+  if (rcon) {
+    status = rcon.isConnected();
+  } else if (botManager) {
+    status = botManager.getStatus();
+  }
+  return status;
   // return botManager.getStatus();
 });
 

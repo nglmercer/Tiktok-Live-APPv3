@@ -4,7 +4,7 @@ const replaceVariables = (command, data, likes) => {
   if (!command){
     return command;
   }
-    console.log(command);
+    // console.log(command);
     // Reemplazar variables en el comando (unchanged)
     let replacedCommand = command
         .replace(/uniqueId/g, data.uniqueId || 'testUser')
@@ -22,7 +22,7 @@ const replaceVariables = (command, data, likes) => {
   
     // Remove all backslashes (proceed with caution!)
     replacedCommand = replacedCommand.replace(/\\/g, '');
-    console.log(playerName);
+    // console.log(playerName);
     //console.log(replacedCommand);
     return replacedCommand;
   };
