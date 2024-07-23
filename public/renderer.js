@@ -12,7 +12,7 @@ import {
 import { replaceVariables } from "./functions/replaceVariables.js";
 import { TTS, leerMensajes, skipAudio } from './functions/tts.js';
 import { createElementWithButtons } from "./utils/createtable.js";
-import { createFileItemHTML, setupDragAndDrop, handlePlayButton, getfileId} from "./utils/Fileshtml.js";
+import { createFileItemHTML, setupDragAndDrop, handlePlayButton, getfileId, handlePasteFromClipboard} from "./utils/Fileshtml.js";
 // Variables globales
 let isReading = null;
 let copyFiles = [];
@@ -28,65 +28,69 @@ const EVENT_TYPES = {
 
 async function eventmanager(eventType, data) {
     const eventsfind = await getDataFromIndexedDB(databases.MyDatabaseActionevent);
+    let matched = false;
     
     for (const eventname of eventsfind) {
-        await processEvent(eventname, eventType, data);
+        matched = await processEvent(eventname, eventType, data);
+        if (matched) break; // Si se encuentra una coincidencia, salir del bucle
+    }
+    console.log('matched', matched);
+    // Si no se encontró ninguna coincidencia, ejecutar la lógica por defecto para 'gift'
+    if (!matched) {
+        for (const eventname of eventsfind) {
+            for (const [key, value] of Object.entries(eventname)) {
+                const splitkey = key.split('-');
+                if (splitkey[1] !== eventType) continue;
+                if (eventType === EVENT_TYPES.GIFT && value.select === 'default') {
+                    console.log('Default logic for GIFT');
+                    await processMediaTypes(eventname, data);
+                    break;
+                }
+            }
+        }
     }
 }
-
 async function processEvent(eventname, eventType, data) {
     let matched = false;
-
     for (const [key, value] of Object.entries(eventname)) {
         const splitkey = key.split('-');
         if (splitkey[1] !== eventType) continue;
-        if (!value.check) return true;
-        console.log(splitkey[1], eventType, value, key);
-
+        if (!value.check) return false;
         switch (eventType) {
             case EVENT_TYPES.GIFT:
                 if (processGiftEvent(value, data)) {
                     matched = true;
-                    break;
+                    console.log("Matched GIFT eventType",matched);
                 }
                 break;
             case EVENT_TYPES.LIKES:
                 if (processLikesEvent(value, data)) {
                     matched = true;
-                    break;
+                    console.log("Matched LIKES eventType",matched);
                 }
                 break;
+            default:
+                matched = true;
+                await processMediaTypes(eventname, data);
+                break;
         }
-
     }
     if (matched) {
         await processMediaTypes(eventname, data);
-    }
-    // Si no se encontró coincidencia y hay un valor 'default', ejecuta la lógica por defecto
-    if (!matched) {
-        for (const [key, value] of Object.entries(eventname)) {
-            const splitkey = key.split('-');
-            if (splitkey[1] !== eventType) continue;
-            if (eventType === EVENT_TYPES.GIFT && value.select === 'default') {
-                console.log('Ejecutando lógica por defecto para gift');
-                // Aquí puedes colocar la lógica adicional que necesites para el caso 'default'
-                await processMediaTypes(eventname, data);
-                break;
-            }
-        }
-    }
+    } 
+    console.log('matched', matched);
+    return matched;
 }
 
 function processGiftEvent(value, data) {
-    value.select = Number(value.select);
-    return value.select === data.giftId;
+    const selectValue = Number(value.select);  // Crear una copia y convertirla a número
+    return selectValue === data.giftId;
 }
 
 function processLikesEvent(value, data) {
-    value.number = Number(value.number) || 2;
-    return value.number <= data.likeCount;
+    const numberValue = Number(value.number) || 2;  // Crear una copia y convertirla a número
+    return numberValue <= data.likeCount;
 }
-
 async function processMediaTypes(eventname, data) {
     const PROCESSED_TYPES = new Set();
     const mediaTypes = [
@@ -202,7 +206,9 @@ function setupTab5Action() {
             loadDataFromIndexedDB123();
             saveDataToIndexedDB(databases.eventsDB, datos);
         },
-        onCancel: getFiles,
+        onCancel: () => {
+            console.log('onCancel');
+        }
     }).then((modal) => {
         objectModal = modal;
         document.getElementById('openaction').addEventListener('click', objectModal.open);
@@ -229,25 +235,36 @@ function setupEventListeners() {
     };
 
     document.getElementById('file-list').addEventListener('click', handleFileListClick);
-
+    document.getElementById('paste-button').addEventListener('click', handlePasteFromClipboard);
     window.speechSynthesis.onvoiceschanged = populateVoiceList;
 }
+
+
 async function handleFileListClick(event) {
     const target = event.target;
     if (target.classList.contains('play-button')) {
         await handlePlayButton(target);
     } else if (target.classList.contains('deleteButton')) {
-        handleDeleteButton(target);
+        await deleteFile(target);
     }
 }
 async function loadFileList() {
-    const files = await window.api.getFilesInFolder();
-    const fileList = document.getElementById('file-list');
-    fileList.innerHTML = files.map(file => createFileItemHTML(file)).join('');
+    try {
+        const files = await window.api.getFilesInFolder();
+        const fileList = document.getElementById('file-list');
+        fileList.innerHTML = files.map(file => createFileItemHTML(file)).join('');
+    } catch (error) {
+        console.error('Error loading file list:', error);
+    }
 }
-async function deleteFile(fileName) {
-    await window.api.deleteFile(fileName);
-    loadFileList();
+async function deleteFile(button) {
+    const fileName = button.closest('.file-item').querySelector('input').value;
+    try {
+        await window.api.deleteFile(fileName);
+        await loadFileList();
+    } catch (error) {
+        console.error('Error deleting file:', error);
+    }
 }
 document.addEventListener('DOMContentLoaded', () => {
     setupInitialState();
@@ -272,86 +289,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDataFromIndexedDB123();
     observer.subscribe(loadDataFromIndexedDB123);
     loadFileList();
-    // document.getElementById('connect-button').addEventListener('click', async () => {
-    //     const result = await window.api.createClientOsc();
-
-    //     if (result.success) {
-    //         console.log('OSC Client created successfully');
-    //     } else {
-    //         console.error('Failed to create OSC Client');
-    //     }
-    // });
-    document.getElementById('createBotForm').addEventListener('submit', async (event) => {
-        event.preventDefault();
-      
-        const keyBOT = document.getElementById('keyBOT').value.trim();
-        const keySERVER = document.getElementById('keySERVER').value.trim();
-        const [serverip, serverport = 25565] = keySERVER.split(':');
-        const keyLOGIN = document.getElementById('InitcommandInput').value.trim();
-        const resultMessage = document.getElementById('resultMessage');
-        const versionminecraft = document.getElementById('versionminecraft').value.trim();
-        const options = {
-          host: serverip,
-          port: parseInt(serverport, 10),
-          username: keyBOT,
-          version: versionminecraft ||'1.20',
-        };
-        console.log("createbot", options, keyLOGIN);
-
-        const result = await window.api.createBot(options, keyLOGIN);
-        if (result.success) {
-          console.log('Bot created successfully');
-          window.api.onBotEvent((event, type, data) => {
-            if (type === 'login') {
-              console.log('Bot logged in');
-              if (!keyLOGIN.startsWith('/')) {
-                window.api.sendChatMessage(keyLOGIN).then(response => {
-                  if (response.success) {
-                    console.log('Login command sent successfully');
-                  } else {
-                    console.error('Failed to send login command:', response.error);
-                  }
-                });
-              }
-            } else if (type === 'chat') {
-              console.log(`${data.username}: ${data.message}`);
-              if (data.message === 'hello') {
-                window.api.sendChatMessage('Hello there!');
-              }
-            }
-          });
-          resultMessage.textContent = 'Bot creado y conectado';
-          resultMessage.style.color = 'green';
-        } else {
-          console.error('Failed to create bot');
-          resultMessage.textContent = 'Error al crear el bot';
-          resultMessage.style.color = 'red';
-        }
-      });
-    setTimeout(getBotStatus, 1000);
-    
     const skipButton = document.getElementById('skip-button');
     skipButton.addEventListener('click', skipAudio);
 });
-async function getBotStatus() {
-    const botStatus = document.getElementById('botStatus');
 
-    try {
-        const response = await window.api.botStatus();
-        console.log('botStatus || Bot-status:', response);
-        if (response.success) {
-            botStatus.innerText = 'Bot online🟢';
-            return response.success;
-        } else {
-            botStatus.innerText = 'Bot offline🟥';
-            return response.error;
-        }
-    } catch (error) {
-        console.error('Error fetching bot status:', error);
-        botStatus.innerText = 'Error fetching bot status';
-        return false;
-    }
-}
     // const optionsgift = () => {
     //     const result = window.globalSimplifiedStates;
     //     console.log('optionsgift', result);

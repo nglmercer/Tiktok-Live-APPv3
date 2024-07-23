@@ -8,6 +8,7 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
         return null;
     }
     const commandInput = document.createElement('input');
+    const categorySelect = document.createElement('select');
     const functionSelect = document.createElement('select');
     const addButton = document.createElement('button');
     const commandList = document.createElement('ul');
@@ -15,21 +16,42 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
     commandInput.type = 'text';
     commandInput.placeholder = 'Ingrese el comando';
 
-    // Agregar opciones predeterminadas y personalizadas al select
-    functionSelect.innerHTML = `
-        <option value="log">Console.log</option>
-        <option value="alert">Alert</option>
+    // Agregar opciones predeterminadas al select de categorías
+    categorySelect.innerHTML = `
+        <option value="">Seleccione una categoría</option>
+        <option value="default">Funciones predeterminadas</option>
     `;
-    Object.keys(customFunctions).forEach(funcName => {
+    Object.keys(customFunctions).forEach(category => {
         const option = document.createElement('option');
-        option.value = funcName;
-        option.textContent = funcName;
-        functionSelect.appendChild(option);
+        option.value = category;
+        option.textContent = category;
+        categorySelect.appendChild(option);
     });
+
+    // Función para actualizar el select de funciones
+    function updateFunctionSelect(category) {
+        functionSelect.innerHTML = '';
+        if (category === 'default') {
+            functionSelect.innerHTML = `
+                <option value="log">Console.log</option>
+                <option value="alert">Alert</option>
+            `;
+        } else if (customFunctions[category]) {
+            Object.keys(customFunctions[category]).forEach(funcName => {
+                const option = document.createElement('option');
+                option.value = funcName;
+                option.textContent = funcName;
+                functionSelect.appendChild(option);
+            });
+        }
+    }
+
+    categorySelect.onchange = () => updateFunctionSelect(categorySelect.value);
 
     addButton.textContent = 'Agregar Comando';
 
     container.appendChild(commandInput);
+    container.appendChild(categorySelect);
     container.appendChild(functionSelect);
     container.appendChild(addButton);
     container.appendChild(commandList);
@@ -44,7 +66,7 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
         commandList.innerHTML = '';
         commands.forEach((cmd, index) => {
             const li = document.createElement('li');
-            li.textContent = `${cmd.command} - ${cmd.function}`;
+            li.textContent = `${cmd.command} - ${cmd.category} - ${cmd.function}`;
             li.className = 'border-b p-1 border-gray-500';
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'Eliminar';
@@ -61,9 +83,10 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
 
     addButton.onclick = () => {
         const command = commandInput.value.trim();
+        const category = categorySelect.value;
         const func = functionSelect.value;
-        if (command) {
-            commands.push({ command, function: func });
+        if (command && category && func) {
+            commands.push({ command, category, function: func });
             saveCommands();
             renderCommands();
             commandInput.value = '';
@@ -79,12 +102,14 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
                 if (text.toLowerCase().startsWith(cmd.command.toLowerCase())) {
                     text = text.slice(cmd.command.length).trim();
                 }
-                if (cmd.function === 'log') {
-                    console.log(`Comando ejecutado: ${cmd.command}`);
-                } else if (cmd.function === 'alert') {
-                    alert(`Comando ejecutado: ${cmd.command}`);
-                } else if (customFunctions[cmd.function]) {
-                    await customFunctions[cmd.function](text);
+                if (cmd.category === 'default') {
+                    if (cmd.function === 'log') {
+                        console.log(`Comando ejecutado: ${cmd.command}`);
+                    } else if (cmd.function === 'alert') {
+                        alert(`Comando ejecutado: ${cmd.command}`);
+                    }
+                } else if (customFunctions[cmd.category] && customFunctions[cmd.category][cmd.function]) {
+                    await customFunctions[cmd.category][cmd.function](text);
                 }
             }
         }
@@ -106,12 +131,4 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
 
 export function getCustomCommandComponent() {
     return instance;
-}
-
-// Ejemplo de uso:
-if (message) {
-    const customCommandComponent = getCustomCommandComponent();
-    if (customCommandComponent && customCommandComponent.existCommand(message)) {
-        customCommandComponent.commandChatSend(message);
-    }
 }

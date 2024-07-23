@@ -62,7 +62,7 @@ function setupDragAndDrop() {
 
     dropArea.addEventListener('drop', handleDrop, false);
 }
-async function deleteFile(fileName) {
+async function handledeletefile(fileName) {
     await window.api.deleteFile(fileName);
     loadFileList();
 }
@@ -80,13 +80,59 @@ async function processDroppedFile(file) {
         await processFileWithoutPath(file);
     }
 }
+async function processFileWithoutPath(file) {
+    try {
+        const fileName = `${Date.now()}-${file.name}`;
+        
+        // Verificar si el archivo es un duplicado
+        if (await isFileDuplicate({name: fileName, size: file.size, type: file.type})) {
+            alert(`El archivo "${fileName}" ya existe o es similar a uno existente.`);
+            return;
+        }
+
+        const fileBlob = await file.arrayBuffer().then(arrayBuffer => new Blob([arrayBuffer]));
+        const base64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.readAsDataURL(fileBlob);
+        });
+
+        const downloadsPath = await window.api.getDownloadsPath();
+        
+        const result = await window.api.addFilePath({
+            fileToAdd: base64,
+            fileName: fileName,
+            isWebFile: true
+        });
+        
+        if (result.success) {
+            const confirmation = confirm(`¿Desea agregar el archivo "${fileName}"?`);
+            if (confirmation) {
+                loadFileList();
+            } else {
+                await window.api.deleteFile(fileName);
+            }
+        } else {
+            alert(`Error al guardar el archivo: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Error processing file:', error);
+        alert(`Error al procesar el archivo: ${error.message}`);
+    }
+}
+
 async function processFileWithPath(file) {
+    // Verificar si el archivo es un duplicado
+    if (await isFileDuplicate({name: file.name, size: file.size, type: file.type})) {
+        alert(`El archivo "${file.name}" ya existe o es similar a uno existente.`);
+        return;
+    }
+
     const fileParams = { fileName: file.name, filePath: file.path };
     const confirmation = confirm(`¿Desea agregar el archivo "${file.name}"?`);
     if (confirmation) {
         const result = await window.api.addFilePath(fileParams);
         if (result.success) {
-            // addFileToLocalStorage(fileParams);
             loadFileList();
         } else {
             alert(`Error al agregar el archivo: ${result.error}`);
@@ -117,4 +163,61 @@ async function getfileId(id) {
         return null;
     }
 }
-export { getMediaElement, createFileItemHTML, setupDragAndDrop, handlePlayButton, getfileId };
+async function handlePasteFromClipboard() {
+    try {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const clipboardItem of clipboardItems) {
+            for (const type of clipboardItem.types) {
+                if (type.startsWith('image/')) {
+                    const blob = await clipboardItem.getType(type);
+                    await processClipboardFile(blob, type);
+                }
+            }
+        }
+    } catch (err) {
+        console.error('Error al pegar desde el portapapeles:', err);
+        alert('Error al pegar desde el portapapeles. Asegúrate de que has copiado una imagen.');
+    }
+}
+
+async function processClipboardFile(blob, type) {
+    const fileName = `clipboard-${Date.now()}.${type.split('/')[1]}`;
+    
+    // Verificar si el archivo es un duplicado
+    if (await isFileDuplicate({name: fileName, size: blob.size, type: type})) {
+        alert(`Un archivo similar ya existe en la lista.`);
+        return;
+    }
+
+    const base64 = await blobToBase64(blob);
+    
+    const result = await window.api.addFilePath({
+        fileToAdd: base64,
+        fileName: fileName,
+        isWebFile: true,
+        isClipboardFile: true
+    });
+
+    if (result.success) {
+        loadFileList();
+    } else {
+        alert(`Error al guardar el archivo del portapapeles: ${result.error}`);
+    }
+}
+function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
+}
+async function isFileDuplicate(newFile) {
+    const existingFiles = await window.api.getFilesInFolder();
+    return existingFiles.some(existingFile => 
+        existingFile.name === newFile.name ||
+        existingFile.size === newFile.size ||
+        existingFile.type === newFile.type
+    );
+}
+export { getMediaElement, createFileItemHTML, setupDragAndDrop, handlePlayButton, getfileId, handledeletefile, handlePasteFromClipboard };

@@ -5,88 +5,23 @@ const Store = require('electron-store');
 const { TikTokConnectionWrapper, getGlobalConnectionCount } = require('./connectionWrapper');
 const YTMusic = require("ytmusic-api");
 const routes = require('./routes');
-const mineflayer = require('mineflayer');
-const AutoAuth = require('mineflayer-auto-auth');
 const fileHandler = require('./fileHandler');
+const { BotManager } = require('./botManager');
+const botManager = new BotManager();
 const socketHandler = require('./socketHandler');
-const { RCONClient } = require('@minecraft-js/rcon');
-
-class MinecraftRCON {
-  constructor(host, password, port) {
-      this.host = host;
-      this.password = password;
-      this.port = port;
-      this.client = new RCONClient(host, password, port);
-      this.connected = false; // Variable para rastrear el estado de la conexión
-  }
-  async connect() {
-    console.log("RconClient", this.host, this.password, this.port);
-      try {
-          await this.client.connect();
-          this.connected = true;
-          console.log(`Connected to RCON server at ${this.host}:${this.port}`);
-      } catch (error) {
-          this.connected = false;
-          console.error('Error connecting to RCON:', error);
-          throw error;
-      }
-  }
-
-  async executeCommand(command) {
-      if (!this.connected) {
-          throw new Error('Not connected to RCON server');
-      }
-      return await this.client.executeCommand(command);
-  }
-
-  disconnect() {
-      this.client.disconnect();
-      this.connected = false;
-      console.log('Disconnected from RCON server');
-  }
-
-  setupListeners() {
-      this.client.on('authenticated', () => {
-          this.connected = true;
-          console.log('Authenticated with RCON');
-          // Puedes ejecutar comandos aquí después de la autenticación
-          this.executeCommand('say Hello from RCON!');
-      });
-
-      this.client.on('error', (err) => {
-          this.connected = false;
-          console.error('RCON Error:', err);
-          // Maneja los errores de conexión o ejecución de comandos
-      });
-
-      this.client.on('response', (requestId, packet) => {
-          console.log('Response from server:', packet);
-          // Maneja las respuestas del servidor aquí
-      });
-
-      this.client.on('end', () => {
-          this.connected = false;
-          console.log('RCON connection ended');
-      });
-  }
-
-  isConnected() {
-    if (this.connected) {
-      return {
-        success: true,
-        status: 'Bot is created and ready',
-        reconnectAttempts: this.reconnectAttempts,
-        maxReconnectAttempts: this.maxReconnectAttempts
-      };
-    } else {
-      return { success: false, error: 'Bot not created' };
-    }
-      
-  }
-}
-
 const updateHandler = require('./updateHandler');
-const WebSocket = require('ws');
+const { downloadYouTubeBuffer } = require('./mediamanager/youtubeDownloader');
+ipcMain.handle('download-mp3', async (event, url) => {
+  console.log('download-mp3', url);
+  try {
+      const buffer = await downloadYouTubeBuffer(url, { format: 'mp3', quality: 'high' });
+      return `data:audio/mp3;base64,${buffer.toString('base64')}`;
+  } catch (error) {
+      console.error('Error al descargar:', error);
+      throw error;
+  }
+});
+
 let ws = null;
 const store = new Store(); 
 let port = process.env.PORT || 8081;
@@ -227,30 +162,38 @@ app.on('activate', function () {
 });
 
 ipcMain.handle('add-file-path', async (event, fileParams) => {
-  const { fileToAdd, fileName, filePath } = fileParams;
-
+  const { fileToAdd, fileName, filePath, isWebFile, isClipboardFile } = fileParams;
   try {
-      if (filePath) {
-          // Si se proporciona un filePath, simplemente registre su información
-          const savedFilePath = fileHandler.registerFile(filePath, fileName);
-          console.log(`El archivo "${fileName}" se ha registrado correctamente.`);
-          return { success: true, filePath: savedFilePath };
+    if (isWebFile || isClipboardFile) {
+      // Procesar archivo web o del portapapeles
+      const downloadsPath = app.getPath('downloads');
+      const result = await fileHandler.processWebFile(fileToAdd, fileName, downloadsPath);
+      if (result.success) {
+        console.log(`El archivo "${fileName}" se ha guardado y registrado correctamente.`);
+        return { success: true, filePath: result.filePath };
       } else {
-          // Si no se proporciona un filePath, se muestra el diálogo para guardar el archivo
-          const { canceled, filePath: dialogFilePath } = await dialog.showSaveDialog({
-              title: 'Guardar archivo',
-              defaultPath: fileName
-          });
-
-          if (!canceled) {
-              const savedFilePath = fileHandler.addOrReplaceFile(fileToAdd, fileName, path.dirname(dialogFilePath));
-              console.log(`El archivo "${fileName}" se ha agregado o reemplazado correctamente.`);
-              return { success: true, filePath: savedFilePath };
-          }
+        return { success: false, error: result.error };
       }
+    } else if (filePath) {
+      // Registrar archivo local existente
+      const savedFilePath = fileHandler.registerFile(filePath, fileName);
+      console.log(`El archivo "${fileName}" se ha registrado correctamente.`);
+      return { success: true, filePath: savedFilePath };
+    } else {
+      // Guardar nuevo archivo local
+      const { canceled, filePath: dialogFilePath } = await dialog.showSaveDialog({
+        title: 'Guardar archivo',
+        defaultPath: fileName
+      });
+      if (!canceled) {
+        const savedFilePath = await fileHandler.addOrReplaceFile(fileToAdd, fileName, path.dirname(dialogFilePath));
+        console.log(`El archivo "${fileName}" se ha agregado o reemplazado correctamente.`);
+        return { success: true, filePath: savedFilePath };
+      }
+    }
   } catch (err) {
-      console.error('Error adding file path:', err);
-      return { success: false, error: err.message };
+    console.error('Error adding file path:', err);
+    return { success: false, error: err.message };
   }
 });
 ipcMain.handle("get-files-in-folder", async () => {
@@ -287,7 +230,24 @@ ipcMain.handle("delete-file", async (_, fileName) => {
       return { success: false, message: `Error deleting file: ${err.message}` };
   }
 });
-
+ipcMain.handle('get-downloads-path', () => {
+  return app.getPath('downloads');
+});
+ipcMain.handle('process-web-file', async (event, { buffer, fileName }) => {
+  try {
+    const downloadsPath = app.getPath('downloads');
+    const result = await fileHandler.processWebFile(buffer, fileName, downloadsPath);
+    if (result.success) {
+      console.log(`El archivo "${fileName}" se ha guardado y registrado correctamente.`);
+      return { success: true, filePath: result.filePath };
+    } else {
+      return { success: false, error: result.error };
+    }
+  } catch (err) {
+    console.error('Error processing web file:', err);
+    return { success: false, error: err.message };
+  }
+});
 ipcMain.handle("on-drag-start", async (event, fileName) => {
   try {
       const filesInfo = fileHandler.getFilesInfo();
@@ -358,220 +318,50 @@ ipcMain.handle('send-overlay-data', (_, { eventType, data, options }) => {
       return { success: false, error: 'Overlay window not created yet' };
   }
 });
-class BotManager {
-  constructor() {
-    this.bot = null;
-    this.reconnectAttempts = 0;
-    this.maxReconnectAttempts = 3;
-  }
-
-  createBot(event, options, keyLOGIN) {
-    if (!keyLOGIN) {
-      console.error('keyLOGIN is undefined or null');
-      event.sender.send('bot-event', 'error', { message: 'keyLOGIN is undefined or null' });
-      return;
-    }
-
-    if (keyLOGIN) {
-      keyLOGIN = keyLOGIN.replace('/login ', '').replace('/register ', '');
-      console.log("createBot with keyLOGIN:", keyLOGIN);
-      options.plugins = [AutoAuth];
-      options.AutoAuth = {
-        logging: true,
-        password: keyLOGIN, // Use keyLOGIN as password if it starts with '/'
-        ignoreRepeat: true
-      };
-    }
-
-    this.bot = mineflayer.createBot(options);
-
-    this.bot.on('login', () => {
-      console.log('Bot logged in');
-      event.sender.send('bot-event', 'login');
-      this.reconnectAttempts = 0; // Reset reconnect attempts on successful login
-      // Si el comando inicial empieza con '/', enviar mensaje de chat
-      if (keyLOGIN.startsWith('/')) {
-        this.sendMessage(keyLOGIN);
-      }
-    });
-
-    this.bot.on('chat', (username, message) => {
-      console.log(`${username}: ${message}`);
-      event.sender.send('bot-event', 'chat', { username, message });
-    });
-
-    this.bot.on('end', () => {
-      console.log('Bot disconnected');
-      event.sender.send('bot-event', 'end');
-      this.handleReconnect(event, options, keyLOGIN);
-    });
-
-    this.bot.on('error', (error) => {
-      console.error('Bot error:', error);
-      this.handleReconnect(event, options, keyLOGIN);
-    });
-
-    this.bot.on('serverAuth', () => {
-      console.log('Bot authenticated');
-      event.sender.send('bot-event', 'authenticated');
-    });
-
-    // Agregar manejo de errores para el evento de respawn
-    this.bot.on('respawn', () => {
-      try {
-        // Verificar que el bot y su mundo estén definidos
-        if (this.bot && this.bot.world && this.bot.world.overworld) {
-          handleRespawnPacketData(this.bot); // Asegúrate de que esta función está bien definida
-        } else {
-          console.error('Bot world or overworld is undefined');
-        }
-      } catch (error) {
-        console.error('Error handling respawn:', error);
-      }
-    });
-  }
-
-  handleReconnect(event, options, keyLOGIN) {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      console.log(`Reconnection attempt ${this.reconnectAttempts}`);
-      setTimeout(() => {
-        this.createBot(event, options, keyLOGIN); // Attempt to reconnect
-      }, 1000); // Delay before reconnecting
-    } else {
-      console.log('Max reconnection attempts reached');
-      event.sender.send('bot-event', 'reconnection-failed');
-    }
-  }
-
-  sendMessage(message) {
-    if (this.bot && this.bot.chat) {
-      this.bot.chat(message);
-      return { success: true };
-    } else {
-      return { success: false, error: 'Bot not created or not ready' };
-    }
-  }
-
-  getStatus() {
-    if (this.bot) {
-      return {
-        success: true,
-        status: 'Bot is created and ready',
-        reconnectAttempts: this.reconnectAttempts,
-        maxReconnectAttempts: this.maxReconnectAttempts
-      };
-    } else {
-      return { success: false, error: 'Bot not created' };
-    }
-  }
-
-  on(event, callback) {
-    if (this.bot) {
-      this.bot.on(event, callback);
-    }
-  }
-
-  end() {
-    if (this.bot) {
-      this.bot.end();
-    }
-  }
-
-  quit() {
-    if (this.bot) {
-      this.bot.quit();
-    }
-  }
-}
-
-const botManager = new BotManager();
-let rcon = null;
-// const rcon = new MinecraftRCON('209.222.98.146', 'hello', 25575);
-
-
-ipcMain.handle('create-bot', (event, options, keyLOGIN) => {
-  console.log("createbot", event, options, keyLOGIN); // Asegúrate de que keyLOGIN se imprime aquí
-  botManager.createBot(event, options, keyLOGIN);
-
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      if (botManager.bot && botManager.bot.chat) {
-        resolve({ success: true });
-      } else {
-        resolve({ success: true, error: 'Bot not created' });
-      }
-      // if (rcon.isConnected()) {
-      //   resolve({ success: true });
-      // } else {
-      //   resolve({ success: false, error: 'Bot not created' });
-      // }
-    }, 1000);
-  });
+// IPC Handlers
+ipcMain.handle('create-bot', async (event, options, keyLOGIN) => {
+  return await botManager.createBot(options, keyLOGIN);
 });
-ipcMain.handle('create-rconclient', (event, options, keyLOGIN) => {
-  console.log("create-rconclient", options.ip, options.password, options.port);
-  rcon = new MinecraftRCON(options.ip, options.password, options.port);
-  rcon.connect();
-  rcon.setupListeners();
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      if (rcon.isConnected()) {
-        resolve({ success: true });
-        rcon.executeCommand(`say ${keyLOGIN}`);
-      } else {
-        resolve({ success: false, error: 'Rcon not created' });
-      }
-    }, 1000);
-  });
+
+ipcMain.handle('create-rconclient', async (event, options, keyLOGIN) => {
+  return await botManager.createRconClient(options, keyLOGIN);
 });
-ipcMain.handle('send-chat-message', (event, message) => {
-  const command = message.replace(/^\/?/, '');
-  if (rcon) {
-    return rcon.executeCommand(command);
-  } else {
-    return botManager.sendMessage(message);
-  }
+
+ipcMain.handle('send-chat-message', async (event, message) => {
+  return await botManager.sendMessage(message);
 });
 
 ipcMain.handle('bot-status', () => {
-  let status = null;
-  if (rcon) {
-    status = rcon.isConnected();
-  } else if (botManager) {
-    status = botManager.getStatus();
-  }
-  return status;
-  // return botManager.getStatus();
+  return botManager.getStatus();
 });
 
-let oscClient2;
-ipcMain.handle('create-client-osc', () => {
-const defaultClientPort = 9000;
-const defaultClientIP = '127.0.0.1';
-const oscClient = new Client(defaultClientIP, defaultClientPort);
-
-const server = new ServerOsc(9001, '127.0.0.1');
-server.on('listening', () => {
-    console.log('OSC Server is listening.');
-});
-oscClient2 = oscClient
-// oscClient.on('listening', () => {
-//     console.log('OSC Client is listening.');
-// });
-
-return { success: true };
+// Event forwarding to renderer
+botManager.on('connected', () => {
+  // Asume que tienes una referencia a tu ventana principal llamada 'mainWindow'
+  mainWindow.webContents.send('bot-event', 'connected');
 });
 
-ipcMain.handle('send-osc-message', (event, message) => {
-if (oscClient2) {
-  oscClient2.send('/chatbox/input', message, () => {
-      console.log('OSC message sent:', message);
-  });
-  return { success: true };
-}
-return { success: false, error: 'OSC Client not created' };
+botManager.on('disconnected', () => {
+  mainWindow.webContents.send('bot-event', 'disconnected');
 });
+
+botManager.on('chat', (data) => {
+  mainWindow.webContents.send('bot-event', 'chat', data);
+});
+
+botManager.on('error', (error) => {
+  mainWindow.webContents.send('bot-event', 'error', error.message);
+});
+
+botManager.on('reconnecting', (attempt) => {
+  mainWindow.webContents.send('bot-event', 'reconnecting', attempt);
+});
+
+botManager.on('reconnection-failed', () => {
+  mainWindow.webContents.send('bot-event', 'reconnection-failed');
+});
+
+
 ipcMain.handle('update', (event, message) => {
   console.log('update', message);
   updateHandler.checkForUpdatesManually(); // Llamar a la función para verificar actualizaciones manualmente

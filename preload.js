@@ -26,11 +26,16 @@ const api = {
     createRconClient: (options, keyLOGIN) => ipcRenderer.invoke('create-rconclient', options, keyLOGIN),
     sendChatMessage: (message) => ipcRenderer.invoke('send-chat-message', message),
     onBotEvent: (callback) => ipcRenderer.on('bot-event', callback),
-    createClientOsc: () => ipcRenderer.invoke('create-client-osc'),
+    createClientOsc: (options) => ipcRenderer.invoke('create-client-osc', options),
+    createServerOsc: (options) => ipcRenderer.invoke('create-server-osc', options),
     sendOscMessage: (message) => ipcRenderer.invoke('send-osc-message', message),
+    inputAction: (action, value) => ipcRenderer.invoke('input-action', action, value),
     botStatus: () => ipcRenderer.invoke('bot-status'),
     update: (message) => ipcRenderer.invoke('update', message),
-    searchSong: (query) => ipcRenderer.invoke('search-song', query)
+    searchSong: (query) => ipcRenderer.invoke('search-song', query),
+    processWebFile: (fileData) => ipcRenderer.invoke('process-web-file', fileData),
+    getDownloadsPath: () => ipcRenderer.invoke('get-downloads-path'),
+    downloadurl: (url) => ipcRenderer.invoke('download-mp3', url),
     // onOscEvent: (callback) => ipcRenderer.on('osc-event', callback),
 }
 

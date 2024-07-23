@@ -151,9 +151,12 @@ function populateGiftSelect(optionsgift) {
     if (optionsgift) {
         const availableGifts = optionsgift || [];
         console.log("availableGifts", availableGifts);
-        
+        const defaultoption = document.createElement('option');
+        defaultoption.textContent = 'default';
+        defaultoption.value = 'default';
+        giftselect.appendChild(defaultoption);
         availableGifts.forEach(gift => {
-            console.log(gift);
+            // console.log(gift);
             const optionElement = document.createElement('option');
             optionElement.textContent = gift.name;
             optionElement.value = gift.id;
@@ -233,11 +236,11 @@ export default async function tab5Action({
 
     const closeModal = () => {
         elementModal.style.display = 'none';
-        ModalElement = null;
+        console.log("closeModal");
     };
 
     const updateModal = (datos) => {
-        // filesform(form, cacheAssign);
+        filesform(form, cacheAssign);
         fillForm(form, datos, separator);
         setPendingSelectValues(form);
         elementModal.style.display = 'flex';

@@ -8,6 +8,7 @@ import { saveLastData, getLastData, simulateWithLastData } from './functions/dat
 import { handleAvailableGifts, getAvailableGifts } from './functions/giftmanager.js';
 import { connectWebsocket, connectTikTok } from './connections/connection.js';
 import { initializeFilterComponent, addFilterItemToGroup } from './utils/filters.js';
+
 let backendUrl = "http://localhost:8081"
 let timeouttime = 5000;
 let viewerCount = 0;
@@ -36,14 +37,16 @@ function initializeApp() {
     connectWebsocket(handleWebsocketMessage);
     // loadVoiceList();
     // loadLastGift();
+    const voiceSelect1 = document.getElementById('voiceSelect1');
     fetchSimplifiedState();
     fetchvoicelist().then(data => {
         Object.keys(data).forEach(function(key) {
             var option = document.createElement('option');
             option.text = key;
             option.value = data[key];
-            voiceSelect.appendChild(option);
+            voiceSelect1.appendChild(option);
         });
+        console.log("fetchvoicelist", data);
     });
     const simplifiedStateJson = localStorage.getItem('simplifiedState');
     if (simplifiedStateJson) {
@@ -303,14 +306,20 @@ let lastMessage = "";
     function addFilterWord(word) {
         addFilterItemToGroup('filter-words', 'containerfilter-words', 'filterWords', word);
     }
+
     document.addEventListener('DOMContentLoaded', () => {
         const customFunctions = {
-            leerMensaje: handleleermensaje,
-            songrequest: searchSong,
-            nextsong: playNextInQueue,
-            filtrarpalabras: addFilterWord
+            mensajes: {
+                leerMensaje: handleleermensaje
+            },
+            musica: {
+                songrequest: searchSong,
+                nextsong: playNextInQueue
+            },
+            moderacion: {
+                filtrarpalabras: addFilterWord
+            }
         };
-    
         // Crear el componente solo si no existe
         if (!customCommandHandler) {
             customCommandHandler = createCustomCommandComponent('customCommandContainer', 'customCommands', customFunctions);
@@ -342,7 +351,6 @@ function addChatItem(color, data, text, summarize) {
         const wordsfilterwords = JSON.parse(localStorage.getItem('filterWords')) || [];
         const filteruserswhite = JSON.parse(localStorage.getItem('filterUsers')) || [];
         console.log(filteruserswhite,wordsfilterwords);
-        let lowerCaseText = data.comment?.toLowerCase().replace(/[^a-zA-Z0-9áéíóúüÜñÑ.,;:!?¡¿'"(){}[\]\s]/g, '');
         localStorage.setItem('lastChatItem', JSON.stringify(data));
     
         const container = location.href.includes('obs.html') ? $('.eventcontainer') : $('.chatcontainer');
@@ -350,14 +358,12 @@ function addChatItem(color, data, text, summarize) {
             container.find('div').slice(0, 200).remove();
         }
         let message = data.comment;
-        const nickname = data.nickname;
         let nameuser = data.uniqueId; 
         const userpointsInput = document.getElementById('users-points');
         const userlevel = document.getElementById('users-level');
         const userlevelCheckbox = document.getElementById('userlevelCheckbox');
         const levelValue = parseInt(userlevel.value);
         const parsedValue = parseInt(userpointsInput.value);
-        let sendDataCheckbox = document.getElementById('sendDataCheckbox');
         let userpointsCheckbox = document.getElementById('userpointsCheckbox');
         let messagelenght3 = document.getElementById('messagelenght3');
         let prefixusermessage = document.getElementById('prefixusermessage').value;
@@ -400,8 +406,8 @@ function addChatItem(color, data, text, summarize) {
             console.log("evalBadge",false, data)
             return;
         }
-        if (evalmessagecontainsfilter(lowerCaseText)) {
-            console.log("evalmessagecontainsfilter",evalmessagecontainsfilter(lowerCaseText), data)
+        if (evalmessagecontainsfilter(message)) {
+            console.log("evalmessagecontainsfilter",evalmessagecontainsfilter(message), data)
             return;
         }
         message.toLowerCase();
@@ -432,13 +438,13 @@ function evalmessagecontainsfilter(text) {
     const filterWords = JSON.parse(localStorage.getItem('filterWords')) || [];
     if (filterWords.length === 0) return false;
 
-    const lowerCaseText = text.toLowerCase();
+    const message = text.toLowerCase();
     return filterWords.some(word => {
         word = word.toLowerCase();
-        if (lowerCaseText.includes(word)){
-            console.log(`${word} filtrado por palabra: ${lowerCaseText}`);
+        if (message.includes(word)){
+            console.log(`${word} filtrado por palabra: ${message}`);
         }
-        return lowerCaseText.includes(word);
+        return message.includes(word);
     });
 }
 function isValidUrl(string) {
@@ -618,7 +624,7 @@ function chattocommand(data) {
     let message = data.comment;
     
 }
-// New gift received
+// socket new gift
 connection.on('gift', (data) => {
     handlegift(data);
 })
@@ -974,7 +980,100 @@ document.addEventListener('DOMContentLoaded', function() {
           resultMessage.style.color = 'red';
         }
     });
+    document.getElementById('createBotForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+      
+        const keyBOT = document.getElementById('keyBOT').value.trim();
+        const keySERVER = document.getElementById('keySERVER').value.trim();
+        const [serverip, serverport = 25565] = keySERVER.split(':');
+        const keyLOGIN = document.getElementById('InitcommandInput').value.trim();
+        const resultMessage = document.getElementById('resultMessage');
+        const options = {
+          host: serverip,
+          port: parseInt(serverport, 10),
+          username: keyBOT,
+        };
+        console.log("createbot", options, keyLOGIN);
+
+        const result = await window.api.createBot(options, keyLOGIN);
+        if (result.success) {
+          console.log('Bot created successfully');
+          window.api.onBotEvent((event, type, data) => {
+            if (type === 'login') {
+              console.log('Bot logged in');
+              if (!keyLOGIN.startsWith('/')) {
+                window.api.sendChatMessage(keyLOGIN).then(response => {
+                  if (response.success) {
+                    console.log('Login command sent successfully');
+                  } else {
+                    console.error('Failed to send login command:', response.error);
+                  }
+                });
+              }
+            } else if (type === 'chat') {
+              console.log(`${data.username}: ${data.message}`);
+              if (data.message === 'hello') {
+                window.api.sendChatMessage('Hello there!');
+              }
+            }
+          });
+          resultMessage.textContent = 'Bot creado y conectado';
+          resultMessage.style.color = 'green';
+        } else {
+          console.error('Failed to create bot');
+          resultMessage.textContent = 'Error al crear el bot';
+          resultMessage.style.color = 'red';
+        }
+      });
+    document.getElementById('clientconnect').addEventListener('click', async function(event) {
+        event.preventDefault(); // Evita el comportamiento predeterminado del botón
+        const clientipport = document.getElementById('clientipport').value;
+        const serveripport = document.getElementById('serveripport').value;
+        const keyLOGIN = document.getElementById('InitcommandInput').value.trim();
+        const clientbotstatus = document.getElementById('clientbotstatus');
+        const optionsclient = {
+          host: clientipport.split(':')[0],
+          port: parseInt(clientipport.split(':')[1], 10),
+        };
+        const optionsserver = {
+          host: serveripport.split(':')[0],
+          port: parseInt(serveripport.split(':')[1], 10),
+        };
+        console.log("createclientbot", optionsclient, optionsserver);
+        const result = await window.api.createClientOsc(optionsclient);
+        const result2 = await window.api.createServerOsc(optionsserver);
+        window.api.sendOscMessage("hola");
+        if (result.success && result2.success) {
+          console.log('Bot created successfully');
+          clientbotstatus.textContent = 'Bot creado y conectado';
+          clientbotstatus.style.color = 'green';
+        } else {
+          console.error('Failed to create bot');
+          clientbotstatus.textContent = 'Error al crear el bot';
+          clientbotstatus.style.color = 'red';
+        }
+    });
+    setTimeout(getBotStatus, 1000);
 })    
+async function getBotStatus() {
+    const botStatus = document.getElementById('botStatus');
+
+    try {
+        const response = await window.api.botStatus();
+        console.log('botStatus || Bot-status:', response);
+        if (response.success) {
+            botStatus.innerText = 'Bot online🟢';
+            return response.success;
+        } else {
+            botStatus.innerText = 'Bot offline🟥';
+            return response.error;
+        }
+    } catch (error) {
+        console.error('Error fetching bot status:', error);
+        botStatus.innerText = 'Error fetching bot status';
+        return false;
+    }
+}
 async function sendToServer(eventType, data) {
     if (data.comment === lastComment) {
         return;
@@ -984,20 +1083,6 @@ async function sendToServer(eventType, data) {
     eventmanager(eventType, data);
     /// aqui enviamos a eventos eventmanager
     elemento.value = objet;
-    fetch(`${backendUrl}/api/receive1`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ eventType, data}),
-      })
-      .then(response => response.json())
-      .then(data => {
-        //console.log(data); // Maneja la respuesta del servidor si es necesario
-      })
-      .catch(error => {
-        console.error('Error:', error);
-      });
 }
 
 window.onload = async function() {

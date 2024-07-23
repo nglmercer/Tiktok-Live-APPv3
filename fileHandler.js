@@ -21,23 +21,16 @@ const generateUniqueFileName = (filePath) => {
     return newFilePath;
 };
 
-const addOrReplaceFile = (fileToAdd, fileName, destination) => {
+const addOrReplaceFile = async (fileToAdd, fileName, destination) => {
     const fileData = store.get('fileData', []);
     let filePath = path.join(destination, fileName);
 
-    const existingFileIndex = fileData.findIndex(file => file.name === fileName && path.extname(file.name) === path.extname(fileName));
+    filePath = generateUniqueFileName(filePath);
 
-    if (existingFileIndex !== -1) {
-        filePath = generateUniqueFileName(filePath);
-    }
+    const base64Data = fileToAdd.replace(/^data:.+;base64,/, '');
 
-    const base64Data = fileToAdd.replace(/^data:.+;base64,/, ''); // Eliminar la parte data URL del base64
-
-    fs.writeFile(filePath, base64Data, { encoding: 'base64' }, (err) => {
-        if (err) {
-            console.error('Error writing file:', err);
-            return;
-        }
+    try {
+        await fs.promises.writeFile(filePath, base64Data, { encoding: 'base64' });
 
         const mimeType = mime.lookup(fileName) || 'application/octet-stream';
 
@@ -54,9 +47,12 @@ const addOrReplaceFile = (fileToAdd, fileName, destination) => {
 
         store.set('fileData', fileData);
         console.log(fileToAdd, fileName, destination, "addOrReplaceFile fileToAdd, fileName, destination");
-    });
 
-    return filePath;
+        return { success: true, filePath };
+    } catch (error) {
+        console.error('Error writing file:', error);
+        return { success: false, error: error.message };
+    }
 };
 
 const registerFile = (filePath, fileName) => {
@@ -148,6 +144,41 @@ const getFileByname = (fileIdname) => {
         isDirectory: fs.existsSync(file.path) ? fs.statSync(file.path).isDirectory() : false,
     };
 };
+const processWebFile = async (fileBase64, fileName, destination) => {
+    let filePath = path.join(destination, fileName);
+    filePath = generateUniqueFileName(filePath);
+
+    try {
+        // Eliminar el prefijo de data URL si está presente
+        const base64Data = fileBase64.replace(/^data:[^;]+;base64,/, "");
+        
+        // Convertir base64 a buffer
+        const fileBuffer = Buffer.from(base64Data, 'base64');
+
+        await fs.promises.writeFile(filePath, fileBuffer);
+        
+        const mimeType = mime.lookup(fileName) || 'application/octet-stream';
+        
+        let fileIndex = store.get('fileIndex', 0) || 0;
+        fileIndex++;
+        store.set('fileIndex', fileIndex);
+
+        const fileData = store.get('fileData', []);
+        fileData.push({ 
+            index: fileIndex,
+            name: path.basename(filePath), 
+            path: filePath, 
+            type: mimeType 
+        });
+
+        store.set('fileData', fileData);
+        
+        return { success: true, filePath };
+    } catch (error) {
+        console.error('Error writing file:', error);
+        return { success: false, error: error.message };
+    }
+};
 module.exports = {
     addOrReplaceFile,
     registerFile,
@@ -155,4 +186,5 @@ module.exports = {
     deleteFile,
     getFileById,
     getFileByname,
+    processWebFile,  // Añade esta línea
 };

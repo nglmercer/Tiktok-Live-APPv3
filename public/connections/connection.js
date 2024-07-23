@@ -5,7 +5,7 @@ let websocket = null;
 let timeouttime = 3000;
 let maxAttempts = 5;
 let Attemptsconnection = 0;
-
+let isconnected = false;
 export function connectWebsocket(onMessage) {
     if (websocket) return; // Already connected
     if (Attemptsconnection >= maxAttempts) {
@@ -32,10 +32,25 @@ export function connectWebsocket(onMessage) {
     websocket.onmessage = onMessage;
 }
 export function connectTikTok(uniqueId, onConnect, onError) {
-    connection.connect(uniqueId, {
+    connection.connect(uniqueId, getoptionsconnection(isconnected)).then(
+        onConnect, isconnected = true
+    ).catch(
+        onError);
+}
+function getoptionsconnection(isconnected) {
+    if (!isconnected) {
+    return {
         processInitialData: true,
         enableExtendedGiftInfo: true,
         enableWebsocketUpgrade: true,
         requestPollingIntervalMs: 2000,
-    }).then(onConnect).catch(onError);
+    }
+} else {
+    return {
+        processInitialData: false,
+        enableExtendedGiftInfo: true,
+        enableWebsocketUpgrade: true,
+        requestPollingIntervalMs: 2000,
+    }
+}
 }

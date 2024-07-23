@@ -1,5 +1,6 @@
 const TTS_API_ENDPOINT = 'https://api.streamelements.com/kappa/v2/speech?';
-
+import AudioPlayer from '../htmlcomponents/AudioPlayer.js';
+const audioPlayer = new AudioPlayer('audio');
 class Queue {
     constructor() {
         this.items = [];
@@ -26,7 +27,7 @@ let lastReadText = null;
 let audioMap = {};
 let audioKeys = [];
 let isPlaying = false;
-let audio = document.getElementById('audio');
+// let audio = document.getElementById('audio');
 
 async function fetchAudio(txt) {
     try {
@@ -74,8 +75,8 @@ function getVoiceFromVoiceSelect() {
 }
 
 function skipAudio() {
-    audio.pause();
-    audio.currentTime = 0;
+    audioPlayer.audio.pause();
+    audioPlayer.audio.currentTime = 0;
 
     if (!audioQueue.isEmpty()) {
         playNextAudio();
@@ -88,12 +89,13 @@ function playNextAudio() {
     if (!audioQueue.isEmpty()) {
         const audioUrl = audioQueue.dequeue();
         if (audioUrl) {
-            audio.src = audioUrl;
-            audio.load();
-            audio.play();
+            audioPlayer.audio.src = audioUrl;
+            audioPlayer.audio.load();
+            audioPlayer.audio.play();
         }
     }
 }
+
 
 function kickstartPlayer() {
     if (audioQueue.isEmpty()) {
@@ -104,7 +106,7 @@ function kickstartPlayer() {
     isPlaying = true;
     playNextAudio();
 
-    audio.onended = function() {
+    audioPlayer.audio.onended = function() {
         kickstartPlayer();
     };
 }
@@ -123,7 +125,6 @@ function leerMensajes(text) {
         });
     }
 }
-
 export class TTS {
     constructor(message) {
         this.speak(message);
@@ -135,6 +136,7 @@ export class TTS {
         utterance.volume = document.querySelector('#volume').value;
 
         const voices = speechSynthesis.getVoices();
+        console.log("voices", voices);
         let voiceSelect = document.getElementById('voiceSelect');
         let selectedVoice = voices.find(voice => voice.name === voiceSelect.selectedOptions[0].getAttribute("data-name"));
 
