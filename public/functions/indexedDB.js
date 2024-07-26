@@ -1,176 +1,138 @@
 export const databases = {
-  eventsDB: { name: 'eventsDB', version: 1, store: 'events' },
-  MyDatabaseActionevent: { name: 'MyDatabaseActionevent', version: 1, store: 'files' }
-};
-
-export function openDatabase({ name, version, store }) {
-  return new Promise((resolve, reject) => {
-      const request = indexedDB.open(name, version);
-      request.onupgradeneeded = (event) => {
+    eventsDB: { name: 'eventsDB', version: 1, store: 'events' },
+    MyDatabaseActionevent: { name: 'MyDatabaseActionevent', version: 1, store: 'files' }
+  };
+  
+  class IndexedDBManager {
+    constructor(dbConfig) {
+      this.dbConfig = dbConfig;
+    }
+  
+    async openDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open(this.dbConfig.name, this.dbConfig.version);
+        request.onupgradeneeded = (event) => {
           const db = event.target.result;
-          const objectStore = db.createObjectStore(store, { keyPath: 'id', autoIncrement: true });
+          const objectStore = db.createObjectStore(this.dbConfig.store, { keyPath: 'id', autoIncrement: true });
           objectStore.createIndex('name', 'name', { unique: false });
           objectStore.createIndex('type', 'type', { unique: false });
           objectStore.createIndex('path', 'path', { unique: false });
-      };
-      request.onsuccess = (event) => {
-          resolve(event.target.result);
-      };
-      request.onerror = (event) => {
-          reject(event.target.error);
-      };
-  });
-}
-
-export function saveDataToIndexedDB(dbConfig, data) {
-  openDatabase(dbConfig).then((db) => {
-      const transaction = db.transaction([dbConfig.store], 'readwrite');
-      const objectStore = transaction.objectStore(dbConfig.store);
-
-      // Verificación y eliminación de ID inválida
-      if (typeof data.id !== 'number' || data.id <= 0) {
+        };
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+      });
+    }
+  
+    async performTransaction(mode, callback) {
+      const db = await this.openDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([this.dbConfig.store], mode);
+        const objectStore = transaction.objectStore(this.dbConfig.store);
+        callback(objectStore, resolve, reject);
+      });
+    }
+  
+    async saveData(data) {
+      return this.performTransaction('readwrite', (objectStore, resolve, reject) => {
+        if (typeof data.id !== 'number' || data.id <= 0) {
           delete data.id;
-      }
-
-      const request = objectStore.add(data);
-      request.onsuccess = (event) => {
-          console.log('Data saved to IndexedDB', data);
+        }
+        const request = objectStore.add(data);
+        request.onsuccess = (event) => {
           data.id = event.target.result;
           observer.notify('save', data);
-      };
-      request.onerror = (event) => {
-          console.error('Error saving data to IndexedDB', event.target.error);
-      };
-  }).catch((error) => {
-      console.error('Error opening IndexedDB', error);
-  });
-}
-
-export function deleteDataFromIndexedDB(dbConfig, id) {
-  openDatabase(dbConfig).then((db) => {
-      const transaction = db.transaction([dbConfig.store], 'readwrite');
-      const objectStore = transaction.objectStore(dbConfig.store);
-      const request = objectStore.delete(id);
-      request.onsuccess = () => {
-          console.log(`Data with id ${id} deleted from IndexedDB`);
-      };
-      request.onerror = (event) => {
-          console.error('Error deleting data from IndexedDB', event.target.error);
-      };
-  }).catch((error) => {
-      console.error('Error opening IndexedDB', error);
-  });
-}
-
-export function updateDataInIndexedDB(dbConfig, data) {
-  data.id = Number(data.id);
+          resolve(data);
+        };
+        request.onerror = (event) => reject(event.target.error);
+      });
+    }
   
-  openDatabase(dbConfig).then((db) => {
-      const transaction = db.transaction([dbConfig.store], 'readwrite');
-      const objectStore = transaction.objectStore(dbConfig.store);
-      const request = objectStore.put(data);
-
-      request.onsuccess = () => {
-          console.log(`Data with id ${data.id} updated in IndexedDB`, data);
+    async deleteData(id) {
+      return this.performTransaction('readwrite', (objectStore, resolve, reject) => {
+        const request = objectStore.delete(Number(id));
+        request.onsuccess = () => {
+          observer.notify('delete', id);
+          resolve(id);
+        };
+        request.onerror = (event) => reject(event.target.error);
+      });
+    }
+  
+    async updateData(data) {
+      return this.performTransaction('readwrite', (objectStore, resolve, reject) => {
+        data.id = Number(data.id);
+        const request = objectStore.put(data);
+        request.onsuccess = () => {
           observer.notify('update', data);
-      };
-
-      request.onerror = (event) => {
-          console.error('Error updating data in IndexedDB', event.target.error);
-      };
-  }).catch((error) => {
-      console.error('Error opening IndexedDB', error);
-  });
-}
-
-export function loadDataFromIndexedDB(dbConfig, callback) {
-  openDatabase(dbConfig).then((db) => {
-      const transaction = db.transaction([dbConfig.store], 'readonly');
-      const objectStore = transaction.objectStore(dbConfig.store);
-      const request = objectStore.getAll();
-      request.onsuccess = (event) => {
-          const allRecords = event.target.result;
-          allRecords.forEach(record => {
-              callback(dbConfig, record);
-          });
-      };
-      request.onerror = (event) => {
-          console.error('Error loading data from IndexedDB', event.target.error);
-      };
-  }).catch((error) => {
-      console.error('Error opening IndexedDB', error);
-  });
-}
-
-export async function getDataFromIndexedDB(dbConfig) {
-  try {
-      const db = await openDatabase(dbConfig);
-      return new Promise((resolve, reject) => {
-          const transaction = db.transaction([dbConfig.store], 'readonly');
-          const objectStore = transaction.objectStore(dbConfig.store);
-          const request = objectStore.getAll();
-
-          request.onsuccess = (event) => {
-              const allRecords = event.target.result;
-              resolve(allRecords);
-          };
-          request.onerror = (event) => {
-              console.error('Error loading data from IndexedDB', event.target.error);
-              reject(event.target.error);
-          };
+          resolve(data);
+        };
+        request.onerror = (event) => reject(event.target.error);
       });
-  } catch (error) {
-      console.error('Error opening database', error);
-      throw error;
+    }
+  
+    async getAllData() {
+      return this.performTransaction('readonly', (objectStore, resolve, reject) => {
+        const request = objectStore.getAll();
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+      });
+    }
+  
+    async exportDatabase() {
+      const data = await this.getAllData();
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${this.dbConfig.name}_backup.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  
+    async importDatabase(file) {
+      const data = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(JSON.parse(event.target.result));
+        reader.readAsText(file);
+      });
+  
+      return this.performTransaction('readwrite', (objectStore, resolve, reject) => {
+        const addNextItem = (index) => {
+          if (index >= data.length) {
+            resolve();
+            return;
+          }
+          const request = objectStore.put(data[index]);
+          request.onsuccess = () => addNextItem(index + 1);
+          request.onerror = (event) => reject(event.target.error);
+        };
+        addNextItem(0);
+      });
+    }
   }
-}
-
-// DBObserver.js
-class DBObserver {
-  constructor() {
+  
+  class DBObserver {
+    constructor() {
       this.listeners = [];
-  }
-
-  subscribe(callback) {
+    }
+  
+    subscribe(callback) {
       this.listeners.push(callback);
-  }
-
-  unsubscribe(callback) {
+    }
+  
+    unsubscribe(callback) {
       this.listeners = this.listeners.filter(listener => listener !== callback);
+    }
+  
+    notify(action, data) {
+      this.listeners.forEach(listener => listener(action, data));
+    }
   }
-
-  notify(action, data) {
-      this.listeners.forEach(listener => {
-          listener(action, data);
-      });
+  
+  export const observer = new DBObserver();
+  
+  // Usage example
+  export function createDBManager(dbConfig) {
+    return new IndexedDBManager(dbConfig);
   }
-}
-
-export const observer = new DBObserver();
-
-// New Functions for Exporting and Importing
-export async function exportDatabase(dbConfig) {
-  const data = await getDataFromIndexedDB(dbConfig);
-  const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${dbConfig.name}_backup.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-export async function importDatabase(dbConfig, file) {
-  const reader = new FileReader();
-  reader.onload = async (event) => {
-      const data = JSON.parse(event.target.result);
-      const db = await openDatabase(dbConfig);
-      const transaction = db.transaction([dbConfig.store], 'readwrite');
-      const objectStore = transaction.objectStore(dbConfig.store);
-      data.forEach(item => {
-          objectStore.put(item);
-      });
-  };
-  reader.readAsText(file);
-}

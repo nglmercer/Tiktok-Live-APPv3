@@ -152,7 +152,6 @@
 //     audio = document.getElementById("audio");
 //     chatbox = document.getElementById("chatbox");
 //     button = document.getElementById("channel-button");
-//     skip = document.getElementById("skip-button");
 //     channelInput = document.getElementById("channel");
 //     isPlaying = false;
 //     add = (DESCENDING ? chatbox.prepend : chatbox.append).bind(chatbox);

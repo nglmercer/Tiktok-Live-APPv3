@@ -1,67 +1,26 @@
 import {Queue, Controlmedia } from './Queueaudio.js';
 import AudioPlayer from '../htmlcomponents/AudioPlayer.js';
 import TemplateRenderer from '../mediaplay/TemplateRenderer.js';
-// class Queue {
-//     constructor() {
-//         this.queue = [];
-//         this.currentIndex = -1;
-//     }
 
-//     add(song) {
-//         this.queue.push(song);
-//     }
-
-//     next() {
-//         if (this.currentIndex < this.queue.length - 1) {
-//             this.currentIndex++;
-//             return this.queue[this.currentIndex];
-//         } else {
-//             return null; // End of queue
-//         }
-//     }
-
-//     current() {
-//         if (this.currentIndex >= 0 && this.currentIndex < this.queue.length) {
-//             return this.queue[this.currentIndex];
-//         } else {
-//             return null;
-//         }
-//     }
-
-//     skip() {
-//         return this.next();
-//     }
-
-//     reset() {
-//         this.currentIndex = -1;
-//     }
-
-//     hasMore() {
-//         return this.currentIndex < this.queue.length - 1;
-//     }
-
-//     isEmpty() {
-//         return this.queue.length === 0;
-//     }
-// }
 const renderer = new TemplateRenderer('ytmusic-container');
 function appendlistSong(songs, templateType = 'simple') {
     renderer.renderList(songs, templateType);
 }
-const searchButton = document.getElementById('searchButtonYT');
 const queue = new Queue();
+const audioPlayer = new AudioPlayer('audiotrack', 
+  () => controlmedia.playPreviousAudio(), 
+  () => controlmedia.nextaudio()
+);
+const controlmedia = new Controlmedia(audioPlayer);
+audioPlayer.setAudioInfo('Youtube Music');
+
+const searchButton = document.getElementById('searchButtonYT');
 console.log('searchButton', searchButton);
 searchButton.addEventListener('click', async () => {
     const query = document.getElementById('searchInput').value;
     console.log('Searching for songs...', query);
     await searchSong(query);
 });
-const audioPlayer = new AudioPlayer('audiotrack', 
-  () => controlmedia.playPreviousAudio(), 
-  () => controlmedia.nextaudio()
-);
-const controlmedia = new Controlmedia(audioPlayer);
-
 async function searchSong(query) {
     try {
         const songs = await window.api.searchSong(query);
@@ -197,11 +156,6 @@ function playNextInQueue() {
     }
 }
 
-// Add skip button functionality
-const skipButton = document.getElementById('skipButton');
-skipButton.addEventListener('click', () => {
-    playNextInQueue();
-});
 function appendPlaylist(){
     // hacemos el append de los elementos de Queue current
         const playlistContainer = document.getElementById('playlist-container');

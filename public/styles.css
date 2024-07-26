@@ -72,7 +72,7 @@ body {
   background-color: #26355c5d;
   bottom: 0px;
   width: 100%;
-  max-height: 120px;
+  max-height: 100px;
 }
 .LiveContainer {
   display: grid;
@@ -284,12 +284,11 @@ input[type="button"]:hover {
 .containerbox {
   box-sizing: content-box;
   padding: 0.5rem;
-  overflow-x: auto;
   position: relative;
   border: 1px solid rgba(88, 88, 255, 0.123);
   border-radius: 0.5rem;
   background-color: #212121;
-  margin: 0.5rem;
+  margin: 0.8rem;
   min-width: 90%;
   min-height: 100%;
 }
@@ -298,7 +297,6 @@ input[type="button"]:hover {
   border: 1px solid rgba(88, 88, 255, 0.123);
   background-color: #1a1919;
   min-height: 200px;
-  margin-right: 10%;
 }
 .containerbox:hover {
   border: 1px solid var(--blue-box-900);
@@ -360,7 +358,7 @@ select {
 }
 .file-container {
   z-index: 999;
-  overflow: auto;
+  overflow: hidden;
   min-width: 500px; 
   min-height: 500px;
 }
@@ -465,12 +463,8 @@ select {
   left: 50%;
   transform: translate(-50%, -50%);
 }
-#voiceSelectContainer,
-.card-subcontent {
+#voiceSelectContainer{
   display: none;
-}
-#voiceenabled:checked ~ .card-subcontent{
-  display: block;
 }
 
 #selectvoice1:checked ~ #voiceSelectContainer {
@@ -631,26 +625,6 @@ audio {
   display: flex;
   align-items: center;
 }
-#addButton:checked ~ .modal-fade {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  max-height: 600px;
-  transform: translate(-50%, -50%);
-  z-index: 99;
-  background-color: rgb(255, 255, 255);
-  border-radius: 10px;
-  border: 1px solid rgb(0, 0, 0);
-  color: rgb(0, 0, 0);
-  display: flex;
-  overflow-y: auto;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.modal-fade {
-  display: none;
-}
 
 /* .sugerencia para label color rojo*/
 .sugerencia {
@@ -786,6 +760,18 @@ label.sugerencia {
   font-size: 14px;
   color: #b3b3b3;
 }
+.audio-title:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+.audio-title {
+  color: rgba(255, 255, 255, 0.5);
+  display: flex;
+  pointer-events: none;
+  margin: 10px 0px;
+  font-size: small;
+    text-align: center;
+    margin-bottom: 10px;
+  }
 
 /* Estilos para player */
 /* Estilos para cardplayer */
@@ -814,4 +800,217 @@ label.sugerencia {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 1rem;
+}
+/* Estilos para modal */
+/* Fondo modal: negro con opacidad al 50% */
+
+
+/* Animación */
+@keyframes animatetop {
+  from {top:-300px; opacity:0} 
+  to {top:0; opacity:1}
+}
+
+@keyframes animarsuperior {
+  from {top:-300px; opacity:0}
+  to {top:0; opacity:1}
+}
+
+/* Botón cerrar */
+.cerrar {
+  color: black;
+  float: right;
+  font-size: 30px;
+  font-weight: bold;
+}
+
+.cerrar:hover,
+.cerrar:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* ModalSelector */
+.image-select-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.image-select-dropdown {
+  display: none;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.image-select-dropdown.show {
+  display: block;
+}
+
+.image-select-option {
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.image-select-option:hover {
+  background-color: #f0f0f0;
+}
+
+.image-select-option img {
+  margin-right: 10px;
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+}
+.modalwindow {
+    color: black;
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.contenido-modal {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.cerrarmodal,.cerrar {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.cerrarmodal:hover,
+.cerrarmodal:focus,
+.cerrar:hover,
+.cerrar:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+#closeModal {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#closeModal:hover {
+    background-color: #d32f2f;
+}
+/* Estilos para el modal */
+/* Estilos para el contenedor del selector personalizado */
+.custom-selector {
+  position: absolute;
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  z-index: 1000;
+  max-width: 300px;
+  width: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+/* Estilos para el título del selector */
+.custom-selector h2 {
+  margin: 0;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border-bottom: 1px solid #ccc;
+  font-size: 16px;
+  color: #333;
+}
+
+/* Estilos para el contenedor de opciones */
+#custom-options-giftSelector {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Estilos para cada opción de regalo */
+.gift-option {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.gift-option:hover {
+  background-color: #f0f0f0;
+}
+
+.gift-option.selected {
+  background-color: #e0e0e0;
+}
+
+/* Estilos para la imagen del regalo */
+.gift-option img {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  margin-right: 10px;
+  border-radius: 4px;
+}
+
+/* Estilos para el nombre del regalo */
+.gift-option span {
+  font-size: 14px;
+  color: #333;
+}
+
+/* Estilos para el input y el botón */
+#event-gift_select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 10px;
+  width: 200px;
+}
+
+#giftSelector-button {
+  padding: 8px 12px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#giftSelector-button:hover {
+  background-color: #0056b3;
+}
+
+/* Estilos para cuando el selector está abierto */
+.custom-selector.open {
+  display: block;
 }

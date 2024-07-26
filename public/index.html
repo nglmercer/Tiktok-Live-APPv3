@@ -25,6 +25,7 @@
 <link href="output.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="https://unpkg.com/speech-synthesis-recorder@1.2.1/SpeechSynthesisRecorder.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script type="module" src="./functions/calculatecommand.js"></script>
@@ -93,14 +94,15 @@ meta
                 </div>
                 <button class="btn btn-primary" id="Actualizar">Actualizar</button>
                 <div id="Actualizar-status"></div>
-
+                
                 <label class="cyberpunk-checkbox-label">
                     <input type="checkbox" class="cyberpunk-checkbox" id="overlayOff">
                     overlay on/off</label>
-                  
                     <label class="cyberpunk-checkbox-label">
+                        <div id="roomStats"></div>    
+
             </div>
- 
+
         </div>
         
         <div class="divcontent">
@@ -125,20 +127,21 @@ meta
                             <div class="card-header">
                                 <h2 class="card-title">General Settings</h2>
                             </div>
-                            <div class="card-content space-y-4">
-                                    <input type="checkbox" id="voiceenabled" checked>
-                                    <label for="voiceenabled">Enabled</label>
+                            <div class="card-content">
+                                    <!-- <input type="checkbox" id="voiceenabled" checked>
+                                    <label for="voiceenabled">Enabled</label> -->
 
                                 <div class="card-subcontent">
-                                    <label class="label cursor-pointer" for="selectvoice1">Voz1</label>
-                                    <input type="radio" name="selectvoice" id="selectvoice1" class="radio checked:bg-blue-300" checked>
+                                    <input type="radio" name="selectvoice" id="selectvoice1" class="radio checked:bg-blue-300 float-start" checked>
+                                    <label class="flex" for="selectvoice1">Voz1</label>
+
                                     <div id="voiceSelectContainer" class="relative m-3 content-center">
                                         <select id="voiceSelect1" class="select select-info" style="width: 100%;"></select>
                                     </div>
 
-                                    <label class="label cursor-pointer" for="selectvoice2">Voz2</label>
-                                    <input type="radio" name="selectvoice" id="selectvoice2" class="radio checked:bg-blue-500">
-
+                                   
+                                    <input type="radio" name="selectvoice" id="selectvoice2" class="radio checked:bg-blue-500 float-start">
+                                    <label class="flex" for="selectvoice2">Voz2</label>
                                 <div class="grid">
                                     <select id="voiceSelect" class="select select-info"></select>
                                     <div class="flex">                                <label for="randomVoice">Random Voice</label>
@@ -214,18 +217,6 @@ meta
                                 </div>
                             </div>
                             
-                            <button class="custombutton" onclick="getCheckboxValues()">Obtener Valores</button>
-                        
-                            <script>
-                                function getCheckboxValues() {
-                                    const checkboxes = document.querySelectorAll('.card-content input[type="checkbox"]');
-                                    const values = {};
-                                    checkboxes.forEach(checkbox => {
-                                        values[checkbox.id] = checkbox.checked;
-                                    });
-                                    console.log(values);
-                                }
-                            </script>
                         </div>
                         <div class="card">
                             <div class="card-header">
@@ -285,24 +276,25 @@ meta
                         </div>
                         <div class="card">
                             <div class="card-header">
-                                <h2 class="card-title">Filtros</h2>
+                                <h2 class="card-title">BlackList: Input de palabras que no aparecerán en el chat </h2>
                             </div>
                             <div class="card-content space-y-4">
-                                <p>BlackList: Input de palabras que no aparecerán en el chat</p>
                                 <input type="text" id="filter-words" class="border p-2 mr-2">
                                 <button class="custombutton" id="addfilter-words" >✅word</button>
                                 <button id="load-known-filters" class="custombutton">Añadir filtros conocidos</button>
                                 <div id="containerfilter-words" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
                             </div>
                         
+                        </div>
+                        <div class="card">
+                            <h2 class="card-title">WhiteList: Input de usuarios que aparecerán en el chat++</h2>
                             <div class="card-content space-y-4">
-                                <p>WhiteList: Input de usuarios que aparecerán en el chat++</p>
                                 <input type="text" id="filter-users" class="border p-2 mr-2">
                                 <button class="custombutton" id="addfilter-users" >✅user</button>
                                 <div id="containerfilter-users" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
                             </div>
                         </div>
-                        <div class="card">
+                        <div class="none invisible">
                             puntos iniciales del canal
                             <input type="number" id="users-points" value="2" max="99" min="0" class="bg-slate-700 w-20">
                             <label class="cyberpunk-checkbox-label">sin puntos no lee
@@ -655,14 +647,14 @@ meta
             <div id="tab3" class="tab-content">
                 <div class="containerbox">
                     <h1>YT Music Search</h1>
+                    
                     <div id="search-container">
-                        <input type="text" id="searchInput" placeholder="Search for songs...">
-                        <button id="searchButtonYT">Search</button>
+                        <input type="text" id="searchInput" class="input" placeholder="Search for songs...">
+                        <button id="searchButtonYT" class="btn btn-primary">Search</button>
                     </div>
                     
                     <div id="ytmusic-container"></div>
                     <div id="player-container"></div>
-                    <button id="skipButton" class="btn btn-secondary">Skip</button>
                     <div id="playlist-container"></div>
                 </div>
 
@@ -674,17 +666,35 @@ meta
                     <div class="file-container" id="drop-area">
                         <ul id="file-list"> </ul>
                     </div>
-                        <button id="paste-button" class="Custombutton">portapapeles</button>
+                        <button id="paste-button" class="btn" onclick="my_modal_5.showModal()">portapapeles</button>
+                        <dialog id="my_modal_5" class="modal modal-bottom sm:modal-middle">
+                        <div class="modal-box">
+                            <h3 class="text-lg font-bold">pega tu imagen o multimedia desde el portapapeles!</h3>
+                            <p class="py-4"></p>
+                            <div class="modal-action">
+                            <form method="dialog">
+                                <!-- if there is a button in form, it will close the modal -->
+                                <button class="btn deletebutton">close</button>
+                            </form>
+                            </div>
+                        </div>
+                        </dialog>
                     </div>
-                    
+                    <div class="containerbox">
+                        <button id="openModal1" class="custombutton openModal1">test</button>
+                        <button id="openModal2" class="custombutton openModal2">test2</button>
+
+
+                    </div>
                 <div class="containerbox">
                         <div id="tab5-action"></div>
-                        <button id="openaction" class="custombutton button-center">Añadir Accion&Eeventos</button>
-                        <button id="closeaction" class="deleteButton">Cerrar</button>
+                        <button id="openaction" class="custombutton button-center">ADD Accion&Eeventos</button>
+                        <button id="closeaction" class="deleteButton">Cerrar M</button>
                         <div id="loadrowactionsevents"></div>
                         <div>
                             <input type="text" id="action-name" placeholder="action name">
                             <button id="testactionevent" class="btn btn-primary">test</button>
+                            
                         </div>
         
                 </div>
@@ -712,25 +722,30 @@ meta
                     <button class="custombutton" onclick="importSettings()">Importar⚙</button>
                     <button class="custombutton" id="exportButton" onclick="exportSettings()">Exportar⚙</button>
                     <span id="loadingIndicator" style="display: none;">Cargando...</span>
-                    <button id="exportDB">Exportar Base de Datos</button>
+                    <!-- <button id="exportDB">Exportar Base de Datos</button>
                 <input type="file" id="importDB" style="display: none;">
-                <button id="importDBButton">Importar Base de Datos</button>
+                <button id="importDBButton">Importar Base de Datos</button> -->
                 </div>
                 <div class="containerbox">
-                    <div class="center-element">
-                        URL OVERLAY MENSAJES EVENTOS Y GIFTS http://localhost:8081/overlay/overlay.html
-                    </div>
+
                     <label class="cyberpunk-checkbox-label">
                         <input type="checkbox" class="cyberpunk-checkbox" id="sendDataCheckbox" checked>
                         mixitupAlerts
                     </label>
-                    <div class="flexbox">
+                    <div class="card">
+                        <h2 class="card-title">URL OVERLAY MENSAJES EVENTOS Y GIFTS</h2>
+                        <div class="card-content">
+                            <input type="text" class="input" id="urloverlay" value="http://localhost:8081/overlay/overlay.html">
+                        </div>
+
+                    </div>
+                    <!-- <div class="flexbox">
                         <h3>Testing handle events</h3>
                         <select name="testselectevent" id="testselectevent"></select>
                         <select name="testselectfunction" id="testselectfunction"></select>
                         <button class="custombutton" id="testHandleeventselect" >Test comando</button>
-                    </div>
-                    <script>
+                    </div> -->
+                    <!-- <script>
                         const events = [
                             "gift",
                             "chat",
@@ -764,7 +779,7 @@ meta
                             });
                         }
                         testEventypeappend();
-                    </script>
+                    </script> -->
                 </div>
                 <div class="containerbox">
                     <form id="vrchatbot" class="grid grid-cols-2 gap-4 max-w-xl mx-4">
@@ -784,75 +799,30 @@ meta
                       <div id="connection-status">Desconectado</div>
                   
                       <div>
-                          <button id="moveForward">Adelante</button>
-                          <button id="moveBackward">Atrás</button>
-                          <button id="moveLeft">Izquierda</button>
-                          <button id="moveRight">Derecha</button>
+                          <button id="moveForward" class="btn btn-primary">Adelante</button>
+                          <button id="moveBackward" class="btn btn-primary">Atrás</button>
+                          <button id="moveLeft" class="btn btn-primary">Izquierda</button>
+                          <button id="moveRight" class="btn btn-primary">Derecha</button>
+
                       </div>
                   
                       <div>
-                          <button id="jump">Saltar</button>
-                          <button id="run">Correr</button>
+                          <button id="jump" class="btn btn-primary">Saltar</button>
+                          <button id="run" class="btn btn-primary">Correr</button>
                       </div>
                   
                       <div>
-                          <label for="lookHorizontal">Mirar Horizontal:</label>
+                          <label for="lookHorizontal" class="label">Mirar Horizontal:</label>
                           <input type="range" id="lookHorizontal" min="-1" max="1" step="0.01" value="0">
                       </div>
                   
                       <div>
                           <input type="text" id="chatMessage" placeholder="Mensaje de chat">
-                          <button id="sendChat">Enviar</button>
+                          <button id="sendChat" class="btn btn-primary">Enviar</button>
                       </div>
                   
-                      <button id="stopAll">Detener Todas las Acciones</button>
-                      <script>
-                        const lookHorizontal = document.getElementById('lookHorizontal');
-                        const stopAllButton = document.getElementById('stopAll');
-                        const clientDisconnectButton = document.getElementById('clientdisconnect');
-                        const clientBotStatus = document.getElementById('clientbotstatus');
-                        const connectionStatus = document.getElementById('connection-status');
-                        const testoscbutton = document.getElementById('testoscbutton');
-                        testoscbutton.addEventListener('click', () => {
-                            const testosctext = document.getElementById('testosctext');
-                            window.api.sendOscMessage(testosctext.value);
-                            console.log('Enviado OSC:', testosctext.value);
-                        });
-                        function handleMovement(action, isKeyDown) {
-                            window.api.inputAction(action, isKeyDown);
-                        }
-                    
-                            // Función para manejar el control deslizante de mirada horizontal
-    function handleLookHorizontal(event) {
-        window.api.inputAction('LookHorizontal', parseFloat(event.target.value));
-    }
+                      <button id="stopAll" class="btn btn-primary">Detener Todas las Acciones</button>
 
-    // Configurar eventos
-    lookHorizontal.addEventListener('input', handleLookHorizontal);
-    stopAllButton.addEventListener('click', () => window.api.inputAction('keyUpAll'));
-
-    // Configurar botones de movimiento
-    const movementButtons = {
-        'moveForward': 'MoveForward',
-        'moveBackward': 'MoveBackward',
-        'moveLeft': 'MoveLeft',
-        'moveRight': 'MoveRight',
-        'jump': 'Jump',
-        'run': 'Run'
-    };
-
-    Object.entries(movementButtons).forEach(([buttonId, action]) => {
-        const button = document.getElementById(buttonId);
-        button.addEventListener('mousedown', () => handleMovement(action, true));
-        button.addEventListener('mouseup', () => handleMovement(action, false));
-        button.addEventListener('mouseleave', () => handleMovement(action, false));
-    });
-
-    // Limpiar al cerrar la ventana
-    window.addEventListener('beforeunload', () => {
-        window.api.inputAction('keyUpAll');
-    });
-                      </script>
                 </div>
             </div>
         </div>
@@ -861,10 +831,8 @@ meta
             </audio>
             <audio id="soundPlayer" type="audio/mp3"></audio>
             <audio id="audiotrack"></audio>
-            <input id="skip-button" type="button" class="btn btn-primary" value="SKIP"> </button>
             
             <div id="durationDisplay"></div>
-            <div id="roomStats"></div>    
 
         </div>
     </div>

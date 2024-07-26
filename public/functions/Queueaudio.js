@@ -41,6 +41,9 @@ class Queue {
         }
         return null;
     }
+    hasMore() {
+        return this.currentIndex < this.items.length - 1;
+    }
 }
 let isPlaying = false;
 

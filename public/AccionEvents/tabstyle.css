@@ -1,12 +1,27 @@
-.tab5-action{
-    position: fixed;
-    left: 50%;
-    top: 50%;
+.modalwindow {
     color: black;
-    /* width: 60%; */
-    transform: translate(-50%, -50%);
-    z-index: 99;
-    background-color: rgb(255, 255, 255);
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: auto;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.contenido-modal {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 5px;
+    position: relative;
+}
+.AccionEvents{
     gap: 10px;
     border: 1px solid rgb(0, 0, 0);
     display: flex;
@@ -16,7 +31,9 @@
     .ElementITEM3,
     .ElementITEM2,
     .ElementITEM{
-        max-height: 20rem;
+        border: 1px solid rgb(0, 0, 0);
+
+        max-height: 22rem;
         overflow-y: auto;
         h1 {
             display: flex;

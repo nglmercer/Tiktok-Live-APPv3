@@ -1,6 +1,4 @@
 // errorComponent.js
-
-// Función para crear el componente de error
 export default function createErrorComponent(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'alert alert-error'; // Clases de CSS del alert
@@ -13,6 +11,13 @@ export default function createErrorComponent(message) {
         </svg>
         <span>${message}</span>
     `;
+
+    // Configurar el temporizador para eliminar el mensaje después de 5 segundos
+    setTimeout(() => {
+        if (errorDiv && errorDiv.parentNode) {
+            errorDiv.parentNode.removeChild(errorDiv);
+        }
+    }, 5000); // 5000 milisegundos = 5 segundos
 
     return errorDiv;
 }

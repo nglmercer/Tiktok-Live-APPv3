@@ -6,11 +6,12 @@ class AudioPlayer {
     this.createControls();
     this.addEventListeners();
   }
-
   createControls() {
       const container = document.createElement('div');
       container.className = 'audio-player';
-
+    this.audioTitle = document.createElement('div');
+    this.audioTitle.className = 'audio-title';
+    container.appendChild(this.audioTitle);
       this.playBtn = document.createElement('button');
       this.playBtn.innerHTML = '▶';
       this.playBtn.className = 'play-btn';
@@ -50,12 +51,13 @@ class AudioPlayer {
       this.volumetext.className = 'volumetext';
       this.volumetext.textContent = '🔉';
 
-      container.appendChild(this.prevBtn);
-      container.appendChild(this.playBtn);
-      container.appendChild(this.nextBtn);
+
       container.appendChild(this.progressBar);
       container.appendChild(this.currentTime);
       container.appendChild(this.duration);
+    container.appendChild(this.prevBtn);
+      container.appendChild(this.playBtn);
+      container.appendChild(this.nextBtn);
       container.appendChild(this.volumetext);
       container.appendChild(this.volumeSlider);
 
@@ -70,6 +72,8 @@ class AudioPlayer {
       this.progressBar.addEventListener('input', () => this.setProgress());
       this.audio.addEventListener('timeupdate', () => this.updateProgress());
       this.audio.addEventListener('loadedmetadata', () => this.setDuration());
+      this.audio.addEventListener('play', () => this.playBtn.innerHTML = '⏸');
+      this.audio.addEventListener('pause', () => this.playBtn.innerHTML = '▶');
   }
 
   togglePlay() {
@@ -127,6 +131,9 @@ class AudioPlayer {
       const minutes = Math.floor(time / 60);
       const seconds = Math.floor(time % 60);
       return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  }
+    setAudioInfo(title) {
+    this.audioTitle.textContent = title;
   }
 }
 

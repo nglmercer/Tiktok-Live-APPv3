@@ -1,8 +1,15 @@
 import { objectModal, eventmanager } from '../renderer.js';
 import { getfileId } from '../utils/Fileshtml.js';
-import { databases, saveDataToIndexedDB, deleteDataFromIndexedDB, updateDataInIndexedDB, loadDataFromIndexedDB, getDataFromIndexedDB, observer } from '../functions/indexedDB.js';
+import { databases, createDBManager, observer } from '../functions/indexedDB.js';
+const actionEventDBManager = createDBManager(databases.MyDatabaseActionevent);
 
-async function createElementWithButtons(dbConfig, data) {
+observer.subscribe((action, data) => {
+    if (action === 'save' || action === 'update' || action === 'delete') {
+        // Reload the entire table when data changes
+        loadAndDisplayAllData();
+    }
+});
+async function createElementWithButtons(data) {
     if (!data || !data.id) {
         console.error('Data is missing or invalid:', data);
         return;
@@ -15,7 +22,7 @@ async function createElementWithButtons(dbConfig, data) {
     const row2 = getOrCreateRow(table2, data);
 
     const nombreCell = createTextCell(data.accionevento.nombre || 'N/A');
-    const eventovalorCell = createTextCell(await geteventovalor(data.event_type,data) || 'default');
+    const eventovalorCell = createTextCell(await geteventovalor(data.event_type, data) || 'default');
     const imagenCell = createTextCell(await getDataText(data["type-imagen"]));
     const videoCell = createTextCell(await getDataText(data["type-video"]));
     const sonidoCell = createTextCell(await getDataText(data["type-audio"]));
@@ -41,6 +48,7 @@ async function createElementWithButtons(dbConfig, data) {
     table1.appendChild(row1);
     table2.appendChild(row2);
 }
+
 async function geteventovalor(eventype,data){
     let valor = data[`event-${eventype}`];
     if (valor && valor.select){
@@ -120,14 +128,14 @@ function createButtonCell(data, row) {
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Borrar';
     deleteButton.className = "deleteButton";
-    deleteButton.addEventListener('click', () => {
-        row.remove();
-        deleteDataFromIndexedDB(databases.MyDatabaseActionevent, data.id);
-        setTimeout(() => {
-            loadDataFromIndexedDB(databases.eventsDB, createElementWithButtons);
-            loadDataFromIndexedDB(databases.MyDatabaseActionevent, createElementWithButtons);
-        }, 1000);
-        console.log('deleteDataFromIndexedDB', data);
+    deleteButton.addEventListener('click', async () => {
+        try {
+            await actionEventDBManager.deleteData(data.id);
+            row.remove();
+            console.log('Deleted data:', data);
+        } catch (error) {
+            console.error('Error deleting data:', error);
+        }
     });
 
     buttonCell.appendChild(editButton);
@@ -170,4 +178,18 @@ function createPlayButtonCell(data) {
     playButtonCell.appendChild(playButton);
     return playButtonCell;
 }
-export { createElementWithButtons };
+async function loadAndDisplayAllData() {
+    try {
+        const allData = await actionEventDBManager.getAllData();
+        const container = document.getElementById('loadrowactionsevents');
+        container.innerHTML = ''; // Limpiar el contenedor
+
+        for (const data of allData) {
+            await createElementWithButtons(data);
+        }
+    } catch (error) {
+        console.error('Error loading data:', error);
+    }
+}
+loadAndDisplayAllData();
+export { createElementWithButtons, loadAndDisplayAllData };

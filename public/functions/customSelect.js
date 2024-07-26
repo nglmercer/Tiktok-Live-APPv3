@@ -1,98 +1,115 @@
 // customSelect.js
 import { fetchSimplifiedState } from './simplifiedState.js';
 
-export async function createGiftSelector(containerId, onChange, initialSelectedValue = null) {
-    try {
-        const simplifiedState = await fetchSimplifiedState();
-        const gifts = simplifiedState.availableGifts;
+// imageSelector.js
+export class ImageSelector {
+    constructor(containerId, options, onChange, initialSelectedValue = null) {
+        this.containerId = containerId;
+        this.options = options;
+        this.onChange = onChange;
+        this.container = document.getElementById(containerId);
+        this.selectedValue = initialSelectedValue;
+        this.init();
+    }
 
-        const container = document.getElementById(containerId);
-        if (!container) {
-            throw new Error(`No element found with ID: ${containerId}`);
+    init() {
+        if (!this.container) {
+            throw new Error(`No element found with ID: ${this.containerId}`);
         }
 
-        // Clear any existing content
-        container.innerHTML = '';
+        this.container.innerHTML = '';
+        this.createSearchInput();
+        this.createDropdown();
+        this.populateOptions();
+        this.addEventListeners();
 
-        // Create the input for search
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.placeholder = 'Search gifts...';
-        input.classList.add('custom-select-input');
-        container.appendChild(input);
-
-        // Create the dropdown container
-        const dropdown = document.createElement('div');
-        dropdown.classList.add('custom-select-dropdown');
-        container.appendChild(dropdown);
-
-        // Function to set selected option
-        function setSelectedOption(gift) {
-            input.value = gift.name;
-            input.dataset.value = gift.giftId;
-            if (onChange && typeof onChange === 'function') {
-                onChange(containerId, input.dataset.value);
-            }
+        if (this.selectedValue !== null) {
+            this.setSelectedOption(this.options.find(opt => opt.value === this.selectedValue));
         }
+    }
 
-        // Populate the dropdown with options
-        gifts.forEach(gift => {
-            const option = document.createElement('div');
-            option.classList.add('custom-select-option');
-            option.innerHTML = `<img src="${gift.imageUrl}" alt="${gift.name}" style="width:20px; height:20px;"/> ${gift.name} (Diamonds: ${gift.diamondcost})`;
-            option.dataset.value = gift.giftId;
-            dropdown.appendChild(option);
+    createSearchInput() {
+        this.input = document.createElement('input');
+        this.input.type = 'text';
+        this.input.placeholder = 'Search options...';
+        this.input.classList.add('image-select-input');
+        this.container.appendChild(this.input);
+    }
 
-            // Add click event to select the option
-            option.addEventListener('click', () => {
-                setSelectedOption(gift);
-                dropdown.classList.remove('show');
-            });
+    createDropdown() {
+        this.dropdown = document.createElement('div');
+        this.dropdown.classList.add('image-select-dropdown');
+        this.container.appendChild(this.dropdown);
+    }
+
+    populateOptions() {
+        this.options.forEach(option => {
+            const optionElement = document.createElement('div');
+            optionElement.classList.add('image-select-option');
+            optionElement.innerHTML = `
+                <img src="${option.imageUrl}" alt="${option.name}" style="width:20px; height:20px;"/>
+                ${option.name} ${option.description ? `(${option.description})` : ''}
+            `;
+            optionElement.dataset.value = option.value;
+            this.dropdown.appendChild(optionElement);
+
+            optionElement.addEventListener('click', () => this.setSelectedOption(option));
         });
+    }
 
-        // Show dropdown on focus
-        input.addEventListener('focus', () => {
-            dropdown.classList.add('show');
-        });
-
-        // Hide dropdown on blur
-        input.addEventListener('blur', () => {
-            setTimeout(() => dropdown.classList.remove('show'), 200); // Delay to allow click
-        });
-
-        // Filter options on input
-        input.addEventListener('input', () => {
-            const filter = input.value.toLowerCase();
-            const options = dropdown.querySelectorAll('.custom-select-option');
-            options.forEach(option => {
-                const text = option.textContent.toLowerCase();
-                if (text.includes(filter)) {
-                    option.style.display = '';
-                } else {
-                    option.style.display = 'none';
-                }
-            });
-        });
-
-        // Set the initial selected value if provided
-        if (initialSelectedValue !== null) {
-            const initialGift = gifts.find(gift => gift.giftId === parseInt(initialSelectedValue, 10));
-            if (initialGift) {
-                setSelectedOption(initialGift);
-            }
+    setSelectedOption(option) {
+        this.input.value = option.name;
+        this.input.dataset.value = option.value;
+        this.selectedValue = option.value;
+        this.dropdown.classList.remove('show');
+        if (this.onChange && typeof this.onChange === 'function') {
+            this.onChange(this.containerId, option.value);
         }
+    }
 
-    } catch (error) {
-        console.error('Error in createGiftSelector:', error);
+    addEventListeners() {
+        this.input.addEventListener('focus', () => this.dropdown.classList.add('show'));
+        this.input.addEventListener('blur', () => {
+            setTimeout(() => this.dropdown.classList.remove('show'), 200);
+        });
+        this.input.addEventListener('input', this.filterOptions.bind(this));
+    }
+
+    filterOptions() {
+        const filter = this.input.value.toLowerCase();
+        const options = this.dropdown.querySelectorAll('.image-select-option');
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(filter) ? '' : 'none';
+        });
+    }
+
+    getValue() {
+        return this.selectedValue;
+    }
+
+    setValue(value) {
+        const option = this.options.find(opt => opt.value === value);
+        if (option) {
+            this.setSelectedOption(option);
+        }
+    }
+
+    addOption(option) {
+        this.options.push(option);
+        const optionElement = document.createElement('div');
+        optionElement.classList.add('image-select-option');
+        optionElement.innerHTML = `
+            <img src="${option.imageUrl}" alt="${option.name}" style="width:20px; height:20px;"/>
+            ${option.name} ${option.description ? `(${option.description})` : ''}
+        `;
+        optionElement.dataset.value = option.value;
+        this.dropdown.appendChild(optionElement);
+        optionElement.addEventListener('click', () => this.setSelectedOption(option));
     }
 }
 
-// Function to get the selected value
-export function getSelectedValue(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) {
-        throw new Error(`No element found with ID: ${containerId}`);
-    }
-    const input = container.querySelector('.custom-select-input');
-    return input ? input.dataset.value : null;
+// Función para crear el selector de imágenes
+export function createImageSelector(containerId, options, onChange, initialSelectedValue = null) {
+    return new ImageSelector(containerId, options, onChange, initialSelectedValue);
 }

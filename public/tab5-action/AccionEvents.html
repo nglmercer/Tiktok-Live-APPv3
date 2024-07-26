@@ -1,4 +1,4 @@
-<form class="tab5-action">
+<form class="AccionEvents">
   <div class="ElementITEM">
     <h1>Acciones y Eventos</h1>
     <input type="checkbox" id="sugerencia" class="sugerencia">
@@ -59,11 +59,15 @@
         <input name="id" type="hidden" id="modalactionsId" />
       </div>
     </div>
+    <div class="input-group">
+      <input type="text" id="event-gift_select" name="event-gift_select" readonly>
+      <div id="gift-selector-container"></div>
 
+  </div>
     <div class="inputGroup Eventoscheck">
       <label for="modalactionsCheckbox4">Eventos</label>
       <input name="accionevento_check" type="checkbox" id="modalactionsCheckbox4" class="form-control"/>
-    
+      
       <div class="config">
         <div class="radio-group grid grid-cols-2 gap-4" data-group-name="eventos">
           <label for="event-chat">chat </label>
@@ -80,7 +84,7 @@
           <br>
           <label for="event-gift">gift </label>
           <input type="radio" name="event_type" id="event-gift" value="gift" class="form-control" />
-          <select name="event-gift_select" id="event-gift_select" class="form-control inputSelectSources"></select>
+          <div class="imageSelectorContainer" id="imageSelectorContainer"></div>
         </div>
       </div>
     </div>
@@ -88,9 +92,7 @@
 
   <div class="ElementITEM">
     <button type="button" class="btn btn-primary modalActionAdd">Agregar Evento</button>
-    <button type="button" class="position-absolute top-0 end-0 deleteButton modalActionClose">Cerrar</button>
+    <button type="button" class="position-absolute top-0 end-0 deleteButton closeModal">Cerrar</button>
     <button type="button" class="btn btn-primary modalActionSave" style="display: none;">Guardar</button>
   </div>
 </form>
-
-<link rel="stylesheet" href="./tab5-action/tab5-action.css">

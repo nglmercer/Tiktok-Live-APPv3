@@ -19,7 +19,6 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
     // Agregar opciones predeterminadas al select de categorías
     categorySelect.innerHTML = `
         <option value="">Seleccione una categoría</option>
-        <option value="default">Funciones predeterminadas</option>
     `;
     Object.keys(customFunctions).forEach(category => {
         const option = document.createElement('option');
@@ -31,12 +30,7 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
     // Función para actualizar el select de funciones
     function updateFunctionSelect(category) {
         functionSelect.innerHTML = '';
-        if (category === 'default') {
-            functionSelect.innerHTML = `
-                <option value="log">Console.log</option>
-                <option value="alert">Alert</option>
-            `;
-        } else if (customFunctions[category]) {
+         if (customFunctions[category]) {
             Object.keys(customFunctions[category]).forEach(funcName => {
                 const option = document.createElement('option');
                 option.value = funcName;
@@ -49,6 +43,7 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
     categorySelect.onchange = () => updateFunctionSelect(categorySelect.value);
 
     addButton.textContent = 'Agregar Comando';
+    addButton.classList.add('custombutton');
 
     container.appendChild(commandInput);
     container.appendChild(categorySelect);
@@ -102,13 +97,7 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
                 if (text.toLowerCase().startsWith(cmd.command.toLowerCase())) {
                     text = text.slice(cmd.command.length).trim();
                 }
-                if (cmd.category === 'default') {
-                    if (cmd.function === 'log') {
-                        console.log(`Comando ejecutado: ${cmd.command}`);
-                    } else if (cmd.function === 'alert') {
-                        alert(`Comando ejecutado: ${cmd.command}`);
-                    }
-                } else if (customFunctions[cmd.category] && customFunctions[cmd.category][cmd.function]) {
+                if (customFunctions[cmd.category] && customFunctions[cmd.category][cmd.function]) {
                     await customFunctions[cmd.category][cmd.function](text);
                 }
             }

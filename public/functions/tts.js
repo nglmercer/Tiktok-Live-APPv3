@@ -1,26 +1,14 @@
 const TTS_API_ENDPOINT = 'https://api.streamelements.com/kappa/v2/speech?';
 import AudioPlayer from '../htmlcomponents/AudioPlayer.js';
-const audioPlayer = new AudioPlayer('audio');
-class Queue {
-    constructor() {
-        this.items = [];
-    }
+import {Queue, Controlmedia } from './Queueaudio.js';
+import SpeechSynthesisRecorder from './speechSynthesisRecorder.js';
 
-    enqueue(element) {
-        this.items.push(element);
-    }
-
-    dequeue() {
-        if (this.isEmpty()) {
-            return "Underflow";
-        }
-        return this.items.shift();
-    }
-
-    isEmpty() {
-        return this.items.length === 0;
-    }
-}
+const audioPlayer = new AudioPlayer('audio', 
+() => controlmedia.playPreviousAudio(), 
+() => controlmedia.nextaudio()
+);
+const controlmedia = new Controlmedia(audioPlayer);
+const recorder = new SpeechSynthesisRecorder();
 
 let audioQueue = new Queue();
 let lastReadText = null;
@@ -79,59 +67,32 @@ function skipAudio() {
     audioPlayer.audio.currentTime = 0;
 
     if (!audioQueue.isEmpty()) {
-        playNextAudio();
+        controlmedia.nextaudio();
     } else {
         isPlaying = false;
     }
 }
 
-function playNextAudio() {
-    if (!audioQueue.isEmpty()) {
-        const audioUrl = audioQueue.dequeue();
-        if (audioUrl) {
-            audioPlayer.audio.src = audioUrl;
-            audioPlayer.audio.load();
-            audioPlayer.audio.play();
-        }
-    }
-}
-
-
-function kickstartPlayer() {
-    if (audioQueue.isEmpty()) {
-        isPlaying = false;
-        return;
-    }
-
-    isPlaying = true;
-    playNextAudio();
-
-    audioPlayer.audio.onended = function() {
-        kickstartPlayer();
-    };
-}
 
 function leerMensajes(text) {
     console.log('leerMensajes', text);
     if (text) {
         fetchAudio(text).then(audioUrl => {
             if (audioUrl) {
-                audioQueue.enqueue(audioUrl);
-                if (!isPlaying) {
-                    isPlaying = true;
-                    kickstartPlayer();
-                }
+                controlmedia.addSong(audioUrl);
+                console.log('leerMensajes audioUrl', audioUrl);
             }
         });
     }
 }
 export class TTS {
-    constructor(message) {
-        this.speak(message);
+    constructor() {
+        this.recorder = null;
     }
 
-    speak(message) {
+    async speak(message) {
         console.log('TTS speak', message);
+
         const utterance = new SpeechSynthesisUtterance(message);
         utterance.volume = document.querySelector('#volume').value;
 
@@ -153,28 +114,40 @@ export class TTS {
         if (document.getElementById('randomPitch').checked) {
             pitch = setRandomPitch();
         }
+
         if (message === lastReadText) {
             return;
         }
 
         lastReadText = message;
 
-        utterance.voice = selectedVoice;
-        utterance.rate = parseFloat(speed);
-        utterance.pitch = parseFloat(pitch);
-
-        window.speechSynthesis.speak(utterance);
-        if (utterance) {
-            audioQueue.enqueue(utterance.voiceURI);
-            if (!isPlaying) {
-                isPlaying = true;
-                playNextAudio();
+        this.recorder = new SpeechSynthesisRecorder({
+            text: message,
+            utteranceOptions: {
+                voice: selectedVoice,
+                rate: parseFloat(speed),
+                pitch: parseFloat(pitch),
+                volume: parseFloat(utterance.volume)
             }
+        });
+
+        try {
+            const {tts, data} = await this.recorder.start().then(tts => tts.blob());
+            const audioUrl = URL.createObjectURL(data);
+            console.log('audioUrl', audioUrl);
+            
+            if (audioUrl) {
+                controlmedia.addSong(audioUrl);
+            }
+            
+            document.getElementById("audiotrack").pause();
+            document.getElementById("audiotrack").currentTime = 0;
+        } catch (error) {
+            console.error('Error recording speech:', error);
         }
-        document.getElementById("audiotrack").pause();
-        document.getElementById("audiotrack").currentTime = 0;
     }
 }
+
 
 function setRandomVoice(voices) {
     const randomIndex = Math.floor(Math.random() * voices.length);
@@ -188,5 +161,4 @@ function setRandomSpeed() {
 function setRandomPitch() {
     return (Math.random() * (1.5 - 0.5) + 0.5).toFixed(1);
 }
-
 export { leerMensajes, skipAudio };

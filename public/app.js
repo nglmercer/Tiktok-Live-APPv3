@@ -8,13 +8,15 @@ import { saveLastData, getLastData, simulateWithLastData } from './functions/dat
 import { handleAvailableGifts, getAvailableGifts } from './functions/giftmanager.js';
 import { connectWebsocket, connectTikTok } from './connections/connection.js';
 import { initializeFilterComponent, addFilterItemToGroup } from './utils/filters.js';
-
+import { obtenerDatos } from './functions/dataHandler.js';
+import {ModalModule} from './modal/modal.js';
 let backendUrl = "http://localhost:8081"
 let timeouttime = 5000;
 let viewerCount = 0;
 let likeCount = 0;
 let diamondsCount = 0;
 let connection = new TikTokIOConnection(backendUrl);
+
 
 // These settings are defined by obs.html
 if (!window.settings) window.settings = {};
@@ -100,7 +102,7 @@ function handleWebsocketMessage(event) {
             handlefollow(data);
             break;
         case "gift":
-            handlegift('gift', data);
+            handlegift(data);
             break;
         default:
             sendToServer(eventype, data);
@@ -156,7 +158,7 @@ function sanitize(text) {
 }
 
 function updateRoomStats() {
-    $('#roomStats').html(`<div class="stats stats-horizontal lg:stats-horizontal shadow">
+    $('#roomStats').html(`<div class="stats stats-vertical lg:stats-vertical shadow">
     <div class="stat">
     <div class="stat-title text-sm">Espectadores</div>
     <div class="stat-value text-sm">${viewerCount}</div>
@@ -630,6 +632,7 @@ connection.on('gift', (data) => {
 })
 
 function handlegift(data) {
+    console.log("handlegift", data);
     localStorage.setItem('lastGiftItem', JSON.stringify(data));
     if (!userPoints[data.nickname]) {
         userPoints[data.nickname] = 10; // Asignar 10 puntos por defecto
