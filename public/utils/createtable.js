@@ -1,8 +1,17 @@
-import { objectModal, eventmanager } from '../renderer.js';
+import {eventmanager } from '../AccionEvents/accioneventTrigger.js';
+import { objectModal, modalPromise, modalManager } from '../renderer.js';
 import { getfileId } from '../utils/Fileshtml.js';
 import { databases, createDBManager, observer } from '../functions/indexedDB.js';
-const actionEventDBManager = createDBManager(databases.MyDatabaseActionevent);
+import {ModalModule} from '../modal/modal.js';
+import {     validateForm,
+    obtenerDatos,
+    resetForm,
+    getFiles123,
+    filesform, } from '../functions/dataHandler.js';
+import { fillForm, setPendingSelectValues } from '../utils/formfiller.js';
 
+const actionEventDBManager = createDBManager(databases.MyDatabaseActionevent);
+let separator = '_';
 observer.subscribe((action, data) => {
     if (action === 'save' || action === 'update' || action === 'delete') {
         // Reload the entire table when data changes
@@ -70,6 +79,7 @@ async function getDataText(data) {
     }
     return data.select ? data.select : 'N/A';
 }
+
 function createEventNamesCell(data) {
     const eventNamesCell = document.createElement('td');
     if (data.event_type) {
@@ -113,17 +123,39 @@ function createTextCell(text) {
     textCell.textContent = text;
     return textCell;
 }
-
+function getformmodal() {
+    if (objectModal) {
+        console.log('Modal already initialized', objectModal);
+    }
+    if (!objectModal) {
+        console.error('Modal not initialized yet');
+        return null;
+    }
+    return objectModal.modal.querySelector('form');
+}
+function handlefillform(data) {
+    const form = getformmodal();
+    if (form) {
+        fillForm(form, data, separator = '_');
+    } else {
+        console.error('Form not available');
+    }
+}
 function createButtonCell(data, row) {
     const buttonCell = document.createElement('td');
     buttonCell.className = 'button-cell';
 
     const editButton = document.createElement('button');
     editButton.textContent = 'Editar';
-    editButton.className = "custombutton";
-    editButton.addEventListener('click', async () => {
-        objectModal.onUpdate(data);
-    });
+    editButton.className = "custombutton openModal1";
+        editButton.addEventListener('click', async () => {
+            try {
+                await modalManager.openForEdit(data);
+            } catch (error) {
+                console.error('Error al abrir la modal para edición:', error);
+            }
+ 
+        });
 
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Borrar';
@@ -147,9 +179,13 @@ function createReassignButtonCell(data) {
     const reassignButtonCell = document.createElement('td');
     const reassignButton = document.createElement('button');
     reassignButton.textContent = 'Reasignar';
-    reassignButton.className = "custombutton";
+    reassignButton.className = "custombutton openModal1";
     reassignButton.addEventListener('click', async () => {
-        objectModal.onEvent(data);
+        try {
+            await modalManager.openForReassign(data);
+        } catch (error) {
+            console.error('Error al abrir la modal para reasignación:', error);
+        }
     });
     reassignButtonCell.appendChild(reassignButton);
     return reassignButtonCell;

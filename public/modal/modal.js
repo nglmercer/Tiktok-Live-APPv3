@@ -3,22 +3,29 @@ import { DataParser, DataParserStructured } from './dataparser.js';
 import {createImageSelector}  from './imageSelector.js';
 
 export class ModalModule {
-    constructor(buttonClass, htmlPath, cssPath, setupCallback, dataCallback) {
+    constructor(buttonClass, htmlPath, cssPath, setupCallback, dataCallback, onOpenCallback) {
         this.buttonClass = buttonClass;
         this.htmlPath = htmlPath;
         this.cssPath = cssPath;
         this.setupCallback = setupCallback;
-        this.dataCallback = dataCallback; // Nuevo callback para obtener datos
+        this.dataCallback = dataCallback;
+        this.onOpenCallback = onOpenCallback; // Nueva función de callback
         this.modal = null;
         this.isSetupDone = false;
-        this.customSelectors = {}; // Añade esta línea
+        this.customSelectors = {};
+        this.modalId = `modal_${Math.random().toString(36).substr(2, 9)}`;
         this.init();
+        this.initPromise = this.init();
     }
     async init() {
         try {
             await this.loadCSS();
             await this.createModal();
             this.addEventListeners();
+            if (this.setupCallback) {
+                await this.setupCallback(this);
+                this.isSetupDone = true;
+            }
         } catch (error) {
             console.error('Error initializing modal:', error);
         }
@@ -52,17 +59,14 @@ export class ModalModule {
     }
     async createModal() {
         try {
-            this.modal = document.getElementById('ventanaModal');
-            if (this.modal) return; // Si ya existe, no crear otro
-
             const response = await fetch(this.htmlPath);
             const htmlContent = await response.text();
             this.modal = document.createElement('div');
-            this.modal.id = 'ventanaModal';
+            this.modal.id = this.modalId;
             this.modal.className = 'modalwindow';
             this.modal.innerHTML = `
                 <div class="contenido-modal">
-                    <span class="cerrarmodal">&times;</span>
+                    <span class="cerrarmodal">❌</span>
                     ${htmlContent}
                 </div>
             `;
@@ -73,7 +77,21 @@ export class ModalModule {
             console.error('Error creating modal:', error);
         }
     }
-
+    async openWithCustomAction(customAction) {
+        await this.open();
+        if (typeof customAction === 'function') {
+            await customAction(this);
+        }
+    }
+    async executeAndClose(action) {
+        try {
+            if (typeof action === 'function') {
+                await action(this);
+            }
+        } finally {
+            this.close();
+        }
+    }
     addEventListeners() {
         document.querySelectorAll(`.${this.buttonClass}`).forEach(button => {
             button.addEventListener('click', () => this.open());
@@ -93,16 +111,23 @@ export class ModalModule {
         this.customSelectors[options.id] = selector;
         return selector;
     }
-
-    open = async () => {
+    async waitForInitialization() {
+        await this.initPromise;
+        return this;
+    }
+    async open(customAction) {
         if (this.modal) {
-            this.modal.style.display = 'block';
-            if (this.setupCallback && !this.isSetupDone) {
-                await this.setupCallback(this);
-                this.isSetupDone = true;
+            this.modal.style.display = 'flex';
+            if (this.onOpenCallback) {
+                await this.onOpenCallback(this);
             }
             // Inicializar los selectores personalizados
             Object.values(this.customSelectors).forEach(selector => selector.initialize());
+            
+            // Ejecutar la acción personalizada si se proporciona
+            if (typeof customAction === 'function') {
+                await customAction(this);
+            }
         }
     }
 
@@ -131,12 +156,15 @@ class CustomSelector {
         this.items = [];
         this.selectorElement = null;
         this.isOpen = false;
+        this.isInitialized = false;
     }
 
     initialize() {
+        if (this.isInitialized) return;
         this.createSelectorButton();
         this.createSelectorElement();
         this.addEventListeners();
+        this.isInitialized = true;
     }
 
     createSelectorButton() {

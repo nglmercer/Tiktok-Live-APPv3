@@ -2,7 +2,8 @@ import { minecraftlive, Minecraftlivedefault } from './indexdb.js';
 // import { replaceVariables } from './functions/replaceVariables.js';
 import { fetchSimplifiedState } from './functions/simplifiedState.js';
 import { searchSong, playNextInQueue } from './functions/YoutubeApi.js';
-import { eventmanager, handleleermensaje } from './renderer.js';
+import { handleleermensaje } from './renderer.js';
+import { eventmanager } from './AccionEvents/accioneventTrigger.js';
 import { createCustomCommandComponent, getCustomCommandComponent } from "./utils/Commandshtml.js";
 import { saveLastData, getLastData, simulateWithLastData } from './functions/datamanager.js';
 import { handleAvailableGifts, getAvailableGifts } from './functions/giftmanager.js';
@@ -1078,9 +1079,6 @@ async function getBotStatus() {
     }
 }
 async function sendToServer(eventType, data) {
-    if (data.comment === lastComment) {
-        return;
-    }
     lastComment = data.comment; 
     let objet = {eventType, data};
     eventmanager(eventType, data);

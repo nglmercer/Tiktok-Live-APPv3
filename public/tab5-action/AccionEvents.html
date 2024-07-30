@@ -60,9 +60,6 @@
       </div>
     </div>
     <div class="input-group">
-      <input type="text" id="event-gift_select" name="event-gift_select" readonly>
-      <div id="gift-selector-container"></div>
-
   </div>
     <div class="inputGroup Eventoscheck">
       <label for="modalactionsCheckbox4">Eventos</label>
@@ -84,15 +81,15 @@
           <br>
           <label for="event-gift">gift </label>
           <input type="radio" name="event_type" id="event-gift" value="gift" class="form-control" />
+          <input type="text" id="event-gift_select" name="event-gift_select" readonly>
+          <div id="gift-selector-container"></div>
           <div class="imageSelectorContainer" id="imageSelectorContainer"></div>
+
         </div>
       </div>
     </div>
   </div>
-
-  <div class="ElementITEM">
     <button type="button" class="btn btn-primary modalActionAdd">Agregar Evento</button>
     <button type="button" class="position-absolute top-0 end-0 deleteButton closeModal">Cerrar</button>
-    <button type="button" class="btn btn-primary modalActionSave" style="display: none;">Guardar</button>
-  </div>
+    <button type="button" class="btn btn-primary modalActionSave">Guardar</button>
 </form>

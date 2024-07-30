@@ -2,22 +2,21 @@
     color: black;
     display: none;
     position: fixed;
+    justify-content: center;
+    align-items: center;  
     z-index: 1;
     left: 0;
     top: 0;
     width: 100%;
-    height: auto;
+    height: 100%;
     overflow: auto;
     background-color: rgba(0,0,0,0.4);
 }
 
 .contenido-modal {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
+    margin: auto;
     border: 1px solid #888;
     width: 80%;
-    max-width: 500px;
     border-radius: 5px;
     position: relative;
 }

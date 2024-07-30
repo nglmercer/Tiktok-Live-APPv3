@@ -85,10 +85,10 @@ async function processFileWithoutPath(file) {
         const fileName = `${Date.now()}-${file.name}`;
         
         // Verificar si el archivo es un duplicado
-        if (await isFileDuplicate({name: fileName, size: file.size, type: file.type})) {
-            alert(`El archivo "${fileName}" ya existe o es similar a uno existente.`);
-            return;
-        }
+        // if (await isFileDuplicate({name: fileName, size: file.size, type: file.type})) {
+        //     alert(`El archivo "${fileName}" ya existe o es similar a uno existente.`);
+        //     return;
+        // }
 
         const fileBlob = await file.arrayBuffer().then(arrayBuffer => new Blob([arrayBuffer]));
         const base64 = await new Promise((resolve) => {
@@ -123,10 +123,10 @@ async function processFileWithoutPath(file) {
 
 async function processFileWithPath(file) {
     // Verificar si el archivo es un duplicado
-    if (await isFileDuplicate({name: file.name, size: file.size, type: file.type})) {
-        alert(`El archivo "${file.name}" ya existe o es similar a uno existente.`);
-        return;
-    }
+    // if (await isFileDuplicate({name: file.name, size: file.size, type: file.type})) {
+    //     alert(`El archivo "${file.name}" ya existe o es similar a uno existente.`);
+    //     return;
+    // }
 
     const fileParams = { fileName: file.name, filePath: file.path };
     const confirmation = confirm(`¿Desea agregar el archivo "${file.name}"?`);

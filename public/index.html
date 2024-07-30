@@ -15,14 +15,12 @@
 <script type="module" src="functions/update.js"></script>
 <script type="module" src="functions/YoutubeApi.js"></script>
 <script src="localstorage.js"></script>
-<script src="tmi.min.js"></script>
-<!-- <script src="TTSmain.js"></script> -->
-<script src="minejs.js"></script>
-<script src="Settings.js"></script>
+<script src="./Minecraft/minejs.js"></script>
+<script src="./settings/Settings.js"></script>
 <script type="module" src="indexdb.js"></script>
-<link rel="stylesheet" href="styles.css">
-<link href="select2.css" rel="stylesheet" />
-<link href="output.css" rel="stylesheet">
+<link rel="stylesheet" href="./css/styles.css">
+<link href="./css/select2.css" rel="stylesheet" />
+<link href="./css/output.css" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
 <script type="text/javascript" src="https://unpkg.com/speech-synthesis-recorder@1.2.1/SpeechSynthesisRecorder.js"></script>
@@ -91,6 +89,10 @@ meta
                 <div class="tabs" data-tab="tab6">
                     <img src="svg/settings.svg" class="icon">
                     <a>Settings</a>
+                </div>
+                <div class="tabs" data-tab="tab7">
+                    <img src="svg/settings.svg" class="icon">
+                    <a>test functions</a>
                 </div>
                 <button class="btn btn-primary" id="Actualizar">Actualizar</button>
                 <div id="Actualizar-status"></div>
@@ -688,7 +690,7 @@ meta
                     </div>
                 <div class="containerbox">
                         <div id="tab5-action"></div>
-                        <button id="openaction" class="custombutton button-center">ADD Accion&Eeventos</button>
+                        <button id="openModal1" class="custombutton openModal1">Añadir Acciones y Eventos</button>
                         <button id="closeaction" class="deleteButton">Cerrar M</button>
                         <div id="loadrowactionsevents"></div>
                         <div>
@@ -824,6 +826,49 @@ meta
                       <button id="stopAll" class="btn btn-primary">Detener Todas las Acciones</button>
 
                 </div>
+            </div>
+            <div id="tab7" class="tab-content">
+                <div class="containerbox">
+                    <h1>test functions</h1>
+                    <input type="text" id="testFunctions-input" placeholder="eventType">
+                    <button id="testEventmanager">test</button>
+                    <div id="testFunctions-status"></div>
+                </div>
+                <script type="module">
+                    import {eventmanager } from './AccionEvents/accioneventTrigger.js';
+                    // obtenemos los ultimos datos y cambiamos por el eventType entonce enviamos a eventmanager el eventType y la data de localstorage encontrada
+                    const testFunctions = document.getElementById('testFunctions-input');
+                    const testFunctionsStatus = document.getElementById('testFunctions-status');
+                    document.getElementById('testEventmanager').addEventListener('click', async () => {
+                        const eventType = testFunctions.value;
+                        const data = geteventTypedata(eventType);
+                        console.log('testEventmanager', eventType, data);
+                        if (data) {
+                        await eventmanager(eventType, data);
+                        testFunctionsStatus.innerText = 'Evento enviado';}
+                    });
+                    function geteventTypedata(eventType) {
+                        switch (eventType) {
+                            case 'gift':
+                                return JSON.parse(localStorage.getItem('lastGiftItem'));
+                            case 'chat':
+                                return JSON.parse(localStorage.getItem('lastChatItem'));
+                            case 'likes':
+                                return JSON.parse(localStorage.getItem('lastLike'));
+                            case 'share':
+                                return JSON.parse(localStorage.getItem('lastShare'));
+                            case 'welcome':
+                                return JSON.parse(localStorage.getItem('lastWelcome'));
+                            case 'envelope':
+                                return JSON.parse(localStorage.getItem('lastEnvelope'));
+                            case 'subscribe':
+                                return JSON.parse(localStorage.getItem('lastSubscribe'));
+                            default:
+                                return null;
+                        }
+                        return data;
+                    }
+                </script>
             </div>
         </div>
         <div class="divfooter">
