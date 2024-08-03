@@ -90,10 +90,10 @@ class Controlmedia {
     }
 
     kickstartPlayer() {
-        if (this.songQueue.isEmpty()) {
-            isPlaying = false;
-            return;
-        }
+        // if (this.songQueue.isEmpty()) {
+        //     isPlaying = false;
+        //     return;
+        // }
 
         this.songQueue.next(); // Start at the first song
         isPlaying = true;

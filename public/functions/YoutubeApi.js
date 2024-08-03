@@ -40,8 +40,9 @@ async function playfirtssong(songs, query) {
         console.log({ videoId: firstSong.videoId, duration: firstSong.duration }); 
         console.log('firstSong playfirtssong', firstSong, `https://www.youtube.com/watch?v=${firstSong.videoId}`);
         const audioUrl = await window.api.downloadurl(`https://www.youtube.com/watch?v=${firstSong.videoId}`);
-        controlmedia.addSong(audioUrl);
         console.log('audioUrl playfirtssong', audioUrl);
+        if (audioUrl.data.audio) {
+        controlmedia.addSong(audioUrl.data.audio);}
 }
     } catch (error) {
         console.error('Error:', error);
@@ -140,7 +141,7 @@ function ytdatatotext(type, songdata) {
 async function playytmusic(videoId) {
     try {
         const audioUrl = await window.api.downloadurl(`https://www.youtube.com/watch?v=${videoId}`);
-        controlmedia.addSong(audioUrl);
+        controlmedia.addSong(audioUrl.data.audio);
     } catch (error) {
         console.error('Error:', error);
     }

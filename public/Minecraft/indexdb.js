@@ -1,20 +1,278 @@
-import { sendReplacedCommand } from './app.js';
-import { replaceVariables } from './functions/replaceVariables.js';
-import { loadData, createGiftSelect, getAvailableGifts } from './functions/giftmanager.js';
+import { sendReplacedCommand } from '../app.js';
+import { replaceVariables } from '../functions/replaceVariables.js';
+import { loadData, createGiftSelect, getAvailableGifts } from '../functions/giftmanager.js';
+import { ModalModule } from '../modal/modal.js';
+import { createDBManager, observer, databases } from '../functions/indexedDB.js';
+import { TableManager } from '../datatable/datatable.js';
+import {     validateForm,
+    obtenerDatos,
+    resetForm,
+    getFiles123,
+    filesform, } from '../functions/dataHandler.js';
+import { fillForm, setPendingSelectValues } from '../utils/formfiller.js';
+import { EventManager } from '../AccionEvents/accioneventTrigger.js';
+import { SendataTestManager} from '../testdata/testdata.js';
 let db;
 let dbReady = false;
 
 let indexedavailableGifts = [];
 const request = indexedDB.open("eventDatabase", 2); // Incrementa la versión de la base de datos
+const minecraftDBManager = createDBManager(databases.MinecraftDatabase);
 
 document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("addgift-button").addEventListener("click", () => addEvent("gift"));
     document.getElementById("addchat-button").addEventListener("click", () => addEvent("chat"));
     document.getElementById("addlikes-button").addEventListener("click", () => addEvent("likes"));
     document.getElementById("testHandleevent").addEventListener("click", testHandleEvent123);
-    setTimeout(loadOptionsGift1, 4000);
+    setTimeout(loadOptionsGift1, 1000);
+    // openmodalminecraft();
+});
+// async function openmodalminecraft() {
+//     try {
+//         const modalminecraft = new ModalModule(
+//             'openMinecraftmodal',
+//             './Minecraft/minecraftmodal.html',
+//             './Minecraft/minecraftmodal.css',
+//             (modal) => {
+//                 console.log('Modal 1 opened', modal);
+//                 modal.addCustomEventListener('.modalActionAdd', 'click', async () => {
+//                     const formelement = modal.modal.querySelector('.minecraftmodal');
+//                     const nameFilter = obtenerDatos(formelement, '_', {});
+//                     console.log(nameFilter);
+//                     // if (nameFilter.id) {
+//                     //     console.log('Guardando datos de la base de datos EXISTE ID', nameFilter.id);
+//                     // } else {
+//                     //     console.log('Guardando datos de la base de datos NO EXISTE ID', nameFilter.id);
+//                     // }
+//                     // await actionEventDBManager.saveData(nameFilter);
+//                 });
+//             },
+//         );
+//             await new Promise(resolve => setTimeout(resolve, 100));
+//             console.log('modal1', modalminecraft);
+//         } catch (error) {
+//             console.error('Error creating modal:', error);
+//         }
+
+// }
+class ModalminecraftManager {
+    constructor() {
+        this.modal = null;
+        this.modalPromise = null;
+    }
+    initializeModal = async () => {
+        this.modalPromise = new ModalModule(
+            'openMinecraftmodal',
+            './Minecraft/minecraftmodal.html',
+            './Minecraft/minecraftmodal.css',
+            this.setupModal,
+            null,
+            this.onModalOpen
+        ).waitForInitialization();
+
+        this.modal = await this.modalPromise;
+    }
+    setupModal = async (modal) => {
+        const formmodal = modal.modal.querySelector('form');
+        console.log("formmodal", formmodal);
+
+        this.setupGiftSelector(modal);
+        this.setupEventListeners(modal);
+        this.setupFunctionSelector(modal);
+
+    }
+    setupGiftSelector = (modal) => {
+        const giftSelector = modal.createCustomSelector({
+            id: 'giftSelector',
+            title: 'Seleccionar regalo',
+            getItemsFunction: getAvailableGifts,
+            renderOptionFunction: (gift) => `
+                <div class="gift-option">
+                    <img src="${gift.image.url_list[0]}" alt="${gift.name}">
+                    <span>${gift.name}</span>
+                </div>`,
+            onSelectFunction: (input, selectedGift) => {
+                input.value = selectedGift.id;
+                input.dataset.name = selectedGift.name;
+            },
+            inputSelector: '#event-gift_select',
+            buttonClass: 'btn btn-primary'
+        });
+
+        giftSelector.initialize();
+    }
+    setupFunctionSelector = (modal) => {
+        const functionSelector = modal.createCustomSelector({
+            id: 'functionSelector',
+            title: 'Seleccionar función',
+            getItemsFunction: async () => functionslist,
+            renderOptionFunction: (functionItem) => `
+                <div class="function-option">
+                    <span>${functionItem.name}</span>
+                </div>`,
+            onSelectFunction: (input, selectedFunction) => {
+                input.value = selectedFunction.name;
+                input.dataset.name = selectedFunction.name;
+            },
+            inputSelector: '#type-functions_select',
+            buttonClass: 'btn btn-primary'
+        });
+        functionSelector.initialize();
+    }
+    setupEventListeners = (modal) => {
+        modal.addCustomEventListener('.modalActionAdd', 'click', async () => {
+            const formelement = modal.modal.querySelector('.minecraftmodal');
+            const nameFilter = obtenerDatos(formelement, '_', {});
+            console.log(nameFilter);
+            minecraftDBManager.saveData(nameFilter);
+            this.modal.close();
+        });
+        modal.addCustomEventListener('.modalActionSave', 'click', async () => {
+            const form = modal.modal.querySelector('form');
+            const nameFilter = obtenerDatos(form, '_', {});
+            if (nameFilter.id) {
+                await minecraftDBManager.updateData(nameFilter);
+                console.log('Guardando datos de la base de datos EXISTE ID', nameFilter.id);
+            } else {
+                await minecraftDBManager.saveData(nameFilter);
+                console.log('Guardando datos de la base de datos NO EXISTE ID', nameFilter.id);
+            }
+            // Aquí podrías añadir lógica adicional después de guardar
+            this.modal.close();
+        });
+    }
+    onModalOpen = async (modal) => {
+        console.log('Modal abierta, ejecutando acciones personalizadas');
+        await this.modal.changeModalLanguage(document.getElementById('changelanguage').value);
+        modal.modal.querySelector('.modalActionSave').style.display = 'none';
+        modal.modal.querySelector('.modalActionAdd').style.display = 'block';
+        const formmodal = modal.modal.querySelector('form');
+        resetForm(formmodal, ['checkbox']);;
+    }
+    openModal = async (config = {}) => {
+
+        await this.modal.open();
+        if (config.showGiftSelector) {
+            this.modal.modal.querySelector('#giftSelector').style.display = 'block';
+        } else {
+            this.modal.modal.querySelector('#giftSelector').style.display = 'none';
+        }
+        
+    }
+    openForEdit = async (data) => {
+        await this.modal.openWithCustomAction(async (modal) => {
+            console.log('Modal abierta para editar:', data);
+            modal.modal.querySelector('.modalActionSave').style.display = 'block';
+            modal.modal.querySelector('.modalActionAdd').style.display = 'none';
+            const form = modal.modal.querySelector('form');
+            if (form) {
+                await fillForm(form, data, '_');
+            }
+        });
+    }
+}
+const modalminecraftManager = new ModalminecraftManager();
+modalminecraftManager.initializeModal().then(() => {
+    console.log('Modal minecraft manager initialized');
+}).catch(error => {
+    console.error('Error initializing modal minecraft manager:', error);
 });
 
+const minecraftdatatable = new TableManager('minecraft-tablemodal',
+ 'MinecraftDatabase', 
+ [
+// { header: 'Commands', key: 'minecraft_commands' },
+{ header: 'ID', key: 'id' },
+{ 
+    header: 'Tipo de Evento Activo', 
+    eventKeys: ['event-chat', 'event-follow', 'event-gift', 'event-likes', 'event-share', 'event-subscribe'],
+    showEventType: true
+},
+{ 
+    header: 'Valor del Evento Activo', 
+    eventKeys: ['event-chat', 'event-follow', 'event-gift', 'event-likes', 'event-share', 'event-subscribe']
+},
+], {
+    onDelete: (id) => {
+        console.log('Custom delete callback', id);
+        if (confirm('¿Estás seguro de que quieres eliminar este elemento?')) {
+            minecraftdatatable.dbManager.deleteData(id);
+        }
+    },
+    onEditar: (item) => {
+        console.log('Custom edit callback', item);
+        modalminecraftManager.openForEdit(item);
+    }
+},
+{
+    default: 'custombutton', // Clase por defecto para todos los botones
+    onDelete: 'DeleteButton deleteButton', // Clase específica para el botón de eliminar
+}
+);
+
+minecraftdatatable.loadAndDisplayAllData();
+const actions = {
+    'type-functions': async (finddata, data, manager) => {
+        if (finddata.select) {
+            console.log("Function", finddata.select);
+            const valuereplaced = replaceVariables(finddata.value, data);
+            const functionItem = manager.functionslist[finddata.select];
+            if (functionItem) {
+                await functionItem(valuereplaced);
+            } else {
+                console.warn(`Function ${finddata.select} not found`);
+            }
+        }
+    },
+};
+const config = {
+    functionslist: {
+        minecraftparsecommands: minecraftparsecommands,
+        testfunction: testfunction,
+    },
+    EVENT_TYPES: {
+        GIFT: 'gift',
+        LIKES: 'likes',
+        FUNCTION: 'function'
+    },
+    mediaTypes: [
+        { type: 'IMAGE', key: "type-imagen" },
+        { type: 'VIDEO', key: "type-video" },
+        { type: 'AUDIO', key: "type-audio" },
+        { type: 'PROFILE', key: "type-profile" }
+    ],
+    customProcessors: {
+        gift: (value, data) => Number(value.select) === data.giftId,
+        likes: (value, data) => (Number(value.number) || 2) <= data.likeCount,
+    },
+    actions: actions,
+    actionEventDBManager: minecraftDBManager
+};
+const functionslist = [
+    {
+        name: 'minecraftparsecommands',
+        description: 'minecraftparsecommands',
+        function: minecraftparsecommands
+    },
+    {
+        name: 'testfunction',
+        description: 'testfunction',
+        function: testfunction
+    }
+];
+function minecraftparsecommands(test) {
+    const splitcommand = test.split('\n');
+    console.log(splitcommand);
+}
+function testfunction(test) {
+    const splitcommand = test.split('\n');
+    console.log(splitcommand);
+}
+const Minecraftmanager = new EventManager(config);
+
+const testmanagerminecraft = new SendataTestManager('testminecraftbutton', 'testminecraftinput', 'testminecraftstatus', Minecraftmanager.eventmanager);
+
+/// aqui es donde se carga la tabla de eventos
 request.onupgradeneeded = (event) => {
     db = event.target.result;
 
@@ -39,7 +297,7 @@ request.onerror = (event) => {
 
 function optionsgiftdb() {
     const result = getAvailableGifts();
-    console.log("optionsgiftdb", result);
+    // console.log("optionsgiftdb", result);
     return result;
 };
 
@@ -48,7 +306,7 @@ function loadOptionsGift1() {
     if (indexdboptionsgift) {
         indexedavailableGifts = indexdboptionsgift || [];
         const selectInputgifts = document.getElementById("gift-title");
-        console.log('indexdboptionsgift', indexdboptionsgift, indexedavailableGifts, selectInputgifts);
+        // console.log('indexdboptionsgift', indexdboptionsgift, indexedavailableGifts, selectInputgifts);
         indexedavailableGifts.forEach(gift => {
             const optionElement = document.createElement('option');
             optionElement.textContent = gift.name;
@@ -156,6 +414,9 @@ function displayEvents(storeName) {
 
             const editButton = document.createElement("button");
             editButton.textContent = "Editar";
+            editButton.setAttribute('data-translate', 'editar');
+            // console.log("storeName minecraft", storeName);
+
             editButton.className = "edit-button";
             editButton.onclick = () => {
                 titleDiv.style.display = 'none';
@@ -167,28 +428,35 @@ function displayEvents(storeName) {
                 descriptionInput.style.marginTop = '10px';
                 descriptionInput.style.width = '100%';
                 saveButton.style.display = 'inline-block';
+                console.log("editbutton minecraft");
+                loadOptionsGift1();
             };
 
             let titleInput;
             if (storeName === "gift") {
                 titleInput = document.createElement("select");
+                const indexdboptionsgift = optionsgiftdb();
+                indexedavailableGifts = indexdboptionsgift || [];
+
                 indexedavailableGifts.forEach(gift => {
                     const optionElement = document.createElement('option');
                     optionElement.textContent = gift.name;
                     optionElement.value = gift.name;
                     titleInput.appendChild(optionElement);
+                    // console.log("optionelement minecraft", optionElement);
                 });
             } else {
+                // console.log("else minecraft", storeName);
                 titleInput = document.createElement("input");
                 titleInput.type = storeName === "likes" ? "number" : "text";
             }
-            titleInput.style.display = 'none';
+            // titleInput.style.display = 'none';
             titleInput.value = eventItem.title;
 
             const descriptionInput = document.createElement("textarea");
             descriptionInput.className = "textarea textarea-primary";
             descriptionInput.value = eventItem.description;
-            descriptionInput.style.display = 'none';
+            // descriptionInput.style.display = 'none';
 
             const saveButton = document.createElement("button");
             saveButton.textContent = "Guardar";
@@ -201,6 +469,7 @@ function displayEvents(storeName) {
             const deleteButton = document.createElement("button");
             deleteButton.textContent = "Borrar";
             deleteButton.className = "deleteButton";
+            deleteButton.setAttribute('data-translate', 'DeleteButton');
             deleteButton.onclick = () => deleteEvent(storeName, eventItem.id);
 
             listItem.appendChild(titleDiv);

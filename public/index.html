@@ -17,7 +17,7 @@
 <script src="localstorage.js"></script>
 <script src="./Minecraft/minejs.js"></script>
 <script src="./settings/Settings.js"></script>
-<script type="module" src="indexdb.js"></script>
+<script type="module" src="Minecraft/indexdb.js"></script>
 <link rel="stylesheet" href="./css/styles.css">
 <link href="./css/select2.css" rel="stylesheet" />
 <link href="./css/output.css" rel="stylesheet">
@@ -37,24 +37,29 @@ meta
   style-src 'self' 'unsafe-inline';
 ">
  -->
- <div class="title-bar">
-    <h1>tiktokLiveApp</h1>
-</div>
     <style>
 
         select {
-            background-color: #29292900;
+            background-color: #29292979;
             border: 2px solid #2c18e6;
         }
         select:focus {
-            background-color: rgba(0, 0, 0, 0.308);
-            color: rgba(255, 255, 255, 0.527);
+            background-color: rgba(0, 0, 0, 0.541);
+        }
+        select::content {
+            color: white;
+            background-color: rgba(0, 0, 0, 0.541);
         }
     </style>
 </head>
-<body class="font-sans font-bold text-white text-xl mt-10 w-full bg-gray-900 flex flex-col">
+<body class="font-sans font-bold text-white text-xl w-full bg-gray-900">
 
     <div class="parent">
+        <div class="divnavbar">
+            <div class="title-bar">
+                <h1>tiktokLiveApp</h1>
+            </div>
+        </div>
         <div class="divmenu">
             <input type="checkbox" id="menu-toggle" >
 
@@ -68,31 +73,43 @@ meta
                 <input type="button" class="custombutton" id="connectButton" value="Conectar">
                 <div class="tabs" data-tab="tab1">
                     <img src="svg/chat.svg" class="icon">
-                    <a>Chat LIVE</a>
+                    <a data-translate="Chat&Live">Chat LIVE</a>
                 </div>
                 <div class="tabs" data-tab="tab2">
                     <img src="svg/minecraft.svg" class="icon">
-                    <a>Minecraft</a>
+                    <a data-translate="Minecraftlive">Minecraft</a>
                 </div>
                 <div class="tabs" data-tab="tab3">
                     <img src="svg/sounds.svg" class="icon">
-                    <a>Sonidos</a>
+                    <a data-translate="SonidosyMusica">Sonidos</a>
                 </div>
                 <div class="tabs" data-tab="tab4">
                     <img src="svg/actionsevent.svg" class="icon">
-                    <a>Overlay</a>
+                    <a data-translate="Actions">Overlay</a>
                 </div>
                 <div class="tabs" data-tab="tab5">
                     <img src="svg/gift.svg" class="icon">
-                    <a>Gifnames</a>
+                    <a data-translate="Giftname">Gifnames</a>
                 </div>
                 <div class="tabs" data-tab="tab6">
                     <img src="svg/settings.svg" class="icon">
-                    <a>Settings</a>
+                    <a data-translate="Settings">Settings</a>
                 </div>
                 <div class="tabs" data-tab="tab7">
                     <img src="svg/settings.svg" class="icon">
-                    <a>test functions</a>
+                    <a data-translate="Testfunctions">test functions</a>
+                </div>
+                <div>
+                    <select name="changelanguage" id="changelanguage">
+                        <option value="en">English</option>
+                        <option value="es">Español</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="it">Italiano</option>
+                        <option value="pt">Português</option>
+                        <option value="ru">Русский</option>
+                        <option value="zh">中文</option>
+                    </select>
                 </div>
                 <button class="btn btn-primary" id="Actualizar">Actualizar</button>
                 <div id="Actualizar-status"></div>
@@ -329,15 +346,15 @@ meta
                         <input type="checkbox" class="checkbox checkbox-lg" id="MinecraftLive" checked>
                         <span class="ml-2 hover:text-blue-500">MinecraftLive</span> </label>
                         <div class="grid grid-cols-2 gap-4 max-w-xl mx-4">
-                            <label>Tu nombre de Minecraft:</label>
+                            <label data-translate="Minecraftplayername">Tu nombre de Minecraft:</label>
                             <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
                                 
-                            <label>Comando Inicial de BOT:</label>
+                            <label data-translate="Minecraftinitialcommand">Comando Inicial de BOT:</label>
                             <input type="text" id="InitcommandInput" placeholder="login">
                             </div>
                         <div class="collapse collapse-plus bg-slate-900 border-cyan-700 border-4 hover:bg-slate-700">
                             <input type="radio" id="acordiondefaultcheck" name="my-accordion-2" checked="checked" />
-                            <div class="collapse-title text-xl font-medium">Minecraft bot server</div>
+                            <div class="collapse-title text-xl font-medium" >Minecraft bot server</div>
                             <div class="collapse-content">
                                 <form id="createBotForm" class="grid grid-cols-2 gap-4 max-w-xl mx-4">
                                     <label for="keyBOT" class="justify-self-start">Nombre del Bot:</label>
@@ -409,49 +426,11 @@ meta
                     </form>
                   </dialog>
                 <div class="containerbox">
-
-                    
-                Sugerencias y comandos 
-                <div class="dropdown dropdown-end">
-                <div tabindex="0" role="button" class="btn btn-circle btn-ghost btn-xs text-info">
-                    <svg
-                    tabindex="0"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    class="h-4 w-4 stroke-current">
-                    <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <div
-                    tabindex="0"
-                    class="card compact dropdown-content bg-base-100 rounded-box z-[1] w-64 shadow">
-                    <div tabindex="0" class="card-body">
-                    <h1>Puedes reemplazar los siguiente por tus valores automaticamente</h1>
-                    Playername       por  tu usuario de Minecraft     
-                    <br>
-                    uniqueId         por  cada USUARIO              
-                    <br>
-                    nickname         por  cada USUARIO                  
-                    <br>
-                    comment          por  COMENTARIO                   
-                    <br>
-                    {milestoneLikes} por  los LIKES                    
-                    <br>
-                    {likes}          por  los LIKES                   
-                    <br>
-                    giftName         por  los REGALOS                 
-                    <br>
-                    repeatCount      por  repeticiones de GIFT      
-                    </div>
-                </div>
-                </div>
-
-
+                    <button id="openMinecraftmodal" class="custombutton openMinecraftmodal" >Añadir comandos o acciones para Minecraft</button>
+                    <div id="minecraft-tablemodal" display="none"></div>
+                    <input type="text" class="input" id="testminecraftinput" value="test">
+                    <button id="testminecraftbutton" class="custombutton">test</button>
+                    <div id="testminecraftstatus"></div>
                     <!-- <input type="checkbox" id="sugerencia" class="sugerencia">
                     <label for="sugerencia">⁉️ Sugerencias</label>
 
@@ -648,11 +627,18 @@ meta
             </div>
             <div id="tab3" class="tab-content">
                 <div class="containerbox">
-                    <h1>YT Music Search</h1>
-                    
+                    <h1 data-translate="YTMusicSearch">YT Music Search</h1>
+                    <h1>YouTube Song Requests</h1>
+<br>
+                    With this feature, your viewers can request and skip songs on YouTube! Simply play your favorite playlist and your viewers can interact with it. The requested songs will be added to your YouTube playback queue.
+                    <br>
+                    Set up the song requests overlay to display your current playlist! Set up the command info overlay to display the command results.
+                    Commands<ul>
+                       <li>!play [Song - Artist] - Add song to queue</li>
+                    </ul>
                     <div id="search-container">
                         <input type="text" id="searchInput" class="input" placeholder="Search for songs...">
-                        <button id="searchButtonYT" class="btn btn-primary">Search</button>
+                        <button id="searchButtonYT" class="btn btn-primary" data-translate="Search">Search</button>
                     </div>
                     
                     <div id="ytmusic-container"></div>
@@ -683,32 +669,21 @@ meta
                         </dialog>
                     </div>
                     <div class="containerbox">
-                        <button id="openModal1" class="custombutton openModal1">test</button>
-                        <button id="openModal2" class="custombutton openModal2">test2</button>
-
-
+                        <h1 data-translate="Testfunctions">test functions</h1>
+                        <input type="text" id="testFunctions-input" placeholder="eventType">
+                        <button id="testEventmanager">test</button>
+                        <div id="testFunctions-status"></div>
                     </div>
                 <div class="containerbox">
+                    <!-- <button id="openModal1" class="custombutton openModal1">test</button>
+                    <button id="openModal2" class="custombutton openModal2">test2</button> -->
                         <div id="tab5-action"></div>
                         <button id="openModal1" class="custombutton openModal1">Añadir Acciones y Eventos</button>
-                        <button id="closeaction" class="deleteButton">Cerrar M</button>
                         <div id="loadrowactionsevents"></div>
-                        <div>
-                            <input type="text" id="action-name" placeholder="action name">
-                            <button id="testactionevent" class="btn btn-primary">test</button>
-                            
-                        </div>
+                        <div id="ActionEvent-tablemodal"></div>
+                        <div id="eventtable-tablemodal"></div>
         
                 </div>
-                <div class="containerbox">
-                    ----------------------------------------------FIN-----------
-                    <div class="modalhtml"></div>
-            
-                    <button id="open" style="display: none;">open</button>
-                    <button id="close" style="display: none;">close</button>
-                    
-                    <div id="chatbox"></div>
-                    </div>
             </div>
             <div id="tab5" class="tab-content">
                 <div id="giftContainer" class="gift-container">
@@ -741,47 +716,6 @@ meta
                         </div>
 
                     </div>
-                    <!-- <div class="flexbox">
-                        <h3>Testing handle events</h3>
-                        <select name="testselectevent" id="testselectevent"></select>
-                        <select name="testselectfunction" id="testselectfunction"></select>
-                        <button class="custombutton" id="testHandleeventselect" >Test comando</button>
-                    </div> -->
-                    <!-- <script>
-                        const events = [
-                            "gift",
-                            "chat",
-                            "likes",
-                            "share",
-                            "welcome",
-                            "envelope",
-                            "subscribe"
-                        ]
-                        const testfunctionselect = [
-                            "minecraftlive",
-                            "leerMensajes",
-                            "eventmanager"
-                        ]
-                        function testEventypeappend() {
-                            const selecttestevent = document.getElementById('testselectevent');
-                            const selecttestfunction = document.getElementById('testselectfunction');
-                            selecttestevent.innerHTML = '';
-                            selecttestfunction.innerHTML = '';
-                            events.forEach(event => {
-                                const option = document.createElement('option');
-                                option.text = event;
-                                option.value = event;
-                                selecttestevent.appendChild(option);
-                            });
-                            testfunctionselect.forEach(functions => {
-                                const option = document.createElement('option');
-                                option.text = functions;
-                                option.value = functions;
-                                selecttestfunction.appendChild(option);
-                            });
-                        }
-                        testEventypeappend();
-                    </script> -->
                 </div>
                 <div class="containerbox">
                     <form id="vrchatbot" class="grid grid-cols-2 gap-4 max-w-xl mx-4">
@@ -828,47 +762,7 @@ meta
                 </div>
             </div>
             <div id="tab7" class="tab-content">
-                <div class="containerbox">
-                    <h1>test functions</h1>
-                    <input type="text" id="testFunctions-input" placeholder="eventType">
-                    <button id="testEventmanager">test</button>
-                    <div id="testFunctions-status"></div>
-                </div>
-                <script type="module">
-                    import {eventmanager } from './AccionEvents/accioneventTrigger.js';
-                    // obtenemos los ultimos datos y cambiamos por el eventType entonce enviamos a eventmanager el eventType y la data de localstorage encontrada
-                    const testFunctions = document.getElementById('testFunctions-input');
-                    const testFunctionsStatus = document.getElementById('testFunctions-status');
-                    document.getElementById('testEventmanager').addEventListener('click', async () => {
-                        const eventType = testFunctions.value;
-                        const data = geteventTypedata(eventType);
-                        console.log('testEventmanager', eventType, data);
-                        if (data) {
-                        await eventmanager(eventType, data);
-                        testFunctionsStatus.innerText = 'Evento enviado';}
-                    });
-                    function geteventTypedata(eventType) {
-                        switch (eventType) {
-                            case 'gift':
-                                return JSON.parse(localStorage.getItem('lastGiftItem'));
-                            case 'chat':
-                                return JSON.parse(localStorage.getItem('lastChatItem'));
-                            case 'likes':
-                                return JSON.parse(localStorage.getItem('lastLike'));
-                            case 'share':
-                                return JSON.parse(localStorage.getItem('lastShare'));
-                            case 'welcome':
-                                return JSON.parse(localStorage.getItem('lastWelcome'));
-                            case 'envelope':
-                                return JSON.parse(localStorage.getItem('lastEnvelope'));
-                            case 'subscribe':
-                                return JSON.parse(localStorage.getItem('lastSubscribe'));
-                            default:
-                                return null;
-                        }
-                        return data;
-                    }
-                </script>
+
             </div>
         </div>
         <div class="divfooter">

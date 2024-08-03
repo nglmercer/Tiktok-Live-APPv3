@@ -23,10 +23,12 @@
 
 .cerrarmodal,.cerrar {
     color: #aaa;
-    float: right;
-    font-size: 28px;
+    right: 0;
+    float: left;
+    font-size: 50px;
     font-weight: bold;
     cursor: pointer;
+    z-index: 1000;
 }
 .cerrarmodal:hover,
 .cerrarmodal:focus,

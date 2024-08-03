@@ -1,6 +1,10 @@
 <form class="AccionEvents">
   <div class="ElementITEM">
-    <h1>Acciones y Eventos</h1>
+    <h1 class="title">Acciones y Eventos</h1>
+  </div>
+  
+
+  <div class="ElementITEM">
     <input type="checkbox" id="sugerencia" class="sugerencia">
     <label for="sugerencia">⁉️ Sugerencias</label>
     <div class="sugerencia-content">
@@ -9,23 +13,19 @@
         <br>
         También puedes asignar eventos a la acción configurada.
     </div>
-  </div>
-  
-
-  <div class="ElementITEM">
     <div class="inputGroup">
       <input name="accionevento_nombre" maxlength="15" type="text" id="modalactionsName" placeholder="Modal Name" class="form-control" />
     </div>
-    <div class="Actionscheck">
-      <div class="inputGroup">
-        <label for="modalactionsCheckbox0">Userprofile</label>
+    <div class="Actionscheck gridcols2">
+      <div class="inputGroup gridcols2">
+        <label for="modalactionsCheckbox0" data-translate="userprofile">Userprofile</label>
         <input name="type-profile_check" type="checkbox" id="modalactionsCheckbox0" class="form-control" />
         <div class="config">
           Duración: <input name="type-profile_duracion" type="number" id="type-profile_duracion" class="form-control inputRangoSeleccion" value="60"/>
           Texto: <input name="type-profile_texto" type="text" id="type-profile_texto" class="form-control inputRangoSeleccion" value="uniqueId"/>
         </div>
       </div>
-      <div class="inputGroup">
+      <div class="inputGroup gridcols2">
         <label for="modalactionsCheckbox1">Video</label>
         <input name="type-video_check" type="checkbox" id="modalactionsCheckbox1" class="form-control" />
         <div class="config">
@@ -35,7 +35,7 @@
         </div>
       </div>
   
-      <div class="inputGroup">
+      <div class="inputGroup gridcols2">
         <label for="modalactionsCheckbox2">Audio</label>
         <input name="type-audio_check" type="checkbox" id="modalactionsCheckbox2" class="form-control" />
         <div class="config">
@@ -45,7 +45,7 @@
         </div>
       </div>
   
-      <div class="inputGroup">
+      <div class="inputGroup gridcols2">
         <label for="modalactionsCheckbox3">Imagen</label>
         <input name="type-imagen_check" type="checkbox" id="modalactionsCheckbox3" class="form-control" />
         <div class="config">
@@ -54,7 +54,18 @@
           duracion<input name="type-imagen_duracion" type="number" id="type-imagen_duracion" class="form-control inputRangoSeleccion" value="60"/>
         </div>
       </div>
-  
+      <div class="inputGroup gridcols2">
+        <label for="modalactionsCheckbox4">Variables</label>
+        <input name="type-functions_check" type="checkbox" id="modalactionsCheckbox4" class="form-control" />
+        <div class="config">
+          <input type="text" id="type-functions_value" name="type-functions_value" value="testvariables" class="form-control" />
+          <p>Variables select</p>
+          <input type="text" id="type-functions_select" name="type-functions_select" value="testfunction" class="form-control" />
+          <div id="functionSelector-container"></div>
+          <br>
+        </div>
+
+      </div>
       <div class="inputGroup">
         <input name="id" type="hidden" id="modalactionsId" />
       </div>
@@ -67,21 +78,23 @@
       
       <div class="config">
         <div class="radio-group grid grid-cols-2 gap-4" data-group-name="eventos">
-          <label for="event-chat">chat </label>
+          <label for="event-chat" data-translate="chat">chat </label>
           <input type="radio" name="event_type" id="event-chat" value="chat" class="form-control" />
-          <label for="event-follow">follow </label>
-          <input type="radio" name="event_type" id="event-follow" value="follow" class="form-control" />
-          <label for="event-share">share </label>
-          <input type="radio" name="event_type" id="event-share" value="share" class="form-control" />
-          <label for="event-subscribe">subscribe </label>
-          <input type="radio" name="event_type" id="event-subscribe" value="subscribe" class="form-control" />
-          <label for="event-likes">likes </label>
-          <input type="radio" name="event_type" id="event-likes" value="likes" class="form-control" />
-          <input type="number" name="event-likes_number" id="event-likes_number" class="form-control" />
+          <input type="text" id="event-chat_comment" name="event-chat_comment" value="chat" >
           <br>
-          <label for="event-gift">gift </label>
+          <label for="event-follow" data-translate="follow">follow </label>
+          <input type="radio" name="event_type" id="event-follow" value="follow" class="form-control" />
+          <label for="event-share" data-translate="share">share </label>
+          <input type="radio" name="event_type" id="event-share" value="share" class="form-control" />
+          <label for="event-subscribe" data-translate="subscribe">subscribe </label>
+          <input type="radio" name="event_type" id="event-subscribe" value="subscribe" class="form-control" />
+          <label for="event-likes" data-translate="likes">likes </label>
+          <input type="radio" name="event_type" id="event-likes" value="likes" class="form-control" />
+          <input type="number" name="event-likes_number" id="event-likes_number" value="10"/>
+          <br>
+          <label for="event-gift" data-translate="gift">gift </label>
           <input type="radio" name="event_type" id="event-gift" value="gift" class="form-control" />
-          <input type="text" id="event-gift_select" name="event-gift_select" readonly>
+          <input type="text" id="event-gift_select" name="event-gift_select">
           <div id="gift-selector-container"></div>
           <div class="imageSelectorContainer" id="imageSelectorContainer"></div>
 

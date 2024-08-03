@@ -14,8 +14,7 @@
     .ElementITEM2,
     .ElementITEM{
         border: 1px solid rgb(0, 0, 0);
-
-        max-height: auto;
+        max-height: 600px;
         overflow-y: auto;
         h1 {
             display: flex;

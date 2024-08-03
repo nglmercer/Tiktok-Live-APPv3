@@ -1,9 +1,9 @@
-import { minecraftlive, Minecraftlivedefault } from './indexdb.js';
+import { minecraftlive, Minecraftlivedefault } from './Minecraft/indexdb.js';
 // import { replaceVariables } from './functions/replaceVariables.js';
 import { fetchSimplifiedState } from './functions/simplifiedState.js';
 import { searchSong, playNextInQueue } from './functions/YoutubeApi.js';
 import { handleleermensaje } from './renderer.js';
-import { eventmanager } from './AccionEvents/accioneventTrigger.js';
+import { eventmanager } from './renderer.js';
 import { createCustomCommandComponent, getCustomCommandComponent } from "./utils/Commandshtml.js";
 import { saveLastData, getLastData, simulateWithLastData } from './functions/datamanager.js';
 import { handleAvailableGifts, getAvailableGifts } from './functions/giftmanager.js';
@@ -720,26 +720,6 @@ connection.on('streamEnd', () => {
 
 connection.on('questionNew', data => {
     // Crear modal
-    const modal = document.createElement('div');
-    modal.classList.add('modal');
-    
-    // Contenido de la modal
-    modal.innerHTML = `
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>${data.nickname} asks:</h2>
-            <p>${data.questionText}</p>
-        </div>
-    `;
-    
-    // Agregar modal al cuerpo del documento
-    document.body.appendChild(modal);
-    
-    // Cerrar modal cuando se hace clic en la "x"
-    const closeBtn = modal.querySelector('.close');
-    closeBtn.addEventListener('click', () => {
-        modal.remove();
-    });
 });
 /*
 connection.on('linkMicBattle', (data) => {

@@ -1,7 +1,7 @@
 // ModalModule.js
 import { DataParser, DataParserStructured } from './dataparser.js';
 import {createImageSelector}  from './imageSelector.js';
-
+import { fetchTranslationData, getTranslationValue } from '../getdata/translate.js';
 export class ModalModule {
     constructor(buttonClass, htmlPath, cssPath, setupCallback, dataCallback, onOpenCallback) {
         this.buttonClass = buttonClass;
@@ -115,7 +115,7 @@ export class ModalModule {
         await this.initPromise;
         return this;
     }
-    async open(customAction) {
+    async open(customAction, lang = 'es') {
         if (this.modal) {
             this.modal.style.display = 'flex';
             if (this.onOpenCallback) {
@@ -123,7 +123,7 @@ export class ModalModule {
             }
             // Inicializar los selectores personalizados
             Object.values(this.customSelectors).forEach(selector => selector.initialize());
-            
+            await this.translateModal(lang);
             // Ejecutar la acción personalizada si se proporciona
             if (typeof customAction === 'function') {
                 await customAction(this);
@@ -147,6 +147,37 @@ export class ModalModule {
         const parser = new DataParserStructured(this.modal, options);
         return parser.parseStructured();
     }
+    async translateModal(lang) {
+        if (!this.modal) {
+            console.error('Modal not initialized');
+            return;
+        }
+    
+        try {
+            const data = await fetchTranslationData();
+            if (data) {
+                this.translateElementsInModal('[data-translate]', data, lang);
+                this.translateElementsInModal('[id]', data, lang);
+                this.translateElementsInModal('[class]', data, lang);
+            }
+        } catch (error) {
+            console.error('Error translating modal:', error);
+        }
+    }
+    
+    translateElementsInModal(selector, data, lang) {
+        const elements = this.modal.querySelectorAll(selector);
+        elements.forEach(element => {
+            const key = element.getAttribute('data-translate') || element.id || element.className;
+            const translation = getTranslationValue(data, lang, key);
+            if (translation) {
+                element.innerHTML = translation;
+            }
+        });
+    }
+    async changeModalLanguage(lang) {
+        await this.translateModal(lang);
+    }
 }
 class CustomSelector {
     constructor(options, modalElement) {
@@ -155,6 +186,7 @@ class CustomSelector {
         this.selectedItem = null;
         this.items = [];
         this.selectorElement = null;
+        this.referenceImage = null;
         this.isOpen = false;
         this.isInitialized = false;
     }
@@ -163,6 +195,7 @@ class CustomSelector {
         if (this.isInitialized) return;
         this.createSelectorButton();
         this.createSelectorElement();
+        this.createReferenceImage();
         this.addEventListeners();
         this.isInitialized = true;
     }
@@ -177,6 +210,7 @@ class CustomSelector {
         button.textContent = 'Seleccionar';
         button.type = 'button';
         button.id = `${this.options.id}-button`;
+        button.className = this.options.buttonClass;
         input.parentNode.insertBefore(button, input.nextSibling);
     }
 
@@ -188,7 +222,21 @@ class CustomSelector {
             <h2>${this.options.title || 'Seleccionar'}</h2>
             <div id="custom-options-${this.options.id}"></div>
         `;
-        this.modalElement.querySelector('.contenido-modal').appendChild(this.selectorElement);
+        
+        const button = this.modalElement.querySelector(`#${this.options.id}-button`);
+        button.parentNode.insertBefore(this.selectorElement, button.nextSibling);
+    }
+
+    createReferenceImage() {
+        this.referenceImage = document.createElement('img');
+        this.referenceImage.className = 'custom-selector-reference-image';
+        this.referenceImage.id = `${this.options.id}-reference-image`;
+        this.referenceImage.style.display = 'none';
+
+        const input = this.modalElement.querySelector(this.options.inputSelector);
+        // selectorDiv.insertBefore(this.referenceImage, this.selectorElement);
+        input.parentNode.insertBefore(this.referenceImage,  this.selectorElement);
+
     }
 
     addEventListeners() {
@@ -229,8 +277,20 @@ class CustomSelector {
         const input = this.modalElement.querySelector(this.options.inputSelector);
         if (input) {
             this.options.onSelectFunction(input, this.selectedItem);
+            this.updateReferenceImage(this.selectedItem);
         }
         this.toggleSelector();
+    }
+
+    updateReferenceImage(item) {
+        console.log("updateReferenceImage", item);
+        if (item && item.image) {
+            this.referenceImage.src = item.image.url_list[0];
+            console.log(this.referenceImage);
+            this.referenceImage.style.display = 'inline';
+        } else {
+            this.referenceImage.style.display = 'none';
+        }
     }
 }
 // export {ModalModule};

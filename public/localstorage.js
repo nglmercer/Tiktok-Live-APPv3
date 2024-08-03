@@ -25,7 +25,12 @@ function guardarEstadoTexto() {
         localStorage.setItem(texto.id, texto.value);
     });
 }
-
+function guardarEstadoSelect() {
+    const selects = document.querySelectorAll('select');
+    selects.forEach(select => {
+        localStorage.setItem(select.id, select.value);
+    });
+}
 function aplicarEstadoCheckboxes() {
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
     checkboxes.forEach(checkbox => {
@@ -35,7 +40,15 @@ function aplicarEstadoCheckboxes() {
         }
     });
 }
-
+function aplicarEstadoSelect() {
+    const selects = document.querySelectorAll('select');
+    selects.forEach(select => {
+        const estadoGuardado = localStorage.getItem(select.id);
+        if (estadoGuardado !== null) {
+            select.value = estadoGuardado;
+        }
+    });
+}
 function aplicarEstadoRadio() {
     const radios = document.querySelectorAll('input[type="radio"]');
     radios.forEach(radio => {
@@ -80,16 +93,19 @@ function guardarEstadoNumber() {
         localStorage.setItem(numero.id, numero.value);
     });
 }
+
 function guardarEstado() {
     guardarEstadoCheckboxes();
     guardarEstadoRadio();
     guardarEstadoRange();
     guardarEstadoTexto();
     guardarEstadoNumber();
+    guardarEstadoSelect();
 }
 
 // Aplicar estado de todos los tipos de inputs
 function aplicarEstado() {
+    aplicarEstadoSelect();
     aplicarEstadoCheckboxes();
     aplicarEstadoRadio();
     aplicarEstadoRange();
@@ -117,7 +133,7 @@ function setupLocalStorage(inputElement, storageKey, callback) {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('input', function(event) {
-        if (event.target.matches('input[type="checkbox"], input[type="radio"], input[type="range"], input[type="text"],input[type="number"]')) {
+        if (event.target.matches('input[type="checkbox"], input[type="radio"], input[type="range"], input[type="text"],input[type="number"],select')) {
             guardarEstado();
         }
     });

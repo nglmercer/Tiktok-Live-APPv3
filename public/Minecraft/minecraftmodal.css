@@ -7,13 +7,11 @@
   --border-color: #bdc3c7;
   --input-background: #ffffff;
   --box-shadow: 0 2px 5px rgba(133, 133, 133, 0.1);
-  --semitrasparentblue-background: rgba(0, 89, 255, 0.11);
 }
 
 .title {
   position: absolute;
-  z-index: 1001;
-  top: 0;
+  z-index: 999;
   left: 50%;
   transform: translateX(-50%);
   font-size: 24px;
@@ -184,14 +182,3 @@
 #confirm-gift-selection:hover {
   background-color: var(--secondary-color);
 }
-/*
- table data*/
- .data-table1{
-  td{
-    height: 2rem;
-  }
-  th{
-    height: 2rem;
-    background-color: var(--semitrasparentblue-background);
-}
-  }

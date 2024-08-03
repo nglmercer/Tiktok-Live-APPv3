@@ -92,9 +92,12 @@ export function obtenerDatos(form, separator = '_') {
     return nameFilter;
 }
 
-export function resetForm(form) {
+export function resetForm(form, excludeTypes = []) {
+    // Convertir excludeTypes a un conjunto para una búsqueda más eficiente
+    const excludeSet = new Set(excludeTypes);
+
     for (const elemento of form.elements) {
-        if (elemento.name) {
+        if (elemento.name && !excludeSet.has(elemento.type)) {
             if (elemento.type === 'checkbox') {
                 elemento.checked = false;
                 const numberElement = form.querySelector(`#${elemento.name}_number`);

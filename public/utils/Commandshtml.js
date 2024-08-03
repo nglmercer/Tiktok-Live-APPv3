@@ -66,6 +66,8 @@ export function createCustomCommandComponent(containerId, storageKey, customFunc
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'Eliminar';
             deleteButton.classList.add('deleteButton');
+            deleteButton.setAttribute('data-translate', 'DeleteButton');
+
             deleteButton.onclick = () => {
                 commands.splice(index, 1);
                 saveCommands();

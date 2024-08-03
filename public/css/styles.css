@@ -4,10 +4,8 @@ body {
   font-size: 1.5em;
   cursor: auto;
   width: 99%;
-  height: 95% !important;
+  height: 100dvh !important;
   overflow: hidden;
-  background: #1c1d1c;
-  color: white !important;
   word-wrap: break-word;
 }
 :root {
@@ -35,45 +33,57 @@ body {
 .parent {
   display: grid;
   grid-template-columns: auto 1fr; /* Menú ocupa auto, contenido ocupa el espacio restante */
-  grid-template-rows: repeat(6, 1fr); /* Seis filas */
+  grid-template-rows: auto 1fr auto; /* Navbar ocupa auto, contenido ocupa el espacio restante, footer ocupa auto */
   grid-column-gap: 0px;
   grid-row-gap: 0px;
-  width: 99vw;
-  height: 100vh;
+  width: 100vw;
+  height: 100dvh;
   grid-template-areas: 
+    "navbar navbar"
     "menu content"
-    "menu content"
-    "menu content"
-    "menu content"
-    "menu content"
-    "menu content"; /* Define explícitamente las áreas */
+    "footer footer"; /* Define explícitamente las áreas */
+}
+
+.divnavbar {
+  grid-area: navbar; /* Asignar área 'navbar' */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2rem; /* Puedes ajustar la altura según sea necesario */
 }
 
 .divmenu {
   position: relative;
-  height: 90%;
   grid-area: menu; /* Asignar área 'menu' */
-  /* background-color: rgb(230, 0, 0); */
   transition: width 0.3s; /* Transición suave para el cambio de ancho */
+  min-height: 0; /* Asegurar que el menú no empuje el footer fuera del viewport */
 }
-.divmenu:hover ~ .menu-button{
-  display: block;
-}
+
 .divcontent {
+  position: relative;
   grid-area: content; /* Asignar área 'content' */
   width: 100%;
-  /* background-color: rgb(87, 0, 109); */
+  min-height: 0; /* Asegurar que el contenido no empuje el footer fuera del viewport */
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* Permitir el scroll si el contenido es demasiado alto */
 }
-
 
 .divfooter {
+  grid-area: footer; /* Asignar área 'footer' */
   display: flex;
-  position: absolute;
-  background-color: #26355c5d;
-  bottom: 0px;
-  width: 100%;
-  max-height: 100px;
+  align-items: center;
+  justify-content: center;
+  height: 50px; /* Puedes ajustar la altura según sea necesario */
 }
+
+@media (max-width <= 900px) {
+  .divfooter {
+    position: absolute;
+    bottom: 0;
+  }
+}
+
 .LiveContainer {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -116,8 +126,6 @@ body {
   width: 5rem;
   overflow-x: hidden;
   height: 100%;
-
-
   transition: all 1s; /* Animación suave para el cambio de ancho */
 }
 .tabs-menu:hover{
@@ -200,15 +208,14 @@ span {
   a {
     position: relative;
     color: rgb(255, 255, 255);
-    font-size: large;
   }
 }
 .tab-content {
   display: none;
   flex-direction: column;
   overflow-x: hidden;
-  padding-block: 10px;
-  max-height: 90dvh; /* ajusta la altura máxima del contenedor */
+  height: 100%;
+  max-height: 95dvh;
 }
 .tab-content.active {
   display: block;
@@ -219,7 +226,7 @@ span {
   border-left: 2px solid #007bff;
   a {
     position: absolute;
-    left: 50%;
+    left: 40%;
     color: #007bff;
   }
 }
@@ -290,7 +297,7 @@ input[type="button"]:hover {
   background-color: #212121;
   margin: 0.8rem;
   min-width: 90%;
-  min-height: 100%;
+  min-height: 50%;
 }
 
 .containerbox-child {
@@ -870,11 +877,15 @@ label.sugerencia {
 }
 .cerrarmodal,.cerrar {
   position: absolute;
+  right: 0;
+
     color: #ff0000;
-    float: right;
-    font-size: 28px;
+    float: left;
+    font-size: 50px;
     font-weight: bold;
     cursor: pointer;
+    z-index: 1000;
+
 }
 .cerrarmodal:hover,
 .cerrarmodal:focus,
@@ -905,8 +916,8 @@ h2 {
 /* Estilos para el modal */
 /* Estilos para el contenedor del selector personalizado */
 .custom-selector {
-  position: absolute;
-  background-color: white;
+  position: relative;
+  background-color: rgb(230, 230, 230);
   border: 1px solid #ccc;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
   z-index: 1000;
@@ -920,7 +931,7 @@ h2 {
 .custom-selector h2 {
   margin: 0;
   padding: 10px;
-  background-color: #f0f0f0;
+  background-color: #c4c2c2;
   border-bottom: 1px solid #ccc;
   font-size: 16px;
   color: #333;
@@ -931,7 +942,9 @@ h2 {
   max-height: 300px;
   overflow-y: auto;
 }
-
+.custom-option:hover {
+    background-color: #4700a3;
+}
 /* Estilos para cada opción de regalo */
 .gift-option {
   display: flex;
@@ -989,5 +1002,78 @@ h2 {
 
 /* Estilos para cuando el selector está abierto */
 .custom-selector.open {
-  display: block;
+  display: flex;
 }
+/* grid columns 2 */
+.gridcols2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+/* Estilos para el selector de imagen */
+.custom-selector-reference-image {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  margin-left: 10px;
+}
+
+/* Estilos modalopenmodalactioneventmodals */
+/* .modalwindow {
+  color: black;
+  display: none;
+  position: fixed;
+  justify-content: center;
+  align-items: center;  
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.contenido-modal {
+  margin: auto;
+  border: 1px solid #888;
+  width: 80%;
+  border-radius: 5px;
+  position: relative;
+}
+
+.cerrarmodal,.cerrar {
+  color: #aaa;
+  right: 0;
+  float: left;
+  font-size: 50px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1000;
+}
+.cerrarmodal:hover,
+.cerrarmodal:focus,
+.cerrar:hover,
+.cerrar:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+#closeModal {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#closeModal:hover {
+  background-color: #d32f2f;
+} */

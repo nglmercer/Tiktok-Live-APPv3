@@ -26,7 +26,7 @@ function createFileItemHTML(file) {
     return `
         <div class="file-item">
             <input type="text" value="${file.name}" class="input input-ghost" disabled>
-            <button onclick="deleteFile('${file.name}')" class="deleteButton">Delete</button>
+            <button onclick="deleteFile('${file.name}')" class="deleteButton" data-translate="DeleteButton">Delete</button>
             <button class="play-button" id="playbutton-${file.index}">Play</button>
             ${getMediaElement(file.path, file.type)}
         </div>
@@ -152,11 +152,13 @@ async function handlePlayButton(button) {
     }
 }
 async function getfileId(id) {
-    if (id === undefined || id === null) {
+    if (id === undefined || id === null || id === false) {
         return null;
-    } 
+    }
+    
     let converidtonumber = Number(id);
-    let findelement = window.api.getFileById(converidtonumber);
+    let findelement = await window.api.getFileById(converidtonumber);
+    // console.log("getfileId", findelement);
     if (findelement) {
         return findelement;
     } else {

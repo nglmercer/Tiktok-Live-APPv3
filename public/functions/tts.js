@@ -9,6 +9,7 @@ const audioPlayer = new AudioPlayer('audio',
 );
 const controlmedia = new Controlmedia(audioPlayer);
 const recorder = new SpeechSynthesisRecorder();
+audioPlayer.setAudioInfo('ASDASDASD');
 
 let audioQueue = new Queue();
 let lastReadText = null;

@@ -88,3 +88,38 @@ export function setPendingSelectValues(form) {
         }
     });
 }
+function inspectFormElements(form) {
+    if (!form) {
+        console.error('No se proporcionó un formulario válido');
+        return [];
+    }
+
+    const elements = [];
+
+    // Inspeccionar todos los elementos del formulario, incluyendo aquellos que podrían no estar en form.elements
+    const allElements = form.querySelectorAll('input, select, textarea');
+    allElements.forEach((element) => {
+        elements.push({
+            element: element,
+            type: element.tagName.toLowerCase(),
+            name: element.name || '',
+            id: element.id || '',
+            inputType: element.type || 'N/A',
+            value: element.value,
+            className: element.className,
+            customAttributes: getCustomAttributes(element)
+        });
+        console.log('element', element);
+    });
+
+    return elements;
+}
+
+function getCustomAttributes(element) {
+    return Array.from(element.attributes)
+        .filter(attr => !['id', 'name', 'class', 'type', 'value'].includes(attr.name))
+        .reduce((obj, attr) => {
+            obj[attr.name] = attr.value;
+            return obj;
+        }, {});
+}
