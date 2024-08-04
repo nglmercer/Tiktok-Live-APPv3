@@ -1,7 +1,7 @@
 import { observer, databases, createDBManager } from '../functions/indexedDB.js';
-
+import { getdatagiftnameforid } from '../functions/giftmanager.js';
 class TableManager {
-    constructor(containerId, dbName, columns, callbacks = {}, buttonClasses = {}, hiddenButtons = []) {
+    constructor(containerId, dbName, columns, callbacks = {}, buttonClasses = {}, hiddenButtons = [], buttonIcons = {}, buttonTooltips = {}) {
         this.container = document.getElementById(containerId);
         this.dbManager = createDBManager(databases[dbName]);
         this.columns = columns;
@@ -15,6 +15,8 @@ class TableManager {
             ...buttonClasses
         };
         this.hiddenButtons = hiddenButtons;
+        this.buttonIcons = buttonIcons;
+        this.buttonTooltips = buttonTooltips;
 
         // Debounced version of loadAndDisplayAllData
         this.debouncedLoadAndDisplayAllData = debounce(this.loadAndDisplayAllData.bind(this), 300);
@@ -46,7 +48,8 @@ class TableManager {
                 headerRow.appendChild(th);
             });
             const actionTh = document.createElement('th');
-            actionTh.textContent = 'Actions';
+            actionTh.textContent = 'Acciones de la tabla';
+            actionTh.setAttribute('data-translate', 'Actions');
             headerRow.appendChild(actionTh);
             thead.appendChild(headerRow);
             table.appendChild(thead);
@@ -78,6 +81,21 @@ class TableManager {
                     value = key.split("-")[1];
                 } else {
                     value = eventValue;
+                    const numberValue = eventValue;
+                    if (Number.isInteger(Number(numberValue))) {
+                        try {
+                            const findvalue = await getdatagiftnameforid(Number(numberValue));
+                            console.log("numberValue", numberValue, "findvalue", findvalue);
+    
+                            // Ensure findvalue is an object before accessing its properties
+                            if (findvalue && typeof findvalue === 'object' && 'name' in findvalue) {
+                                console.log("findvalue", findvalue.name);
+                                value = findvalue.name;
+                            }
+                        } catch (error) {
+                            console.error(`Error retrieving gift name for ID ${numberValue}:`, error);
+                        }
+                    }
                 }
             } else {
                 value = this.getNestedValue(item, column.key);
@@ -94,7 +112,7 @@ class TableManager {
     
             const truncatedValue = this.truncateText(value.toString());
             td.textContent = truncatedValue;
-            
+    
             if (truncatedValue !== value) {
                 td.title = value; // Add tooltip
                 td.classList.add('truncated-text');
@@ -102,28 +120,31 @@ class TableManager {
     
             row.appendChild(td);
         }
-
+    
         const actionTd = document.createElement('td');
-
+    
         for (const [actionName, callback] of Object.entries(this.callbacks)) {
             if (!this.hiddenButtons.includes(actionName)) {
-                const buttonText = this.capitalizeFirstLetter(actionName.replace('on', ''));
+                const buttonContent = this.buttonIcons[actionName] || this.capitalizeFirstLetter(actionName.replace('on', ''));
                 const buttonClass = this.buttonClasses[actionName] || this.buttonClasses.default;
-                const button = this.createButton(buttonText, () => callback(actionName === 'onDelete' ? item.id : item), buttonClass);
+                const button = this.createButton(buttonContent, () => callback(actionName === 'onDelete' ? item.id : item), buttonClass, actionName);
                 actionTd.appendChild(button);
             }
         }
-
+    
         if (actionTd.children.length > 0) {
             row.appendChild(actionTd);
         }
-
+    
         return row;
     }
-    truncateText(text, maxLength = 50) {
+    
+
+    truncateText(text, maxLength = 80) {
         if (text.length <= maxLength) return text;
         return text.substr(0, maxLength) + '...';
     }
+
     capitalizeFirstLetter(string) {
         return string.charAt(0).toUpperCase() + string.slice(1);
     }
@@ -133,6 +154,10 @@ class TableManager {
         let value = obj;
         for (let part of parts) {
             if (value && typeof value === 'object' && part in value) {
+                if (value.check === false) {
+                    // return undefined;
+                    return false;
+                }
                 value = value[part];
             } else {
                 return undefined;
@@ -141,12 +166,22 @@ class TableManager {
         return value;
     }
 
-    createButton(text, onClick, className) {
+    createButton(content, onClick, className, actionName) {
         const button = document.createElement('button');
-        button.textContent = text;
+        if (content.includes('<svg')) {
+            button.innerHTML = content; // Assume it's an SVG string
+        } else {
+            button.textContent = content;
+        }
         button.addEventListener('click', onClick);
         button.className = className;
         button.setAttribute('data-translate', className.split(' ')[0] || className);
+        
+        // Add tooltip if it exists for this action
+        if (this.buttonTooltips[actionName]) {
+            button.title = this.buttonTooltips[actionName];
+        }
+        
         return button;
     }
 
@@ -172,6 +207,7 @@ class TableManager {
         this.debouncedLoadAndDisplayAllData();
     }
 }
+
 function debounce(func, wait) {
     let timeout;
     return function(...args) {
@@ -183,8 +219,5 @@ function debounce(func, wait) {
         timeout = setTimeout(later, wait);
     };
 }
-function truncateText(text, maxLength = 50) {
-    if (text.length <= maxLength) return text;
-    return text.substr(0, maxLength) + '...';
-}
+
 export { TableManager };

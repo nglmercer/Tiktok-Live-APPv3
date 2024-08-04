@@ -1,4 +1,4 @@
-import { minecraftlive, Minecraftlivedefault } from './Minecraft/indexdb.js';
+import { minecraftlive } from './Minecraft/indexdb.js';
 // import { replaceVariables } from './functions/replaceVariables.js';
 import { fetchSimplifiedState } from './functions/simplifiedState.js';
 import { searchSong, playNextInQueue } from './functions/YoutubeApi.js';
@@ -485,7 +485,7 @@ function handlelike(data) {
     // Check if user's like count has reached the milestone
     while (userStats[data.uniqueId].likes >= userStats[data.uniqueId].milestone && userStats[data.uniqueId].milestone <= 500) {
         // Send data or data.uniqueId and $ likes
-        Minecraftlivedefault('likes', data);
+        minecraftlive('likes', data);
         
         userStats[data.uniqueId].likes -= userStats[data.uniqueId].milestone; // Deduct milestone likes from user's like count
         userStats[data.uniqueId].milestone += 25; // Increase the milestone
@@ -568,7 +568,7 @@ connection.on('member', (data) => {
         joinMsgDelay -= addDelay;
         addEventsItem('welcome', data, 'welcome', true);
         let message = data.uniqueId;
-        Minecraftlivedefault('welcome', data, message, null, data);
+        minecraftlive('welcome', data, message, null, data);
     }, joinMsgDelay);
 })
 let userPoints = {};
@@ -601,7 +601,7 @@ function handlechat(data) {
         console.log("WhiteList", lowerCaseUser);
         addChatItem('', data, message);
         sendToServer('chat', data);
-        Minecraftlivedefault('chat', data);
+        minecraftlive('chat', data);
         return;
       }
 
@@ -609,7 +609,7 @@ function handlechat(data) {
 
     addChatItem('', data, message);
     sendToServer('chat', data);
-    Minecraftlivedefault('chat', data);
+    minecraftlive('chat', data);
     if (message === lastMessage) {
         return;
     }
@@ -685,7 +685,7 @@ function handlefollow(data) {
     let prefixuserfollow = document.getElementById('prefixuserfollow').value || "te sige";
     let color = '#CDA434'; // Cambia esto al color que quieras para los seguidores
     let message = `${data.nickname} ${prefixuserfollow}`;
-    Minecraftlivedefault('follow', data);
+    minecraftlive('follow', data);
     sendToServer('follow', data);
     if (!seguidores.has(data.nickname)) {
         console.log('followsocial', `${data.nickname} ${prefixuserfollow}`);
@@ -700,7 +700,7 @@ function handlefollow(data) {
 function handleshare(data) {
     let color = '#CDA434'; // Color por defecto
     let message = `${data.nickname} compartió el directo`;
-    Minecraftlivedefault('share', data);
+    minecraftlive('share', data);
     sendToServer('share', data);
     addEventsItem("share", data);
 }
@@ -950,6 +950,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const Rconport = document.getElementById('Rconport').value;
         const Rconpassword = document.getElementById('Rconpassword').value;
         const keyLOGIN = document.getElementById('InitcommandInput').value.trim();
+        const resultMessage = document.getElementById('resultMessage');
 
         console.log('Rconconnect', Rconip, Rconport, Rconpassword);
         const options = { ip: Rconip, password: Rconpassword, port: Rconport };

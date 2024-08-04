@@ -1,5 +1,5 @@
 
-const replaceVariables = (command, data, likes) => {
+const replaceVariables = (command, data) => {
   let playerName = localStorage.getItem('playerName');
   if (!command){
     return command;
@@ -11,8 +11,8 @@ const replaceVariables = (command, data, likes) => {
         .replace(/uniqueid/g, data.uniqueId || 'testUser')
         .replace(/nickname/g, data.nickname || 'testUser')
         .replace(/comment/g, data.comment || 'testComment')
-        .replace(/{milestoneLikes}/g, likes || '50testLikes')
-        .replace(/{likes}/g, likes || '50testLikes')
+        .replace(/{milestoneLikes}/g, data.likeCount || '50testLikes')
+        .replace(/{likes}/g, data.likeCount || '50testLikes')
         .replace(/message/g, data.comment || 'testcomment')
         .replace(/giftName/g, data.giftName || 'testgiftName')
         .replace(/giftname/g, data.giftName || 'testgiftName')

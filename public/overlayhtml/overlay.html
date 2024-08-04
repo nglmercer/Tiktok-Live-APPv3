@@ -93,7 +93,7 @@
             video.autoplay = true;
             let duracion = options.duracion * 1000;
             if (duracion <= 1000) {
-                duracion = 5000;
+                duracion = 1000;
             }
             const source = document.createElement('source');
             source.src = data.src;
@@ -121,7 +121,7 @@
             img.style.maxHeight = '200px';
 
             if (duracion <= 1000) {
-                duracion = 5000;
+                duracion = 1000;
             }
             setPosition(img, position);
             container.appendChild(img);
@@ -141,7 +141,7 @@
             audio.style.maxWidth = '100%';
             audio.style.maxHeight = '200px';
             if (duracion <= 1000) {
-                duracion = 5000;
+                duracion = 1000;
             }
             setPosition(audio, position);
             container.appendChild(audio);
@@ -196,7 +196,7 @@
             let duracion = options.duracion * 1000;
 
             if (duracion <= 1000) {
-                duracion = 5000;
+                duracion = 1000;
             }
             if (options.texto && options.texto.trim() !== '') {
                 const div = document.createElement('div');

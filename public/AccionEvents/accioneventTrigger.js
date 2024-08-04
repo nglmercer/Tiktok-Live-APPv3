@@ -1,7 +1,38 @@
 // import { replaceVariables } from "../functions/replaceVariables.js";
 // import { createDBManager, databases } from '../functions/indexedDB.js';
+// import { log } from "../utils/console";
 
-
+const logdebug = new Proxy({
+    hidden: [],
+    list: {},
+    all: false,
+}, {
+    get: (obj, props) => {
+        if (props === "get") {
+            setTimeout(() => {
+                logdebug.EventManagerErrordebug(Object.keys(obj.list)); 
+                return Object.keys(obj.list);
+            }, 100);
+        }
+        if (obj.hidden.includes(props) || obj.all) {
+            return () => false;
+        }
+        obj.list[props] = "";
+        return (...args) => {
+            console.log(`[${props}] =>`, ...args); 
+            return true;
+        };
+    },
+    set: (obj, props, value) => {
+        if (props === "hidden") { 
+            obj.hidden.push(...value);
+        }
+        if (props === "all") { 
+            obj.all = value; 
+        }
+        return true;
+    }
+});
 class EventManager {
     constructor(config) {
         this.functionslist = config.functionslist || {};
@@ -9,23 +40,34 @@ class EventManager {
         this.mediaTypes = config.mediaTypes || [];
         this.customProcessors = config.customProcessors || {};
         this.actions = config.actions || {};
-        this.actionEventDBManager = config.actionEventDBManager; // Add this line
-        // this.sendOverlayData = config.sendOverlayData || null;
+        this.actionEventDBManager = config.actionEventDBManager;
+        this.defaultFunction = config.defaultFunction; // Store the default function name
     }
 
     eventmanager = async (eventType, data) => {
         const eventsfind = await this.actionEventDBManager.getAllData();
         let matched = false;
-        
+
         for (const eventname of eventsfind) {
             matched = await this.processEvent(eventname, eventType, data);
-            console.log("eventname", eventname, matched);
+            logdebug.EventManagerdebug("eventname", eventname, matched);
             if (matched) break;
         }
 
         if (!matched && this.EVENT_TYPES.GIFT === eventType) {
             await this.processDefaultGift(eventsfind, data);
         }
+
+        // si no encuentra el marched entonces ejecuta esta function por defecto
+        // if (!matched && this.defaultFunction) {
+        //     const defaultFunc = this.functionslist[this.defaultFunction];
+        //     if (defaultFunc) {
+        //         console.log(`Executing default function: ${this.defaultFunction}`);
+        //         await defaultFunc(eventType, data);
+        //     } else {
+        //         logdebug.EventManagerErrordebug(`Default function ${this.defaultFunction} not found`);
+        //     }
+        // }
     }
 
     async processEvent(eventname, eventType, data) {
@@ -37,7 +79,7 @@ class EventManager {
             const matched = processor(value, data);
 
             if (matched) {
-                console.log("matched", matched, eventname);
+                logdebug.EventManagerdebug("matched", matched, eventname);
                 await this.processActions(eventname, data);
                 return true;
             }
@@ -64,30 +106,28 @@ class EventManager {
 
     async processActions(eventname, data) {
         for (const [actionType, actionConfig] of Object.entries(eventname)) {
-            if (!actionConfig.check) {
-                // console.log("Action not checked", actionConfig);
-                continue;
-            };
+            if (!actionConfig.check) continue;
+
             const action = this.actions[actionType];
             if (action) {
                 try {
                     await action(actionConfig, data, this);
                 } catch (error) {
-                    console.error(`Error executing action ${actionType}:`, error);
+                    logdebug.EventManagerErrordebug(`Error executing action ${actionType}:`, error);
                 }
             } else {
-                console.log(`Action ${actionType} not found`);
+                logdebug.EventManagerdebug(`Action ${actionType} not found`);
             }
         }
     }
 
     async sendOverlayData(srcoverlay, options, isProfile = false) {
-    await window.api.createOverlayWindow();
-    await window.api.sendOverlayData('play', { 
-        src: srcoverlay.path, 
-        fileType: srcoverlay.type, 
-        options 
-    }, isProfile);
+        await window.api.createOverlayWindow();
+        await window.api.sendOverlayData('play', { 
+            src: srcoverlay.path, 
+            fileType: srcoverlay.type, 
+            options 
+        }, isProfile);
     }
 
     async getfileId(id) {
@@ -99,13 +139,7 @@ class EventManager {
         return findelement || null;
     }
 }
-// async function sendOverlayData(srcoverlay, options, isProfile = false) {
-//     await window.api.createOverlayWindow();
-//     await window.api.sendOverlayData('play', { 
-//         src: srcoverlay.path, 
-//         fileType: srcoverlay.type, 
-//         options 
-//     }, isProfile);
-// }
+// desabilitamos el log
+logdebug.all = true;
 export { EventManager}
 // agregar option default to gift

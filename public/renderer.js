@@ -1,30 +1,31 @@
-import { loadData, createGiftSelect, getAvailableGifts } from './functions/giftmanager.js';
+import { getAvailableGifts } from './functions/giftmanager.js';
 import { replaceVariables } from "./functions/replaceVariables.js";
 import { TTS, leerMensajes } from './functions/tts.js';
-// import { createElementWithButtons } from "./utils/createtable.js";
 import { createFileItemHTML, setupDragAndDrop, handlePlayButton, getfileId, handlePasteFromClipboard} from "./utils/Fileshtml.js";
 import {     validateForm,obtenerDatos,resetForm,getFiles123,filesform, } from './functions/dataHandler.js';
-import { fillForm, setPendingSelectValues } from './utils/formfiller.js';
+import { fillForm } from './utils/formfiller.js';
 import {ModalModule} from './modal/modal.js';
-import {observer ,databases, createDBManager } from './functions/indexedDB.js';
+import {databases, createDBManager } from './functions/indexedDB.js';
 import { fetchTranslationData, getTranslationValue, changetextlanguage } from './getdata/translate.js';
 import { EventManager } from './AccionEvents/accioneventTrigger.js';
 import { TableManager } from './datatable/datatable.js';
+import {SendataTestManager, getEventTypeData, newdataifnoexist} from './testdata/testdata.js';
+import { svglist } from './svg/svgconst.js';
 // import { get } from '../routes.js';
 // Variables globales
 let isReading = null;
 let copyFiles = [];
+loadFileList();
+
 const actionEventDBManager = createDBManager(databases.MyDatabaseActionevent);
 document.addEventListener('DOMContentLoaded', async () => {
-    console.log("asdasdasd");
+    console.log("cargando inicialmente");
     setupInitialState();
     setupEventListeners();
-    loadFileList();
     setupDragAndDrop();
     window.api.onShowMessage((event, message) => {
         console.log(message);
     });
-    loadFileList();
     setTimeout(changetextlanguage(document.getElementById('changelanguage').value), 3000);
     document.getElementById('changelanguage').addEventListener('change', function() {
         const lang = this.value;
@@ -376,7 +377,22 @@ const ActionEventmanagertable = new TableManager(
         onEdit: 'editar custombutton',
         onDelete: 'DeleteButton deleteButton',
         onReassign: 'Reassign custombutton'
-    }
+    },
+    [],
+    {
+        onDelete: svglist.deleteSvgIcon,
+        onEdit: svglist.editSvgIcon,
+    },
+    {
+        onDelete: 'Eliminar este elemento',
+        onEdit: 'Editar este elemento',
+     }
+);
+const testManager = new SendataTestManager(
+    'testEventmanager',
+    'testFunctions-input',
+    'testFunctions-status',
+    eventmanager
 );
 const eventtable = new TableManager(
     'eventtable-tablemodal',
@@ -412,7 +428,10 @@ const eventtable = new TableManager(
         onPlay: (item) => {
             console.log('Custom openForPlay callback', item);
             console.log("item eventype", item.event_type);
-            // eventmanager(item.event_type, getlastdatatest(item.event_type));
+            const data = newdataifnoexist(item.event_type, item["event-gift"]);
+            // getEventTypeData
+            console.log("getEventTypeData", data);
+            eventmanager(item.event_type, data);
         }
     },
     {
@@ -421,7 +440,15 @@ const eventtable = new TableManager(
         onDelete: 'DeleteButton deleteButton',
         onReassign: 'Reassign custombutton'
     },
-    ['onDelete','onEdit']  // Este parámetro oculta los botones de eliminar y editar
+    ['onDelete','onEdit'],
+    {
+        onReassign: svglist.editSvgIcon,
+        onPlay: svglist.playsvg,
+    },
+    {
+        onReassign: '- [Reasignar] este elemento',
+        onPlay: '- [Reproducir] este elemento',
+     }
 );
 eventtable.loadAndDisplayAllData();
 ActionEventmanagertable.loadAndDisplayAllData();
@@ -449,8 +476,13 @@ async function handleleermensaje(text) {
             break;
     }
 
-    if (shouldRead && text && !isReading) {
-        selectedVoice.id === 'selectvoice2' ? new TTS(text) : leerMensajes(text);
+    // if (shouldRead && text && !isReading) {
+    //     selectedVoice.id === 'selectvoice2' ? new TTS(text) : leerMensajes(text);
+    // }
+    if (selectedVoice.id === 'selectvoice2') {
+        new TTS(text);
+    } else {
+        leerMensajes(text);
     }
 
     return true;

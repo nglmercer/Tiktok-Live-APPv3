@@ -65,38 +65,9 @@ function getGlobalSimplifiedStates() {
 }
 
 function getAvailableGifts() {
-    if (!isDataLoaded) {
-        console.warn("Data not loaded yet. Call loadData() first.");
-        return [null];
-    }
     return globalSimplifiedStates[0]?.availableGifts || [];
 }
-function createGiftSelect(selectId, onChangeCallback = null) {
-    const select = document.createElement('select');
-    select.id = selectId;
 
-    if (isDataLoaded) {
-        populateSelect(select);
-    } else {
-        loadData().then(() => populateSelect(select));
-    }
-
-    if (onChangeCallback) {
-        select.addEventListener('change', onChangeCallback);
-    }
-
-    return select;
-}
-function populateSelect(select) {
-    const gifts = getAvailableGifts();
-    select.innerHTML = '';
-    gifts.forEach(gift => {
-        const option = document.createElement('option');
-        option.value = getNormalizedProperty(gift, 'name');
-        option.textContent = `${getNormalizedProperty(gift, 'name')} (${getNormalizedProperty(gift, 'diamondcost')}🌟)`;
-        select.appendChild(option);
-    });
-}
 // Función para cargar los datos guardados
 function loadSavedData() {
     const savedStateJson = localStorage.getItem('simplifiedState');
@@ -194,6 +165,19 @@ function downloadJson() {
     downloadLink.click();
     document.body.removeChild(downloadLink);
 }
+async function getdatagiftnameforid(giftId) {
+    if (!Number.isInteger(giftId)){
+        return null;
+    }
+    try {
+        const gift = await getAvailableGifts();
+        const findgift = gift.find(gift => gift.giftId === giftId);
+        return findgift;
+    } catch (error) {
+        console.error('Error getting gift name:', error);
+        return null;
+    }
+}
 
 // Exponer globalSimplifiedStates al objeto global window
 window.globalSimplifiedStates = globalSimplifiedStates;
@@ -204,8 +188,6 @@ document.addEventListener('DOMContentLoaded', () => {
     handleAvailableGifts();
 });
 export {
-    loadData,
-    getGlobalSimplifiedStates,
     getAvailableGifts,
-    createGiftSelect
+    getdatagiftnameforid
 };

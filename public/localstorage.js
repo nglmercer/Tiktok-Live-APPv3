@@ -138,31 +138,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     aplicarEstado();
-    document.getElementById('saveAllChanges').addEventListener('click', saveAllChanges1);
 });
-function saveAllChanges1() {
-                    
-    const commandjsonlist = {};
-    
-    const types = ['chat', 'follow', 'likes', 'share', 'welcome', 'envelope', 'subscribe', 'gift'];
-    
-    types.forEach(type => {
-      const commands = document.getElementById(`${type}commands`).value.trim();
-    
-      if (commands !== "") {
-          commandjsonlist[type] = {
-              "default": commands.split('\n')
-          };
-      } else {
-          commandjsonlist[type] = {
-              "default": []
-          };
-      }
-    });
-    
-    localStorage.setItem('commandjsonlist', JSON.stringify(commandjsonlist));
-
-    // Muestra los datos guardados en la consola
-    console.log('Datos almacenados en el localStorage:');
-    console.log(commandjsonlist);
-    }

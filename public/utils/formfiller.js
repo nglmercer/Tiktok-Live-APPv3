@@ -63,7 +63,7 @@ function setElementValue(element, value) {
 }
 
 function setSelectValue(selectElement, value) {
-    console.log(`setSelectValue Setting select value to ${value}`, selectElement);
+    // console.log(`setSelectValue Setting select value to ${value}`, selectElement);
     // Si el select está vacío, guardamos el valor para establecerlo más tarde
     if (selectElement.options.length === 0) {
         selectElement.dataset.pendingValue = value;

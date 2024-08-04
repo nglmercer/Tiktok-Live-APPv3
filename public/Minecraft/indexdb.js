@@ -1,6 +1,5 @@
-import { sendReplacedCommand } from '../app.js';
 import { replaceVariables } from '../functions/replaceVariables.js';
-import { loadData, createGiftSelect, getAvailableGifts } from '../functions/giftmanager.js';
+import { getAvailableGifts } from '../functions/giftmanager.js';
 import { ModalModule } from '../modal/modal.js';
 import { createDBManager, observer, databases } from '../functions/indexedDB.js';
 import { TableManager } from '../datatable/datatable.js';
@@ -12,49 +11,10 @@ import {     validateForm,
 import { fillForm, setPendingSelectValues } from '../utils/formfiller.js';
 import { EventManager } from '../AccionEvents/accioneventTrigger.js';
 import { SendataTestManager} from '../testdata/testdata.js';
-let db;
-let dbReady = false;
-
-let indexedavailableGifts = [];
-const request = indexedDB.open("eventDatabase", 2); // Incrementa la versión de la base de datos
+import { svglist } from '../svg/svgconst.js';
+import { sendReplacedCommand } from '../app.js';
 const minecraftDBManager = createDBManager(databases.MinecraftDatabase);
 
-document.addEventListener("DOMContentLoaded", function() {
-    document.getElementById("addgift-button").addEventListener("click", () => addEvent("gift"));
-    document.getElementById("addchat-button").addEventListener("click", () => addEvent("chat"));
-    document.getElementById("addlikes-button").addEventListener("click", () => addEvent("likes"));
-    document.getElementById("testHandleevent").addEventListener("click", testHandleEvent123);
-    setTimeout(loadOptionsGift1, 1000);
-    // openmodalminecraft();
-});
-// async function openmodalminecraft() {
-//     try {
-//         const modalminecraft = new ModalModule(
-//             'openMinecraftmodal',
-//             './Minecraft/minecraftmodal.html',
-//             './Minecraft/minecraftmodal.css',
-//             (modal) => {
-//                 console.log('Modal 1 opened', modal);
-//                 modal.addCustomEventListener('.modalActionAdd', 'click', async () => {
-//                     const formelement = modal.modal.querySelector('.minecraftmodal');
-//                     const nameFilter = obtenerDatos(formelement, '_', {});
-//                     console.log(nameFilter);
-//                     // if (nameFilter.id) {
-//                     //     console.log('Guardando datos de la base de datos EXISTE ID', nameFilter.id);
-//                     // } else {
-//                     //     console.log('Guardando datos de la base de datos NO EXISTE ID', nameFilter.id);
-//                     // }
-//                     // await actionEventDBManager.saveData(nameFilter);
-//                 });
-//             },
-//         );
-//             await new Promise(resolve => setTimeout(resolve, 100));
-//             console.log('modal1', modalminecraft);
-//         } catch (error) {
-//             console.error('Error creating modal:', error);
-//         }
-
-// }
 class ModalminecraftManager {
     constructor() {
         this.modal = null;
@@ -78,8 +38,6 @@ class ModalminecraftManager {
 
         this.setupGiftSelector(modal);
         this.setupEventListeners(modal);
-        this.setupFunctionSelector(modal);
-
     }
     setupGiftSelector = (modal) => {
         const giftSelector = modal.createCustomSelector({
@@ -100,24 +58,6 @@ class ModalminecraftManager {
         });
 
         giftSelector.initialize();
-    }
-    setupFunctionSelector = (modal) => {
-        const functionSelector = modal.createCustomSelector({
-            id: 'functionSelector',
-            title: 'Seleccionar función',
-            getItemsFunction: async () => functionslist,
-            renderOptionFunction: (functionItem) => `
-                <div class="function-option">
-                    <span>${functionItem.name}</span>
-                </div>`,
-            onSelectFunction: (input, selectedFunction) => {
-                input.value = selectedFunction.name;
-                input.dataset.name = selectedFunction.name;
-            },
-            inputSelector: '#type-functions_select',
-            buttonClass: 'btn btn-primary'
-        });
-        functionSelector.initialize();
     }
     setupEventListeners = (modal) => {
         modal.addCustomEventListener('.modalActionAdd', 'click', async () => {
@@ -181,15 +121,15 @@ modalminecraftManager.initializeModal().then(() => {
 const minecraftdatatable = new TableManager('minecraft-tablemodal',
  'MinecraftDatabase', 
  [
-// { header: 'Commands', key: 'minecraft_commands' },
-{ header: 'ID', key: 'id' },
+{ header: 'comandos de minecraft', key: 'type-functions_value' },
+// { header: 'ID', key: 'id' },
 { 
-    header: 'Tipo de Evento Activo', 
+    header: 'Evento activo',
     eventKeys: ['event-chat', 'event-follow', 'event-gift', 'event-likes', 'event-share', 'event-subscribe'],
     showEventType: true
 },
 { 
-    header: 'Valor del Evento Activo', 
+    header: 'Valor del Evento',
     eventKeys: ['event-chat', 'event-follow', 'event-gift', 'event-likes', 'event-share', 'event-subscribe']
 },
 ], {
@@ -206,29 +146,39 @@ const minecraftdatatable = new TableManager('minecraft-tablemodal',
 },
 {
     default: 'custombutton', // Clase por defecto para todos los botones
-    onDelete: 'DeleteButton deleteButton', // Clase específica para el botón de eliminar
-}
+    onDelete: 'deleteButton', // Clase específica para el botón de eliminar
+}, 
+[],
+{
+    onDelete: svglist.deleteSvgIcon,
+    onEditar: svglist.editSvgIcon,
+},
+{
+    onDelete: 'Eliminar este elemento',
+    onEditar: 'Editar este elemento',
+ }
 );
 
 minecraftdatatable.loadAndDisplayAllData();
 const actions = {
     'type-functions': async (finddata, data, manager) => {
-        if (finddata.select) {
-            console.log("Function", finddata.select);
+        const functionName = finddata.select || manager.defaultFunction;
+        console.log("type Function", finddata);
+        if (functionName) {
+            console.log("type Function functionName", functionName,"finddata", finddata);
             const valuereplaced = replaceVariables(finddata.value, data);
-            const functionItem = manager.functionslist[finddata.select];
+            const functionItem = manager.functionslist[functionName];
             if (functionItem) {
                 await functionItem(valuereplaced);
             } else {
-                console.warn(`Function ${finddata.select} not found`);
+                console.warn(`Function ${functionName} not found`);
             }
         }
     },
 };
 const config = {
     functionslist: {
-        minecraftparsecommands: minecraftparsecommands,
-        testfunction: testfunction,
+        minecraftparsecommands: minecraftparsecommands
     },
     EVENT_TYPES: {
         GIFT: 'gift',
@@ -246,419 +196,34 @@ const config = {
         likes: (value, data) => (Number(value.number) || 2) <= data.likeCount,
     },
     actions: actions,
-    actionEventDBManager: minecraftDBManager
+    actionEventDBManager: minecraftDBManager,
+    defaultFunction: 'minecraftparsecommands' // Add default function name here
 };
-const functionslist = [
-    {
-        name: 'minecraftparsecommands',
-        description: 'minecraftparsecommands',
-        function: minecraftparsecommands
-    },
-    {
-        name: 'testfunction',
-        description: 'testfunction',
-        function: testfunction
-    }
-];
 function minecraftparsecommands(test) {
+    if (typeof test !== 'string') {
+        // console.log("minecraftparsecommands no string", test);
+        return;
+    }
     const splitcommand = test.split('\n');
-    console.log(splitcommand);
+    console.log("minecraftparsecommands", splitcommand);
+    if (splitcommand.length > 1) {
+        splitcommand.forEach(async (command) => {
+            if (command.length > 0) {
+                // console.log("minecraftparsecommands command", command);
+                sendReplacedCommand(command);
+            }
+        });
+    }
 }
-function testfunction(test) {
-    const splitcommand = test.split('\n');
-    console.log(splitcommand);
-}
+
 const Minecraftmanager = new EventManager(config);
 
 const testmanagerminecraft = new SendataTestManager('testminecraftbutton', 'testminecraftinput', 'testminecraftstatus', Minecraftmanager.eventmanager);
 
-/// aqui es donde se carga la tabla de eventos
-request.onupgradeneeded = (event) => {
-    db = event.target.result;
-
-    const stores = ["gift", "chat", "likes"];
-    stores.forEach(store => {
-        if (!db.objectStoreNames.contains(store)) {
-            db.createObjectStore(store, { keyPath: "id", autoIncrement: true });
-        }
-    });
-};
-
-request.onsuccess = (event) => {
-    db = event.target.result;
-    displayEvents("gift");
-    displayEvents("chat");
-    displayEvents("likes");
-};
-
-request.onerror = (event) => {
-    console.error("Database error: ", event.target.errorCode);
-};
-
-function optionsgiftdb() {
-    const result = getAvailableGifts();
-    // console.log("optionsgiftdb", result);
-    return result;
-};
-
-function loadOptionsGift1() {
-    const indexdboptionsgift = optionsgiftdb();
-    if (indexdboptionsgift) {
-        indexedavailableGifts = indexdboptionsgift || [];
-        const selectInputgifts = document.getElementById("gift-title");
-        // console.log('indexdboptionsgift', indexdboptionsgift, indexedavailableGifts, selectInputgifts);
-        indexedavailableGifts.forEach(gift => {
-            const optionElement = document.createElement('option');
-            optionElement.textContent = gift.name;
-            optionElement.value = gift.name;
-            selectInputgifts.appendChild(optionElement);
-        });
-    }
-
+function minecraftlive(eventType, data) {
+    Minecraftmanager.eventmanager(eventType, data);
 }
-
-function addEvent(storeName) {
-    let eventTitle, eventDescription;
-
-    if (storeName === "gift") {
-        eventTitle = document.getElementById(`${storeName}-title`).value;
-    } else {
-        eventTitle = document.getElementById(`${storeName}-title`).value;
-    }
-
-    eventDescription = document.getElementById(`${storeName}-description`).value;
-
-    if (eventTitle === "" || eventDescription === "") {
-        alert("Ingrese tanto un título como una descripción.");
-        return;
-    }
-    console.log(storeName);
-    const transaction = db.transaction([storeName], "readwrite");
-    const objectStore = transaction.objectStore(storeName);
-
-    const request = objectStore.add({ title: eventTitle, description: eventDescription });
-
-    request.onsuccess = () => {
-        document.getElementById(`${storeName}-title`).value = "";
-        document.getElementById(`${storeName}-description`).value = "";
-        displayEvents(storeName);
-    };
-
-    request.onerror = (event) => {
-        console.error(`Agregar ${storeName}, error: `, event.target.errorCode);
-    };
+function minecraftlivetest(comando) {
+    console.log("minecraftlivetest", comando);
 }
-
-function deleteEvent(storeName, id) {
-    const transaction = db.transaction([storeName], "readwrite");
-    const objectStore = transaction.objectStore(storeName);
-
-    const request = objectStore.delete(id);
-
-    request.onsuccess = () => {
-        displayEvents(storeName);
-    };
-
-    request.onerror = (event) => {
-        console.error(`Borrar ${storeName}, error: `, event.target.errorCode);
-    };
-}
-
-function updateEvent(storeName, id, newTitle, newDescription) {
-    const transaction = db.transaction([storeName], "readwrite");
-    const objectStore = transaction.objectStore(storeName);
-
-    const request = objectStore.get(id);
-
-    request.onsuccess = (event) => {
-        dbReady = true;
-        const eventItem = event.target.result;
-        eventItem.title = newTitle;
-        eventItem.description = newDescription;
-
-        const updateRequest = objectStore.put(eventItem);
-
-        updateRequest.onsuccess = () => {
-            displayEvents(storeName);
-        };
-        updateRequest.onerror = (event) => {
-            console.error(`Editar ${storeName} error: `, event.target.errorCode);
-        };
-    };
-
-    request.onerror = (event) => {
-        console.error(`Retrieve ${storeName} error: `, event.target.errorCode);
-    };
-}
-function eventTypeExists(eventType) {
-    return dbReady && db.objectStoreNames.contains(eventType);
-}
-function displayEvents(storeName) {
-    const transaction = db.transaction([storeName], "readonly");
-    const objectStore = transaction.objectStore(storeName);
-
-    const request = objectStore.getAll();
-
-    request.onsuccess = (event) => {
-        const eventList = document.getElementById(`${storeName}-list`);
-        eventList.innerHTML = "";
-        console.log(event.target.result);
-        event.target.result.forEach((eventItem) => {
-            const listItem = document.createElement("li");
-
-            const titleDiv = document.createElement("div");
-            titleDiv.textContent = eventItem.title;
-
-            const descriptionDiv = document.createElement("div");
-            descriptionDiv.textContent = eventItem.description;
-
-            const editButton = document.createElement("button");
-            editButton.textContent = "Editar";
-            editButton.setAttribute('data-translate', 'editar');
-            // console.log("storeName minecraft", storeName);
-
-            editButton.className = "edit-button";
-            editButton.onclick = () => {
-                titleDiv.style.display = 'none';
-                descriptionDiv.style.display = 'none';
-                editButton.style.display = 'none';
-                titleInput.style.display = 'inline-block';
-                titleInput.style.width = '100%';
-                descriptionInput.style.display = 'inline-block';
-                descriptionInput.style.marginTop = '10px';
-                descriptionInput.style.width = '100%';
-                saveButton.style.display = 'inline-block';
-                console.log("editbutton minecraft");
-                loadOptionsGift1();
-            };
-
-            let titleInput;
-            if (storeName === "gift") {
-                titleInput = document.createElement("select");
-                const indexdboptionsgift = optionsgiftdb();
-                indexedavailableGifts = indexdboptionsgift || [];
-
-                indexedavailableGifts.forEach(gift => {
-                    const optionElement = document.createElement('option');
-                    optionElement.textContent = gift.name;
-                    optionElement.value = gift.name;
-                    titleInput.appendChild(optionElement);
-                    // console.log("optionelement minecraft", optionElement);
-                });
-            } else {
-                // console.log("else minecraft", storeName);
-                titleInput = document.createElement("input");
-                titleInput.type = storeName === "likes" ? "number" : "text";
-            }
-            // titleInput.style.display = 'none';
-            titleInput.value = eventItem.title;
-
-            const descriptionInput = document.createElement("textarea");
-            descriptionInput.className = "textarea textarea-primary";
-            descriptionInput.value = eventItem.description;
-            // descriptionInput.style.display = 'none';
-
-            const saveButton = document.createElement("button");
-            saveButton.textContent = "Guardar";
-            saveButton.className = "save-button";
-            saveButton.style.display = 'none';
-            saveButton.onclick = () => {
-                updateEvent(storeName, eventItem.id, titleInput.value, descriptionInput.value);
-            };
-
-            const deleteButton = document.createElement("button");
-            deleteButton.textContent = "Borrar";
-            deleteButton.className = "deleteButton";
-            deleteButton.setAttribute('data-translate', 'DeleteButton');
-            deleteButton.onclick = () => deleteEvent(storeName, eventItem.id);
-
-            listItem.appendChild(titleDiv);
-            listItem.appendChild(descriptionDiv);
-            listItem.appendChild(titleInput);
-            listItem.appendChild(descriptionInput);
-            listItem.appendChild(editButton);
-            listItem.appendChild(saveButton);
-            listItem.appendChild(deleteButton);
-
-            eventList.appendChild(listItem);
-        });
-    };
-
-    request.onerror = (event) => {
-        console.error(`Display ${storeName} error: `, event.target.errorCode);
-    };
-}
-
-function testHandleEvent123() {
-    const eventType = document.getElementById('eventType').value;
-    const data = getTestData(eventType);
-    minecraftlive(eventType, data);
-}
-
-function getTestData(eventType) {
-    const dataInput = document.getElementById('data').value;
-    switch (eventType) {
-        case 'gift':
-            return { giftName: dataInput };
-        case 'chat':
-            return { comment: dataInput };
-        case 'likes':
-            return { likeCount: dataInput };
-        default:
-            return null;
-    }
-}
-
-function getMinecraftcheckbox() {
-    const MinecraftLivetoggle = document.getElementById("MinecraftLive");
-    return MinecraftLivetoggle.checked;
-}
-export function Minecraftlivedefault(eventType, data) {
-    if (!getMinecraftcheckbox()) return;
-    
-    const commandjsonlist = localStorage.getItem('commandjsonlist');
-    const commandjson = JSON.parse(commandjsonlist);
-
-    if (commandjson && commandjson[eventType] && commandjson[eventType].default) {
-        const defaultCommand = commandjson[eventType].default;
-        console.log(defaultCommand);
-        // defaultCommand.forEach(command => {
-        //     const replacedCommand = replaceVariables(command, data);
-        //     sendReplacedCommand(replacedCommand)
-        //     console.log(replacedCommand);
-        // });
-        ProcessMinecraftCommands(defaultCommand, data, 200); // Agregar delay a los comandos predeterminados
-    } else {
-        console.error(`No se encontraron comandos predeterminados para el evento "${eventType}"`);
-    }
-}
-
-export function minecraftlive(eventType, data) {
-    const MinecraftLivetoggle = getMinecraftcheckbox();
-
-    if (!MinecraftLivetoggle) {
-        return;
-    }
-    if (!eventTypeExists(eventType)) {
-        console.log(`El tipo de evento "${eventType}" no existe en la base de datos. Ejecutando comandos predeterminados.`);
-        Minecraftlivedefault(eventType, data);
-        return;
-    }
-    const transaction = db.transaction([eventType], "readonly");
-    const objectStore = transaction.objectStore(eventType);
-    const request = objectStore.getAll();
-
-    request.onsuccess = (event) => {
-        const results = event.target.result;
-        console.log(results);
-
-        let foundMatch = false;
-
-        results.forEach(result => {
-            if (eventType === 'gift' && result.title === data.giftName) {
-                const eventCommands = result.description.split('\n');
-                ProcessMinecraftCommands(eventCommands, data);
-                foundMatch = true;
-            } else if (eventType === 'chat' && result.title === data.comment) {
-                const eventCommands = result.description.split('\n');
-                ProcessMinecraftCommands(eventCommands, data);
-                foundMatch = true;
-            } else if (eventType === 'likes' && result.title >= data.likeCount) {
-                const eventCommands = result.description.split('\n');
-                ProcessMinecraftCommands(eventCommands, data);
-                foundMatch = true;
-            }
-        });
-
-        if (!foundMatch) {
-            console.log("Minecraftlivedefault");
-            Minecraftlivedefault(eventType, data);
-        }
-    };
-
-    request.onerror = (event) => {
-        console.error("Display error: ", event.target.errorCode, request);
-        Minecraftlivedefault(eventType, data);
-    };
-}
-                            
-function ProcessMinecraftCommands(eventCommands, data, delay = 100) {
-    let index = 0;
-
-    function sendNextCommand() {
-        if (index < eventCommands.length) {
-            const command = eventCommands[index];
-            if (command) {
-                const replacedCommand = replaceVariables(command, data);
-                sendReplacedCommand(replacedCommand);
-                console.log(replacedCommand);
-            }
-            index++;
-            setTimeout(sendNextCommand, delay); // Llama a la función recursivamente con un retraso
-        }
-    }
-
-    sendNextCommand(); // Inicia el envío de comandos
-}
-document.getElementById("add-event-button").addEventListener("click", () => addEventFromTextarea());
-function parseGiftEvent(data) {
-    const lines = data.split('\n');
-    const storeName = document.getElementById("event-store-name").value;
-    const events = [];
-
-    let currentEvent = null;
-
-    lines.forEach(line => {
-        line = line.trim();
-        if (line.includes(':') && !line.startsWith('/')) {
-            if (currentEvent) {
-                events.push(currentEvent);
-            }
-            const [title, ...commands] = line.split(':');
-            currentEvent = {
-                title: title.trim(),
-                commands: commands.join(':').trim().split('\n')
-                    .map(command => command.trim())
-                    .filter(command => command !== '')
-            };
-        } else if (line.startsWith('/')) {
-            if (currentEvent) {
-                currentEvent.commands.push(line.trim());
-            }
-        }
-    });
-
-    if (currentEvent) {
-        events.push(currentEvent);
-    }
-
-    return { storeName, events };
-}
-
-function addEventFromTextarea() {
-    const eventData = document.getElementById("event-data").value;
-
-    if (!eventData) {
-        alert("Ingrese datos de eventos.");
-        return;
-    }
-
-    const { storeName, events } = parseGiftEvent(eventData);
-
-    events.forEach(event => {
-        const transaction = db.transaction([storeName], 'readwrite');
-        const objectStore = transaction.objectStore(storeName);
-
-        const request = objectStore.add({ title: event.title, description: event.commands.join('\n') });
-
-        request.onsuccess = () => {
-            displayEvents(storeName);
-        };
-
-        request.onerror = (event) => {
-            console.error(`Agregar ${storeName}, error: `, event.target.errorCode);
-        };
-    });
-
-    document.getElementById("event-data").value = "";
-}
+export { minecraftlive  };

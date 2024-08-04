@@ -9,7 +9,7 @@ const audioPlayer = new AudioPlayer('audio',
 );
 const controlmedia = new Controlmedia(audioPlayer);
 const recorder = new SpeechSynthesisRecorder();
-audioPlayer.setAudioInfo('ASDASDASD');
+audioPlayer.setAudioInfo('ttsplayer');
 
 let audioQueue = new Queue();
 let lastReadText = null;
@@ -87,15 +87,12 @@ function leerMensajes(text) {
     }
 }
 export class TTS {
-    constructor() {
-        this.recorder = null;
+    constructor(message) {
+        this.speak(message);
     }
 
     async speak(message) {
         console.log('TTS speak', message);
-
-        const utterance = new SpeechSynthesisUtterance(message);
-        utterance.volume = document.querySelector('#volume').value;
 
         const voices = speechSynthesis.getVoices();
         console.log("voices", voices);
@@ -116,39 +113,44 @@ export class TTS {
             pitch = setRandomPitch();
         }
 
-        if (message === lastReadText) {
-            return;
-        }
+        const volume = document.querySelector('#volume').value;
 
-        lastReadText = message;
+        const utterance = new SpeechSynthesisUtterance(message);
+        utterance.voice = selectedVoice;
+        utterance.rate = parseFloat(speed);
+        utterance.pitch = parseFloat(pitch);
+        utterance.volume = parseFloat(volume);
 
-        this.recorder = new SpeechSynthesisRecorder({
-            text: message,
-            utteranceOptions: {
-                voice: selectedVoice,
-                rate: parseFloat(speed),
-                pitch: parseFloat(pitch),
-                volume: parseFloat(utterance.volume)
-            }
-        });
+        console.log('utterance options', utterance);
+        window.speechSynthesis.speak(utterance);
 
-        try {
-            const {tts, data} = await this.recorder.start().then(tts => tts.blob());
-            const audioUrl = URL.createObjectURL(data);
-            console.log('audioUrl', audioUrl);
-            
-            if (audioUrl) {
-                controlmedia.addSong(audioUrl);
-            }
-            
-            document.getElementById("audiotrack").pause();
-            document.getElementById("audiotrack").currentTime = 0;
-        } catch (error) {
-            console.error('Error recording speech:', error);
-        }
+        // try {
+        //     const audioUrl = await recordSpeechAndGetTTS(message, utterance);
+        //     console.log('audioUrl', audioUrl);
+        //     // Aquí puedes hacer algo con audioUrl, como reproducirlo o guardarlo
+        // } catch (error) {
+        //     console.error('Error recording speech:', error);
+        // }
     }
 }
 
+async function recordSpeechAndGetTTS(message, utteranceOptions) {
+    // const recorder = new SpeechSynthesisRecorder({
+    //     text: message,
+    //     utteranceOptions: utteranceOptions
+    // });
+
+
+    // try {
+    //     const {tts, data} = await recorder.start().then(tts => tts.blob());
+    //     const audioUrl = URL.createObjectURL(data);
+    //     console.log('audioUrl', audioUrl);
+    //     return audioUrl;
+    // } catch (error) {
+    //     console.error('Error recording speech:', error);
+    //     throw error;
+    // }
+}
 
 function setRandomVoice(voices) {
     const randomIndex = Math.floor(Math.random() * voices.length);
