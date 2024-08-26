@@ -1,0 +1,23 @@
+.grid-autofit-28rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
+}
+.grid-autofit-10rem-left {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(auto, 10rem));
+}
+.grid-1fr-1fr {
+  display: grid;
+  grid-template-columns: minmax(auto, 1fr) minmax(auto, 1fr);
+  gap: 5px;
+  [type=checkbox]:not(:checked),
+  [type=checkbox]:checked {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+.grid-align-center {
+  display: grid;
+  align-items: center;
+}
