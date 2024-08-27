@@ -190,243 +190,244 @@
     </div>
       </div>
       <button id="googleSignInBtn">Sign in with Google</button>
-      <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y atajos</button>
-      <div id="modal1" class="modal">
-        <div class="modal-content">
+</div>
+
+<div class="tabcontainer" data-tab="tab2">
+  <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y atajos</button>
+  <div id="modal1" class="modal">
+    <div class="modal-content">
+      <form id="dynamicForm2" class="gridform">
+
+      </form>
       <a id="submitFormBtn2" href="#!" class="modal-close btn filled waves-effect waves-light">Añadir acciones </a>
 
-          <form id="dynamicForm2">
-            <!-- Form fields will be appended here -->
-          </form>
-        </div>
-      </div>
+    </div>
+  </div>
+    <div class="containerbox relative">
+      <div class="LiveContainer">
+        <div  id="chat-container" class="chat1 chatcontainer">Chats</div>
+        <div class="gift2 giftcontainer">Gifts</div>
+        <div class="events3 eventscontainer">Events</div>
 
-
-</div>
-<div class="tabcontainer" data-tab="tab2">
+    </div>
+  </div>
   <div class="containerbox relative">
-    <div class="LiveContainer">
-      <div  id="chat-container" class="chat1 chatcontainer">Chats</div>
-      <div class="gift2 giftcontainer">Gifts</div>
-      <div class="events3 eventscontainer">Events</div>
+    <input type="checkbox" id="show-more" style="display:none;">
+    <label for="show-more" class="show-more-label"><span></span></label>
+
+    <div class="flexbox">
+
+      <div class="card">
+          <div class="card-header">
+              <h2 class="card-title">General Settings</h2>
+          </div>
+          <div class="card-content">
+                  <!-- <input type="checkbox" id="voiceenabled" checked>
+                  <label for="voiceenabled">Enabled</label> -->
+
+                  <div class="card-subcontent">
+
+                    <label class="flex" for="selectvoice1"><input type="radio" name="selectvoice" id="selectvoice1" class="radio checked:bg-blue-300 float-start" checked><span>Voz1</span></label>
+
+                    <div id="voiceSelectContainer" class="relative m-3 content-center">
+                        <select id="voiceSelect1" class="select select-info browser-default" style="width: 100%;" aria-label="Select Voice">select voice</select>
+                        <label for="voiceSelect1">select voice</label>
+                    </div>
+
+
+                    <label class="flex" for="selectvoice2">
+                      <input type="radio" name="selectvoice" id="selectvoice2" class="radio checked:bg-blue-500 float-start">
+                      <span>Voz2</span></label>
+                <div class="grid">
+                    <select id="voiceSelect" class="select select-info browser-default"></select>
+
+                      <label for="randomVoice"><input type="checkbox" id="randomVoice" checked><span>Random Voice</span></label>
+
+                        <label for="randomSpeed">
+                        <input type="checkbox" id="randomSpeed">
+                        <span>random speed</span>
+                        </label>
+                        <input type="range" class="range range-sm" id="randomSpeedValue" name="randomSpeedValue" value="1" min="0.1" max="2" step="0.1">
+
+                        </div>
+                    <div class="flex">
+                      <label for="randomPitch">
+                        <input type="checkbox" id="randomPitch">
+                        <span>random pitch</span></label>
+                        <input type="range" class="range range-sm" id="randomPitchValue" name="randomPitchValue" value="1" min="0.1" max="2" step="0.1">
+                    </div>
+                    <div class="flex">
+                        <label for="default-speed">Default Speed</label>
+                        <input type="range" id="default-speed" class="range range-sm">                                   </div>
+                    <div class="flex">
+                        <label for="default-pitch">Default Pitch</label>
+                        <input type="range" id="default-pitch" class="range range-sm">                                   </div>
+                    <small>Speech Volume</small>
+                    <label for="volume">
+                        <i class="bi bi-volume-up-fill"></i></label>
+                        <input id="volume" type="range" min="0" max="1" value="1" step="0.1" class="range range-sm">
+
+                </div>
+          </div>
+      </div>
+      <div class="card">
+          <div class="card-header">
+              <h2 class="card-title">Allowed Users</h2>
+          </div>
+          <div class="card-content space-y-4 text-lg">
+              <div class="flex items-center">
+                <label for="allUsers">
+                    <input type="checkbox" id="allUsers" checked>
+                    <span>All Users</span></label>
+              </div>
+              <div class="flex items-center">
+                <label for="followRole">
+                    <input type="checkbox" id="followRole" checked>
+                    <span>Followers</span></label>
+              </div>
+              <div class="flex items-center">
+                <label for="isSubscriber">
+                    <input type="checkbox" id="isSubscriber" checked>
+                    <span>isSubscriber</span>
+                  </label>
+              </div>
+              <div class="flex items-center">
+                <label for="isModerator">
+                    <input type="checkbox" id="isModerator" checked>
+                    <span>isModerator</span>
+                  </label>
+              </div>
+              <div class="flex items-center">
+                <label for="isNewGifter">
+                    <input type="checkbox" id="isNewGifter" checked>
+                    <span>isNewGifter</span>
+                  </label>
+              </div>
+              <div class="flex items-center">
+                <label for="teamMemberLevel">
+                    <input type="checkbox" id="teamMemberLevel" checked>
+                      <span>Team Members <span>Min. Level:</span></span>
+                  </label>
+                  <input type="number" id="teamMemberLevel-value" class="input input-bordered w-12" value="1" min="0">
+              </div>
+              <div class="flex items-center">
+                <label for="topGifterRank">
+                    <input type="checkbox" id="topGifterRank" checked>
+                    <span>Top Gifters <span>Top:</span></span>
+
+
+
+
+                  </label>
+                  <input type="number" id="topGifterRank-value" class="input input-bordered w-12" value="3" min="0">
+              </div>
+              <div class="flex items-center">
+                <label for="allowed-users-list">
+                    <input type="checkbox" id="allowed-users-list" checked>
+                      <span>Allowed Users from list <p>Manage List</p></span>
+                  </label>
+              </div>
+          </div>
+
+      </div>
+      <div class="card">
+          <div class="card-header">
+              <h2 class="card-title">Comment Types</h2>
+          </div>
+          <div class="card-content space-y-4">
+              <label>Read...</label>
+              <div>
+                  <div class="flex items-center">
+                    <label for="any-comment">
+                        <input type="radio" name="comment-type" value="any-comment" id="any-comment" class="radio checked:bg-blue-300" checked>
+                        <span>Any comment</span></label>
+                  </div>
+                  <div class="flex items-center">
+                    <label for="dot-comment">
+                        <input type="radio" name="comment-type" value="dot-comment" id="dot-comment" class="radio checked:bg-blue-300">
+                        <span>Comments starting with dot (.)</span></label>
+                  </div>
+                  <div class="flex items-center">
+                    <label for="slash-comment">
+                        <input type="radio" name="comment-type" value="slash-comment" id="slash-comment" class="radio checked:bg-blue-300">
+                        <span>Comments starting with slash (/)</span></label>
+                  </div>
+                  <div class="flex items-center">
+                    <label for="command-comment">
+                      <input type="radio" name="comment-type" value="command-comment" id="command-comment" class="radio checked:bg-blue-300">
+                      <span>Comments starting with Command:</span></label>
+                  </div>
+              </div>
+              <div class="space-y-2">
+                  <label for="command">Command</label>
+                  <input type="text" id="command" placeholder="!speak">
+              </div>
+          </div>
+      </div>
+      <div class="card">
+          <div class="card-header">
+              <h2 class="card-title">More Settings</h2>
+
+          </div>
+          <div class="card-content space-y-4">
+              <label class="cyberpunk-checkbox-label">
+                  leer follower prefijo:
+                  <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
+                  <input type="text" id="prefixuserfollow" value="te sige">
+              </label>
+              <label class="cyberpunk-checkbox-label">
+                  leer regalos prefijo:
+                  <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
+                  <input type="text" id="prefixGiftEvent" value="regalo">
+              </label>
+              <label class="cyberpunk-checkbox-label">
+                  leer usuario y mensaje prefijo:
+                  <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
+                  <input type="text" id="prefixusermessage" value="dice">
+              </label>
+              <label class="cyberpunk-checkbox-label">solo mensajes =>3
+                  <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
+                  </label>
+          </div>
+      </div>
+      <div class="card">
+          <div class="card-header">
+              <h2 class="card-title">BlackList: Input de palabras que no aparecerán en el chat </h2>
+          </div>
+          <div class="card-content space-y-4">
+              <input type="text" id="filter-words" class="border p-2 mr-2">
+              <button class="custombutton" id="addfilter-words" >✅word</button>
+              <button id="load-known-filters" class="custombutton">Añadir filtros conocidos</button>
+              <div id="containerfilter-words" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
+          </div>
+
+      </div>
+      <div class="card">
+          <h2 class="card-title">WhiteList: Input de usuarios que aparecerán en el chat++</h2>
+          <div class="card-content space-y-4">
+              <input type="text" id="filter-users" class="border p-2 mr-2">
+              <button class="custombutton" id="addfilter-users" >✅user</button>
+              <div id="containerfilter-users" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
+          </div>
+      </div>
+      <div id="audio"></div>
+  </div>
 
   </div>
 </div>
-<div class="containerbox relative">
-  <input type="checkbox" id="show-more" style="display:none;">
-  <label for="show-more" class="show-more-label"><span></span></label>
 
-  <div class="flexbox">
-
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">General Settings</h2>
-        </div>
-        <div class="card-content">
-                <!-- <input type="checkbox" id="voiceenabled" checked>
-                <label for="voiceenabled">Enabled</label> -->
-
-                <div class="card-subcontent">
-
-                  <label class="flex" for="selectvoice1"><input type="radio" name="selectvoice" id="selectvoice1" class="radio checked:bg-blue-300 float-start" checked><span>Voz1</span></label>
-
-                  <div id="voiceSelectContainer" class="relative m-3 content-center">
-                      <select id="voiceSelect1" class="select select-info browser-default" style="width: 100%;" aria-label="Select Voice">select voice</select>
-                      <label for="voiceSelect1">select voice</label>
-                  </div>
-
-
-                  <label class="flex" for="selectvoice2">
-                    <input type="radio" name="selectvoice" id="selectvoice2" class="radio checked:bg-blue-500 float-start">
-                    <span>Voz2</span></label>
-              <div class="grid">
-                  <select id="voiceSelect" class="select select-info browser-default"></select>
-
-                    <label for="randomVoice"><input type="checkbox" id="randomVoice" checked><span>Random Voice</span></label>
-
-                      <label for="randomSpeed">
-                      <input type="checkbox" id="randomSpeed">
-                       <span>random speed</span>
-                      </label>
-                      <input type="range" class="range range-sm" id="randomSpeedValue" name="randomSpeedValue" value="1" min="0.1" max="2" step="0.1">
-
-                      </div>
-                  <div class="flex">
-                    <label for="randomPitch">
-                      <input type="checkbox" id="randomPitch">
-                      <span>random pitch</span></label>
-                      <input type="range" class="range range-sm" id="randomPitchValue" name="randomPitchValue" value="1" min="0.1" max="2" step="0.1">
-                  </div>
-                  <div class="flex">
-                      <label for="default-speed">Default Speed</label>
-                      <input type="range" id="default-speed" class="range range-sm">                                   </div>
-                  <div class="flex">
-                      <label for="default-pitch">Default Pitch</label>
-                      <input type="range" id="default-pitch" class="range range-sm">                                   </div>
-                  <small>Speech Volume</small>
-                  <label for="volume">
-                      <i class="bi bi-volume-up-fill"></i></label>
-                      <input id="volume" type="range" min="0" max="1" value="1" step="0.1" class="range range-sm">
-
-              </div>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Allowed Users</h2>
-        </div>
-        <div class="card-content space-y-4 text-lg">
-            <div class="flex items-center">
-              <label for="allUsers">
-                  <input type="checkbox" id="allUsers" checked>
-                  <span>All Users</span></label>
-            </div>
-            <div class="flex items-center">
-              <label for="followRole">
-                  <input type="checkbox" id="followRole" checked>
-                  <span>Followers</span></label>
-            </div>
-            <div class="flex items-center">
-              <label for="isSubscriber">
-                  <input type="checkbox" id="isSubscriber" checked>
-                  <span>isSubscriber</span>
-                </label>
-            </div>
-            <div class="flex items-center">
-              <label for="isModerator">
-                  <input type="checkbox" id="isModerator" checked>
-                  <span>isModerator</span>
-                </label>
-            </div>
-            <div class="flex items-center">
-              <label for="isNewGifter">
-                  <input type="checkbox" id="isNewGifter" checked>
-                  <span>isNewGifter</span>
-                </label>
-            </div>
-            <div class="flex items-center">
-              <label for="teamMemberLevel">
-                  <input type="checkbox" id="teamMemberLevel" checked>
-                    <span>Team Members <span>Min. Level:</span></span>
-                </label>
-                <input type="number" id="teamMemberLevel-value" class="input input-bordered w-12" value="1" min="0">
-            </div>
-            <div class="flex items-center">
-              <label for="topGifterRank">
-                  <input type="checkbox" id="topGifterRank" checked>
-                  <span>Top Gifters <span>Top:</span></span>
-
-
-
-
-                </label>
-                <input type="number" id="topGifterRank-value" class="input input-bordered w-12" value="3" min="0">
-            </div>
-            <div class="flex items-center">
-              <label for="allowed-users-list">
-                  <input type="checkbox" id="allowed-users-list" checked>
-                    <span>Allowed Users from list <p>Manage List</p></span>
-                </label>
-            </div>
-        </div>
-
-    </div>
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">Comment Types</h2>
-        </div>
-        <div class="card-content space-y-4">
-            <label>Read...</label>
-            <div>
-                <div class="flex items-center">
-                  <label for="any-comment">
-                      <input type="radio" name="comment-type" value="any-comment" id="any-comment" class="radio checked:bg-blue-300" checked>
-                      <span>Any comment</span></label>
-                </div>
-                <div class="flex items-center">
-                  <label for="dot-comment">
-                      <input type="radio" name="comment-type" value="dot-comment" id="dot-comment" class="radio checked:bg-blue-300">
-                      <span>Comments starting with dot (.)</span></label>
-                </div>
-                <div class="flex items-center">
-                  <label for="slash-comment">
-                      <input type="radio" name="comment-type" value="slash-comment" id="slash-comment" class="radio checked:bg-blue-300">
-                      <span>Comments starting with slash (/)</span></label>
-                </div>
-                <div class="flex items-center">
-                  <label for="command-comment">
-                    <input type="radio" name="comment-type" value="command-comment" id="command-comment" class="radio checked:bg-blue-300">
-                    <span>Comments starting with Command:</span></label>
-                </div>
-            </div>
-            <div class="space-y-2">
-                <label for="command">Command</label>
-                <input type="text" id="command" placeholder="!speak">
-            </div>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">More Settings</h2>
-
-        </div>
-        <div class="card-content space-y-4">
-            <label class="cyberpunk-checkbox-label">
-                leer follower prefijo:
-                <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                <input type="text" id="prefixuserfollow" value="te sige">
-            </label>
-            <label class="cyberpunk-checkbox-label">
-                leer regalos prefijo:
-                <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
-                <input type="text" id="prefixGiftEvent" value="regalo">
-            </label>
-            <label class="cyberpunk-checkbox-label">
-                leer usuario y mensaje prefijo:
-                <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                <input type="text" id="prefixusermessage" value="dice">
-            </label>
-            <label class="cyberpunk-checkbox-label">solo mensajes =>3
-                <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
-                </label>
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-header">
-            <h2 class="card-title">BlackList: Input de palabras que no aparecerán en el chat </h2>
-        </div>
-        <div class="card-content space-y-4">
-            <input type="text" id="filter-words" class="border p-2 mr-2">
-            <button class="custombutton" id="addfilter-words" >✅word</button>
-            <button id="load-known-filters" class="custombutton">Añadir filtros conocidos</button>
-            <div id="containerfilter-words" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
-        </div>
-
-    </div>
-    <div class="card">
-        <h2 class="card-title">WhiteList: Input de usuarios que aparecerán en el chat++</h2>
-        <div class="card-content space-y-4">
-            <input type="text" id="filter-users" class="border p-2 mr-2">
-            <button class="custombutton" id="addfilter-users" >✅user</button>
-            <div id="containerfilter-users" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
-        </div>
-    </div>
-    <div id="audio"></div>
-</div>
-
-</div>
-</div>
 <div class="tabcontainer" data-tab="tab3">
+
   <h2>Silder Apps</h2>
   <div id="sliders-container"></div>
 </div>
+
 <div class="tabcontainer" data-tab="tab4">
-
-  <div class="file-container" id="drop-area">
-    <ul id="file-list"> </ul>
+    <div class="file-container" id="drop-area">
+      <ul id="file-list"> </ul>
+  </div>
 </div>
 
-</div>
 <div class="tabcontainer" data-tab="tab5">
   <a id="openModalBtn" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y atajos</a>
   <div id="modal" class="modal">
@@ -439,11 +440,10 @@
     </div>
   </div>
   <button id="toogleEditModeBtn" class="waves-effect waves-light btn">Editar</button>
-
   <div id="buttonContainer"></div>
 </div>
-</div>
-<script >
+
+<script>
     // Inicialización del sidenav
     var elems = document.querySelectorAll('.sidenav');
     elems.forEach(function(elem) {
@@ -474,7 +474,6 @@
     // Obtener la última pestaña abierta de localStorage o usar 'tab1' como valor predeterminado
     var lastOpenedTab = localStorage.getItem('lastOpenedTab') || 'tab1';
     showTab(lastOpenedTab);
-
     // Agregar evento de clic a los enlaces de las pestañas
     tabLinks.forEach(function(link) {
         link.addEventListener('click', function(e) {
@@ -507,46 +506,82 @@
         }
     });
   </script>
+  <script type="module" src="./src/components/Accionevents.js"></script>
     <script type="module" src="./src/renderer.js"></script>
     <script type="module" src="./src/datamodal.js"></script>
     <script type="module" src="userdatas.js"></script>
     <script type="module" src="./src/utils/localstorage.js"></script>
 
-      <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-        import { getFirestore, collection, addDoc,getDocs  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+      import { getFirestore, collection, setDoc, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDf_0M9KgJttAJogVDqHdv7E7y8psKgZyE",
-            authDomain: "tiktokliveapp-bced3.firebaseapp.com",
-            projectId: "tiktokliveapp-bced3",
-            storageBucket: "tiktokliveapp-bced3.appspot.com",
-            messagingSenderId: "860491897747",
-            appId: "1:860491897747:web:928b1824fb8f936dade666",
-            measurementId: "G-VE9VWQWWX1"
-        };
+      const firebaseConfig = {
+        apiKey: "AIzaSyDf_0M9KgJttAJogVDqHdv7E7y8psKgZyE",
+        authDomain: "tiktokliveapp-bced3.firebaseapp.com",
+        projectId: "tiktokliveapp-bced3",
+        storageBucket: "tiktokliveapp-bced3.appspot.com",
+        messagingSenderId: "860491897747",
+        appId: "1:860491897747:web:928b1824fb8f936dade666",
+        measurementId: "G-VE9VWQWWX1"
+      };
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const db = getFirestore(app);
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
 
+      const docRef = doc(db, "datajson", "localStorageBackup");
 
-      async function getAllDataFromFirestore() {
+      async function saveLocalStorageToFirestore() {
+        const data = JSON.stringify(localStorage);
         try {
-            // Obtener todos los documentos de la colección
-            const querySnapshot = await getDocs(collection(db, "datajson"));
-            querySnapshot.forEach((doc) => {
-                console.log(doc.id, " => ", doc.data());
-            });
+          await setDoc(docRef, { data, timestamp: new Date() });
+          console.log("LocalStorage saved to Firestore.");
         } catch (e) {
-            console.error("Error getting documents: ", e);
+          console.error("Error saving document: ", e);
         }
-    }
+      }
 
-    getAllDataFromFirestore();
-      </script>
+      async function loadFirestoreToLocalStorage() {
+        try {
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            const { data } = docSnap.data();
+            const storedData = JSON.parse(data);
+            Object.keys(storedData).forEach((key) => {
+              localStorage.setItem(key, storedData[key]);
+            });
+            console.log("LocalStorage restored from Firestore.");
+          } else {
+            console.log("No document found.");
+          }
+        } catch (e) {
+          console.error("Error getting document: ", e);
+        }
+      }
+
+      async function checkAndUpdateDaily() {
+        const docSnap = await getDoc(docRef);
+        const now = new Date();
+        if (docSnap.exists()) {
+          const { timestamp } = docSnap.data();
+          const lastSavedDate = new Date(timestamp.seconds * 1000);
+          if (now.toDateString() !== lastSavedDate.toDateString()) {
+            await saveLocalStorageToFirestore();
+          } else {
+            console.log("LocalStorage already updated today.");
+          }
+        } else {
+          await saveLocalStorageToFirestore();
+        }
+      }
+
+      // On page load, load data from Firestore and then check if it needs to be updated
+      setTimeout( async () => {
+        loadFirestoreToLocalStorage().then(checkAndUpdateDaily);
+      }, 60 * 1000);
+    </script>
+
       <script type="module" src="./src/voice/speech.js"></script>
   </body>
 </html>

@@ -1,13 +1,12 @@
 import socketManager, { Websocket, socketurl } from './src/utils/socket';
 import textReplacer, { imageManipulator } from './src/utils/textReplacer';
 import  { IndexedDBManager, databases, DBObserver } from "./src/utils/indexedDB";
-import { getformdatabyid, postToFileHandler, getdatafromserver } from './src/utils/getdata';
+import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb } from './src/utils/getdata';
 import TypeofData from './src/utils/typeof';
 import { Counter } from './src/utils/counters';
 import showAlert from './assets/alerts'
 import { ChatContainer, ChatMessage } from './assets/items';
-import { UserPointsTable } from './src/UserPoints';
-import FormModal from './src/components/FormModal'
+import { UserPointsTable } from './src/utils/UserPoints';
 import { handleleermensaje } from './src/voice/tts';
 import { loadFileList, setupDragAndDrop, handlePlayButton, getfileId, handlePasteFromClipboard} from './src/components/Fileshtml'
 const observeruserPoints = new DBObserver();
@@ -19,11 +18,9 @@ const countergift = new Counter(0, 1000);
 const countershare = new Counter(0, 1000);
 const counterlike = new Counter(0, 1000);
 const counterfollow = new Counter(0, 1000);
-const filescontent = await postToFileHandler("get-files-in-folder", {});
 async function sendcreateserver(serverurl,data) {
-  console.log("sendcreateserver", serverurl,data);
   const respone = await getdatafromserver(serverurl,data);
-  console.log("getdatafromserver", respone);
+  console.log("getdatafromserver", respone, serverurl, data);
 }
 sendcreateserver(`${socketurl.getport()}/create-overlay-window`, {});
 const textcontent = {
@@ -71,52 +68,8 @@ observeruserPoints.subscribe(async (action, data) => {
     userPointsTable.renderTable();
   }
 });
-class getdataIndexdb {
-  constructor() {
-    this.dbManager = null;
-  }
 
-  // Método para obtener todos los datos de la base de datos y almacenarlos en la clase
-  async getAllDataFromDB(dbManager) {
-        const dbManagerdata = await getAllData(dbManager);
-        console.log("dbManagerdata", dbManagerdata);
-        this.dbManager = dbManager;
-        return dbManagerdata;
-  }
-
-  // Método para buscar datos en base al 'id' o 'name' y devolver una propiedad específica
-  async getdataIndexdb(data, property = null) {
-    const dbManagerdata = await getAllDataFromDB(userPointsDBManager);
-    if (!dbManagerdata || dbManagerdata.length === 0) {
-      console.log("No data loaded. Please call getAllDataFromDB first.");
-      return null;
-    }
-    const foundItem = dbManagerdata.find(
-      item => item.uniqueId === data.uniqueId || item.name === data.name
-    );
-
-    if (foundItem) {
-      console.log("foundItem", foundItem, property, foundItem[property]);
-      return property ? foundItem[property] : foundItem;
-    } else {
-      console.log("No se encontró un item con el id o name proporcionado.");
-      return null;
-    }
-  }
-}
-async function getAllDataFromDB(dbManager) {
-  try {
-      const dbManagerdata = await dbManager.getAllData();
-      console.log(dbManagerdata);
-      return dbManagerdata;
-  } catch (e) {
-      console.error("Error getting documents: ", e);
-  }
-}
 const getdataIndexdbInstance = new getdataIndexdb();
-
-
-
 
 let websocket = null;
 const uniqueidform = document.getElementById("uniqueidform");
@@ -159,7 +112,18 @@ function handleWebsocketMessage(event) {
   let data = parsedData.data;
   handleevents(evenType, data);
 }
-function handleevents(evenType, data) {
+async function handleevents(evenType, data) {
+    let userpoints;
+    if (data.uniqueId) {
+      userpoints = {
+        uniqueId: data.uniqueId,
+        nickname: data.nickname,
+        uniqueId: data.uniqueId,
+        name: data.uniqueId,
+        points: 0,
+        imageUrl: data.profilePictureUrl,
+    }
+    }
   const evaldata = evalBadge(data);
   if (evaldata) {
     console.log("evaldata", evaldata);
@@ -176,8 +140,12 @@ function handleevents(evenType, data) {
         }
         if (evalmessagecontainsfilter(data.comment)) {
             console.log("evalmessagecontainsfilter",evalmessagecontainsfilter(data.comment), data)
+            let getpoinifexists = TypeofData.toNumber(await getdataIndexdbInstance.getdataIndexdb(data, 'points')) || 0;
+            userpoints.points = getpoinifexists -= 5;
+            userPointsDBManager.saveOrUpdateDataByName(userpoints);
             return;
         }
+        if (userpoints.points  <= -1) return userpoints.points = -1;
         handleleermensaje(data.comment);
         break;
     case "share":
@@ -217,7 +185,6 @@ function handleevents(evenType, data) {
 async function evalsystempoints(evenType, data) {
   if (!data.uniqueId) return;
   const getpoinifexists = TypeofData.toNumber(await getdataIndexdbInstance.getdataIndexdb(data, 'points')) || 0;
-  console.log("getpoinifexists", getpoinifexists);
   let userpoints = {
       uniqueId: data.uniqueId,
       nickname: data.nickname,
@@ -228,7 +195,6 @@ async function evalsystempoints(evenType, data) {
   };
   const form = document.getElementById('pointsForm');
   const config = getformdatabyid(form);
-  console.log("evalsystempoints", config);
   localStorage.setItem(evenType, JSON.stringify(data));
   const eventPointscheck = {
     follow: config.Pointsperfollow.check,
@@ -278,17 +244,7 @@ async function evalsystempoints(evenType, data) {
   console.log("Puntos asignados:",evenType, userpoints);
   return userpoints;
 }
-let testuserpoints = {
-  uniqueId: "test",
-  nickname: "test",
-  name: "test",
-  points: Math.floor(Math.random() * 100),
-  imageUrl: "test",
-};
-// setInterval(() => {
-//   testuserpoints.points = Math.floor(Math.random() * 100);
-//   userPointsDBManager.saveOrUpdateDataByName(testuserpoints);
-// }, 1000);
+
 function handlechat(data) {
   const parsedchatdata = {
     content: {
@@ -365,7 +321,6 @@ function onRoominfo(data) {
   console.log("onRoominfo", data.nickname,data);
   showAlert('info', `${data.cover}`, 10000);
 }
-// cuando el documento y el dom se cargan
 
 const events = ['connected', 'chat', 'share', 'social', 'like', 'follow', 'gift', 'streamEnd', 'disconnected', 'emote', 'envelope', 'questionNew', 'subscribe', 'member', 'roomUser'];
 events.forEach(event => {
@@ -381,10 +336,9 @@ socketManager.on("roominfo", (data) => {
     onRoominfo(data);
   });
 
-console.log("socketManager123123123");
 setTimeout(async () => {
   await loadFileList();
-}, 5000);
+}, 1000);
 function evalBadge(data) {
   if (!data || !data.uniqueId) return true;
   const checkboxes = document.querySelectorAll('.card-content input[type="checkbox"]');
@@ -426,50 +380,7 @@ function evalBadge(data) {
 
   return false;
 }
-const options = [
-  { value: 'keyPress', label: 'Presionar Tecla' },
-  { value: 'openApp', label: 'Abrir Aplicación' },
-];
-const appOptions = filescontent.map((app) => ({
-  value: app.path,
-  label: app.name,
-}));
-const formConfig = [
-  {
-    type: 'checkbox',
-    name: 'eventcheck',
-    label: 'Mostrar Grupo',
-    inputType: 'checkbox',
-    children: [
-      { type: 'input', name: 'id', label: 'ID', inputType: 'Number', returnType: 'Number', hidden: true },
-      { type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
-      { type: 'input', name: 'textparsed', label: 'Texto', inputType: 'text', returnType: 'string' },
-      { type: 'input', name: 'duration', label: 'Duracion', inputType: 'number', returnType: 'number' },
-      { type: 'slider', name: 'volume', label: 'Volumen', inputType: 'range', returnType: 'number' },
-    ],
-    returnType: 'boolean',
-  },
 
-  { type: 'checkbox', name: 'active', label: 'active', inputType: 'checkbox', returnType: 'boolean' },
-  { type: 'select', name: 'actionType', label: 'Tipo de Acción', options: [{ value: 'keyPress', label: 'Presionar Tecla' }, { value: 'openApp', label: 'Abrir Aplicación' }], returnType: 'string' },
-  { type: 'multiSelect', name: 'keyvalue', label: 'Keyvalue', options: options, returnType: 'array', hidden: true },
-  { type: 'select', name: 'application', label: 'Application', options: appOptions, returnType: 'string' },
-];
-
-const formModal = new FormModal('#modal1', '#dynamicForm2', 'submitFormBtn2', 'openModaltest');
-const openModaltest = document.getElementById('openModaltest');
-console.log("formModal", formModal);
-const existingData = {
-  nombre: 'Accion',
-  actionType: 'keyPress',
-  application: 'app1',
-  keyvalue: ["F1", "F2"]  // Valores a seleccionar en el multiSelect
-};
-openModaltest.addEventListener('click', () => {
-  formModal.open(formConfig, (formData) => {
-    console.log("formData", formData);
-  }, {}, false);
-});
 function evalmessagecontainsfilter(text) {
   const filterWords = JSON.parse(localStorage.getItem('filterWords')) || [];
   if (filterWords.length === 0) return false;
@@ -484,6 +395,9 @@ function evalmessagecontainsfilter(text) {
   });
 }
 document.addEventListener('DOMContentLoaded', async () => {
-  setupDragAndDrop();
+  setTimeout(async () => {
+    setupDragAndDrop();
+    console.log("setupDragAndDrop");
+  }, 1000);
 });
 export { socketManager }

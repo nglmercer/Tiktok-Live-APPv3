@@ -32,7 +32,6 @@ export const socketurl = {
     let socketUrl;
 
     if (port === '5173') {
-      console.log("port", port);
       socketUrl = this.constructSocketUrl(8088);
     } else {
       console.log("port", port);
@@ -52,7 +51,6 @@ export const socketurl = {
       console.log(`${protocol}//${hostname}:${port}`);
       return `${protocol}//${hostname}:${port}`;
     } else if (protocol === "http:") {
-      console.log("protocol", protocol, `http://${hostname}:${port}`);
       return `http://${hostname}:${port}`;
     }
   }

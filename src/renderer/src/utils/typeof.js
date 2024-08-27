@@ -76,12 +76,12 @@ class TypeofData {
   }
 }
 
-// Ejemplo de uso
-console.log(TypeofData.isString("hello")); // true
-console.log(TypeofData.isNumber(123)); // true
-console.log(TypeofData.isArray([1, 2, 3])); // true
-console.log(TypeofData.toNumber("123")); // 123
-console.log(TypeofData.toString(123)); // "123"
-console.log(TypeofData.getType({})); // "object"
-console.log(TypeofData.canBeNumber("456")); // true
+// Ejemplo de usoquerySnapshot.forEach
+// console.log(TypeofData.isString("hello")); // true
+// console.log(TypeofData.isNumber(123)); // true
+// console.log(TypeofData.isArray([1, 2, 3])); // true
+// console.log(TypeofData.toNumber("123")); // 123
+// console.log(TypeofData.toString(123)); // "123"
+// console.log(TypeofData.getType({})); // "object"
+// console.log(TypeofData.canBeNumber("456")); // true
 export default TypeofData;

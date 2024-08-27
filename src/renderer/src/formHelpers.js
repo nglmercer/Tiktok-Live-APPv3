@@ -1,3 +1,4 @@
+import TypeofData from './utils/typeof';
 export function createInputField(field) {
   const div = document.createElement('div');
   div.className = 'input-field';
@@ -146,7 +147,7 @@ export function createCheckboxField(field) {
   checkboxWrapper.className = 'indeterminate-checkbox';
 
   const label = document.createElement('label');
-  label.setAttribute('for', field.name);
+  label.setAttribute('for', `${field.name}_check`);
   label.textContent = field.label;
 
   const checkbox = document.createElement('input');
@@ -210,27 +211,33 @@ export function getFormData(config) {
     if (field.type === 'checkbox') {
       const element = document.querySelector(`[name="${field.name}_check"]`);
       value = element ? element.checked : false;  // Asegura obtener el valor del checkbox con sufijo '_check'
-      console.log("getFormData", field, value, element);
       if (field.children) {
         field.children.forEach(child => {
+          console.log("getFormDatachild", child);
           const childElement = document.querySelector(`[name="${child.name}"]`);
-          formData[child.name] = childElement ? childElement.value : null;
+          if (child.returnType === 'number') {
+            formData[child.name] = TypeofData.toNumber(childElement ? childElement.value : null);
+          } else {
+            formData[child.name] = childElement ? childElement.value : null;
+          }
         });
       }
     } else if (field.type === 'multiSelect') {
       const checkboxes = document.querySelectorAll(`[name="${field.name}"]:checked`);
       value = Array.from(checkboxes).map(checkbox => checkbox.value);
-    } else {
+    } else
+    {
       const element = document.querySelector(`[name="${field.name}"]`);
       value = element ? element.value : null;
     }
-
+    console.log("getFormData", field, field.returnType);
     switch (field.returnType) {
       case 'boolean':
         formData[field.name] = value === true || value === 'true';
         break;
       case 'number':
-        formData[field.name] = parseFloat(value);
+        console.log("getFormDatanumber", field, value);
+        formData[field.name] = TypeofData.toNumber(value);
         break;
       case 'array':
         formData[field.name] = Array.isArray(value) ? value : [value];

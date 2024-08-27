@@ -8,14 +8,12 @@ const gridbuttonscontent = new ButtonGrid('buttonContainer', 100, 50, 5, 5, onDe
 const observer = new DBObserver();
 const streamcontrolsDBManager = new IndexedDBManager(databases.streamcontrols,observer);
 const filescontent = await postToFileHandler("get-files-in-folder", {});
-console.log("filescontent", filescontent);
 
 const openModalBtn = document.querySelector('#openModalBtn');
 const options = Object.entries(datajson).map(([value, label]) => ({
   value,
   label,
 }));
-console.log(options);
 const appOptions = filescontent.map((app) => ({
   value: app.path,
   label: app.name,

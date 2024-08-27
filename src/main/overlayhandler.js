@@ -12,7 +12,7 @@ function createOverlayWindow() {
         // alwaysOnTop: true,
         webPreferences: {
             nodeIntegration: false,
-            preload: join(__dirname, "../preload/index.mjs"),
+            // preload: join(__dirname, "../preload/index.mjs"),
             webSecurity: false,
         }
     });
