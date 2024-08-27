@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: rgba(0, 0, 255, 0);
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .overlay {
+            position: absolute;
+        }
+        img {
+            box-sizing: content-box;
+            height: auto;
+            width: 100%;
+            max-width: 100px;
+            max-height: 100px;
+        }
+        canvas,
+        video {
+            box-sizing: content-box;
+            height: auto;
+            width: 100%;
+            max-width: 400px;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <div id="container"></div>
+    <script>
+        const socket = io("http://localhost:8088");
+        socket.on('connect', () => {
+            console.log('connected');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('disconnected') ;
+        });
+        console.log("socket", socket);
+        const container = document.getElementById('container');
+        let positions = [];
+        let lastxposition = 0;
+        let lastyposition = 0;
+        let currentPositionIndex = 0;
+
+        // Generar posiciones en una cuadrícula
+        for (let x = 8; x <= 88; x += 4) {
+            for (let y = 8; y <= 88; y += 4) {
+                positions.push({ x, y });
+            }
+        }
+
+        // Barajar el array de posiciones
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        positions = shuffleArray(positions);
+
+        // Función para obtener la siguiente posición de manera circular
+        function getNextPosition() {
+            const position = positions[currentPositionIndex];
+            currentPositionIndex = (currentPositionIndex + 1) % positions.length;
+            return position;
+        }
+
+        // Función para predecir la siguiente posición sin avanzar el índice
+        function predictNextPosition() {
+            let position = positions[currentPositionIndex];
+            let newY = position.y - 6; // Ajusta el valor de 4 según sea necesario
+            let newX = position.x + 0.2;
+            // Asegúrate de que newY no sea menor que 0
+            if (newY < 0) {
+                newY = 0;
+            }
+            if (newX < 0) {
+                newX = 0;
+            }
+            return { x: newX, y: newY };
+        }
+
+
+        // Función que devuelve una posición aleatoria o la siguiente posición
+        function getPosition(existingPosition = null) {
+            if (existingPosition) {
+                return existingPosition;
+            }
+            return getNextPosition();
+        }
+        function setPosition(element, position) {
+            const { x, y } = position;
+            element.style.left = `${x}%`;
+            element.style.top = `${y}%`;
+            lastyposition = y;
+            lastxposition = x;
+            element.classList.add('overlay');
+        }
+        // Función para crear y añadir un video
+        function addVideo(data, position, options) {
+            if (options.check === false) {
+                return;
+            }
+
+            const video = document.createElement('video');
+            video.style.display = 'none'; // Oculta el video
+            video.autoplay = true;
+
+            let duracion = options.duracion * 1000;
+            if (duracion <= 1000) {
+                duracion = 1000;
+            }
+
+            const source = document.createElement('source');
+            source.src = data.src;
+            source.type = 'video/mp4';
+            video.volume = options.rango / 100;
+            video.appendChild(source);
+            container.appendChild(video);
+
+            // Crear un canvas para aplicar el efecto de eliminar el color verde
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            container.appendChild(canvas);
+
+            video.addEventListener('loadedmetadata', () => {
+                // Ajustar el tamaño del canvas al tamaño del video después de que los metadatos estén cargados
+
+                video.addEventListener('play', () => {
+                    function applyChromaKey() {
+                        if (!video.paused && !video.ended) {
+                            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                            // Obtener los datos de la imagen del canvas
+                            let frame = context.getImageData(0, 0, canvas.width, canvas.height);
+                            let length = frame.data.length;
+
+                            // Aplicar clave de color para remover una gama de verdes
+                            for (let i = 0; i < length; i += 4) {
+                                let r = frame.data[i];     // Rojo
+                                let g = frame.data[i + 1]; // Verde
+                                let b = frame.data[i + 2]; // Azul
+
+                                // Ajusta los umbrales de color verde
+                                if (g > 100 && r < 150 && b < 150) {
+                                    frame.data[i + 3] = 0; // Alpha a 0, haciendo el pixel transparente
+                                }
+                            }
+
+                            context.putImageData(frame, 0, 0);
+                            requestAnimationFrame(applyChromaKey);
+                        }
+                    }
+
+                    applyChromaKey();
+                });
+            });
+
+            video.addEventListener('ended', () => {
+                container.removeChild(video);
+                container.removeChild(canvas);
+            });
+
+            setTimeout(() => {
+                container.removeChild(video);
+                container.removeChild(canvas);
+            }, duracion);
+
+            console.log('duracion', duracion);
+        }
+
+        // Función para crear y añadir una imagen
+        function addImage(data, position, options) {
+            const img = document.createElement('img');
+            let duracion = options.duracion * 1000;
+            img.src = data.src;
+            img.style.maxWidth = '20%';
+            img.style.maxHeight = '20%';
+
+            if (duracion <= 1008) {
+                duracion = 1000;
+            }
+            setPosition(img, position);
+            container.appendChild(img);
+            setTimeout(() => {
+                container.removeChild(img);
+            }, duracion);
+            console.log('duracion', duracion);
+        }
+
+        function addAudio(data, position, options) {
+            const audio = document.createElement('audio');
+            console.log('options', options);
+            let duracion = options.duracion * 1000;
+            audio.src = data.src;
+            audio.autoplay = true;
+            audio.volume = options.rango / 100;
+            audio.style.maxWidth = '50%';
+            audio.style.maxHeight = '50%';
+            if (duracion <= 1000) {
+                duracion = 1800;
+            }
+            setPosition(audio, position);
+            container.appendChild(audio);
+
+            setTimeout(() => {
+                container.removeChild(audio);
+            }, duracion);
+            console.log('duracion', duracion);
+        }
+
+        // Función para manejar mensajes recibidos
+        function handleMessage(event) {
+            const { eventType, data, options } = event;
+            console.log('Received message from parent window:', event);
+            console.log('eventType:', eventType);
+            console.log('data:', data);
+
+            if (eventType === 'play') {
+                let position = getPosition(data.position);
+
+                if (data.src.endsWith('.mp4') || data.fileType.startsWith('video/')) {
+                    addVideo(data, position, data.options);
+                } else if (data.src.endsWith('.png') || data.fileType.startsWith('image/')) {
+                    if (options) {
+                        showUserpicture(data, predictNextPosition(), data.options);
+                        return;
+                    }
+                    addImage(data, position, data.options);
+                } else if (data.src.endsWith('.mp3') || data.fileType.startsWith('audio/')) {
+                    addAudio(data, position, data.options);
+                } else {
+                    const div = document.createElement('div');
+                    div.textContent = 'Unsupported file type';
+                    setPosition(div, position);
+                    container.appendChild(div);
+
+                    setTimeout(() => {
+                        container.removeChild(div);
+                    }, 5000);
+                }
+            }
+        }
+
+        // Función para crear y añadir una imagen de usuario
+        function showUserpicture(data, position, options) {
+            if (options.check === false) {
+                return;
+            }
+            let duracion = options.duracion * 1000;
+
+            if (duracion <= 1000) {
+                duracion = 1000;
+            }
+            if (options.texto && options.texto.trim() !== '') {
+                const div = document.createElement('div');
+                div.textContent = options.texto;
+                div.style.color = 'white';
+                div.style.fontSize = '1.5rem';
+                div.style.zIndex = '11';
+
+                setPosition(div, position);
+                container.appendChild(div);
+
+                setTimeout(() => {
+                    container.removeChild(div);
+                }, duracion);
+            }
+            const img = document.createElement('img');
+            img.src = data.src;
+            img.style.maxWidth = '10%';
+            img.style.maxHeight = '10%';
+
+            setPosition(img, position);
+            img.style.position = 'absolute';
+            img.style.zIndex = '10';
+            img.classList.add('overlay');
+            container.appendChild(img);
+
+            setTimeout(() => {
+                container.removeChild(img);
+            }, duracion);
+
+            console.log('duracion', duracion);
+        }
+
+        window.api.onShowMessage((event, message) => {
+            console.log(message);
+        });
+        console.log("window.api", window.api);
+
+        window.api.onOverlayEvent((event, eventdata) => {
+            const { eventType, data, options123 } = eventdata;
+            handleMessage(eventdata);
+            console.log(eventdata);
+            console.log('Overlay event received:', eventType);
+            console.log('data:', data);
+        });
+
+        window.addEventListener('message', handleMessage);
+    </script>
+</body>
+</html>
