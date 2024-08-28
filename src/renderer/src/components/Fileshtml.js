@@ -1,4 +1,5 @@
 import socketManager, { Websocket, socketurl } from '../utils/socket';
+import { getformdatabyid, postToFileHandler, getdatafromserver }  from '../utils/getdata'
 class FileItem {
   constructor(file) {
       this.file = file;
@@ -24,6 +25,7 @@ class FileItem {
       playButton.className = 'play-button';
       playButton.id = `playbutton-${this.file.index}`;
       playButton.textContent = 'Play';
+      playButton.onclick = () => handlePlayButton(playButton);
 
       const mediaElement = this.createMediaElement();
 
@@ -185,17 +187,29 @@ async function processFileWithPath(file) {
     }
 }
 async function handlePlayButton(button) {
+    console.log("handlePlayButton", button);
     const options = { check: true, select: '11', rango: '50', duracion: '15' };
     const fileindex = button.id.split('-')[1];
     const file = await getfileId(fileindex);
-
-    try {
-        await window.api.createOverlayWindow();
-        await window.api.sendOverlayData('play', { src: file.path, fileType: file.type, options });
-    } catch (error) {
-        console.error('Error sending overlay event:', error);
-    }
+    console.log("handlePlayButton", file,options);
+    const datafile = {
+      eventType: 'play',
+      data: { src: file.path, fileType: file.type, options },
+    };
+    // getdatafromserver(`${socketurl.getport()}/overlay`, datafile);
+    socketManager.emitMessage("overlaydata", datafile);
 }
+// setInterval(() => {
+//   const datafile = {
+//     eventType: 'play',
+//     data: { src: "testdata", fileType: "image/jpeg", options: { check: true, select: '11', rango: '50', duracion: '15' } },
+// };
+// console.log("datafile", datafile);
+//   socketManager.emitMessage("overlaydata", datafile);
+// }, 5000);
+socketManager.onMessage("overlay-event", (data) => {
+  console.log("overlay-event", data);
+});
 async function getfileId(id) {
     if (id === undefined || id === null || id === false) {
         return null;
@@ -267,15 +281,5 @@ async function isFileDuplicate(newFile) {
         existingFile.type === newFile.type
     );
 }
-async function postToFileHandler(event, params) {
 
-  const response = await fetch(`${socketurl.getport()}/file-handler`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ event, ...params })
-  });
-  return response.json();
-}
 export { setupDragAndDrop, handlePlayButton, getfileId, handledeletefile, handlePasteFromClipboard, loadFileList };

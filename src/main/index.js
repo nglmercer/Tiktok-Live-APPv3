@@ -1,18 +1,18 @@
-import { app, shell, BrowserWindow, globalShortcut } from "electron";
-import { join } from "path";
+import { app, shell, BrowserWindow, globalShortcut, ipcMain } from "electron";
+import path, { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import icon from "../../resources/icon.png?asset";
 import fs from "fs";
-import path from "path";
-import AudioController from "./audioController";
 import fileIndexer from "./FindFiles";
 import FileOpener from "./FileOpener";
-import keynut from "./keynut";
+import AudioController from "./features/audioController";
+import keynut from "./features/keynut";
+import { createOverlayWindow } from "./overlayhandler";
 import SocketHandler from "./server/socketServer";
-import { HttpExpressServer, HttpsExpressServer } from "./server/ExpressServe";
-import * as fileHandler from "./fileHandler";
 import injectQRCode from "./server/listenserver";
-import TiktokLiveController from "./tiktoklive";
+import { HttpExpressServer, HttpsExpressServer } from "./server/ExpressServe";
+import * as fileHandler from "./data/fileHandler";
+import TiktokLiveController from "./data/tiktoklive";
 let Port;
 let io
 const fileOpener = new FileOpener();
@@ -23,7 +23,8 @@ const httpsServer = new HttpsExpressServer();
 const audioController = new AudioController();
 const UPDATE_INTERVAL = 5000;
 let tiktokController; // Variable para almacenar la instancia de TiktokLiveController
-
+const servers = [httpServer, httpsServer];
+const sockets = [socketHandler, newsocketHandler];
 async function startServer() {
   const httpPort = 8088;
   const httpsPort = 0;
@@ -34,9 +35,6 @@ async function startServer() {
 
     await httpServer.initialize(httpPort);
     await httpsServer.initialize(httpsPort, credentials);
-
-    const servers = [httpServer, httpsServer];
-    const sockets = [socketHandler, newsocketHandler];
 
     servers.forEach((server, index) => {
       server.addRoute("get", "/port", (req, res) => {
@@ -49,8 +47,8 @@ async function startServer() {
       });
       server.addRoute('post', '/file-handler', async (req, res) => {
         console.log("req.body", req.body);
-        const { event, ...params } = req.body;
-
+        const { event, id, ...params } = req.body;
+        console.log(event,"event");
         try {
           let result;
 
@@ -64,7 +62,7 @@ async function startServer() {
               break;
 
             case 'get-file-by-id':
-              result = await fileHandler.getFileById(params.fileId);
+              result = await fileHandler.getFileById(id ||params.fileId);
               break;
 
             case 'get-file-by-name':
@@ -98,6 +96,17 @@ async function startServer() {
           console.error(`Error handling event ${event}:`, err);
           res.status(500).json({ success: false, error: err.message });
         }
+      });
+      server.addRoute("post", "/overlay", async (req, res) => {
+        const { event, ...params } = req.body;
+        console.log("req.body", req.body);
+        res.json({ result: result, success: true });
+      });
+      server.addRoute("post", "/create-overlaywindow", async (req, res) => {
+        const { event, ...params } = req.body;
+        console.log("req.body", req.body);
+        const result = await createOverlayWindow();
+        res.json({ result: result, success: true });
       });
       sockets[index].initialize(server.server);
 
@@ -137,7 +146,9 @@ function handleSocketEvents(socket, index) {
       socket.to(roomId).emit("webrtc", { type, data, from: socket.id });
     }
   });
-
+  socket.on("overlaydata", (event, data) => {
+    overlaydatahandler(socket, event, data, index);
+  });
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
     clearInterval(intervalId);
@@ -151,6 +162,11 @@ function handleSocketEvents(socket, index) {
   socket.on("openapp", (data) => handleAppOpen(socket, data));
   socket.on("uniqueid", (data) => handleUniqueId(socket, data));
   socket.on("disconnect_tiktok", () => handleDisconnectTiktok(socket));
+}
+function overlaydatahandler(socket, event, data, index = 1) {
+  console.log("overlay-event", event, data);
+  sockets[index].emitToAllSockets("overlay-event",  event, data);
+  console.log("sockets[index].emitToAllSockets", event, data);
 }
 async function handleAddFilePath({ fileToAdd, fileName, filePath, isWebFile, isClipboardFile }) {
   if (isWebFile || isClipboardFile) {
@@ -295,7 +311,7 @@ function createWindow() {
     autoHideMenuBar: true,
     ...(process.platform === "linux" ? { icon } : {}),
     webPreferences: {
-      // preload: join(__dirname, "../preload/index.js"),
+      // preload: join(__dirname, "../preload/index.mjs"),
       contextIsolation: true,
       webSecurity: false,
       // sandbox: true,
@@ -353,4 +369,3 @@ app.on("window-all-closed", () => {
     app.quit();
   }
 });
-

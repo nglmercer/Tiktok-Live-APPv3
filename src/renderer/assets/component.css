@@ -231,7 +231,7 @@ input[type="range"]::-ms-fill-upper {
   box-sizing: content-box;
 }
 .file-container {
-  background-color: #fff;
+  background-color: #ffffff2f;
   z-index: 999;
   overflow: hidden;
   min-width: 500px;

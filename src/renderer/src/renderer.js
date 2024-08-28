@@ -1,5 +1,5 @@
 import SliderCreator from "./components/slider";
-import {socketManager} from "../userdatas";
+import {socketManager} from "../tiktoksocketdata";
 import keyboardMap  from '../json/keyboard.json';
 import { initializeFilterComponent, addFilterItemToGroup } from './filters/filters'
 const sliderCreator = new SliderCreator('sliders-container');

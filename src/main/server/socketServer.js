@@ -7,6 +7,7 @@ class SocketHandler {
     this.isConnected = false;
     this.port = null;
     this.isInitialized = false;
+    this.subscribers = new Map(); // Cambiado a Map para almacenar los eventos suscritos por socket
   }
 
   initialize = (server) => {
@@ -44,10 +45,6 @@ class SocketHandler {
   }
 
   listensocket = async (port = 0) => {
-    // if (this.isInitialized) {
-    //   console.log("Socket server is already listening.");
-    //   return Promise.resolve(this.port);
-    // }
     return new Promise((resolve, reject) => {
       try {
         this.server.listen(port, () => {
@@ -66,6 +63,38 @@ class SocketHandler {
     console.log("getListenPort", this.port);
     return this.port;
   }
+  subscribe = (socket) => {
+    if (!this.subscribers.has(socket)) {
+      this.subscribers.set(socket, new Set());
+    }
+
+    socket.on("subscribeEvent", (eventName) => {
+      this.subscribers.get(socket).add(eventName);
+      console.log(`Socket ${socket.id} subscribed to ${eventName}`);
+    });
+  }
+
+  // Método para desuscribir un socket
+  unsubscribe = (socket) => {
+    this.subscribers.delete(socket);
+    console.log(`Unsubscribed socket: ${socket.id}`);
+  }
+  emitallusers = (eventName, data) => {
+    this.subscribers.forEach((subscribedEvents, subscriber) => {
+      if (subscribedEvents.has(eventName)) {
+        subscriber.emit(eventName, data);
+      }
+    });
+  }
+
+  // Método para emitir un evento a todos los sockets conectados, sin importar la suscripción
+  emitToAllSockets = (eventName, data) => {
+    this.io.sockets.emit(eventName, data);
+  }
 }
+//socketHandler.emitToAllSockets('anotherEvent', { key: 'value' });
+// Para emitir a todos los sockets conectados, independientemente de su suscripción:
+
+// socketHandler.emitallusers('someEvent', { key: 'value' });
 
 export default SocketHandler;

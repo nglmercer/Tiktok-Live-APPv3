@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: rgba(0, 0, 255, 0);
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .overlay {
+            position: absolute;
+        }
+        .overlay-image {
+            box-sizing: content-box;
+            height: auto;
+            width: 100%;
+            max-width: 100px;
+            max-height: 100px;
+        }
+        .overlay-video, .overlay-canvas {
+            box-sizing: content-box;
+            height: auto;
+            width: 100%;
+            max-width: 400px;
+            max-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <div id="container"></div>
+    <script>
+        class OverlayManager {
+            constructor() {
+                this.container = document.getElementById('container');
+                this.positions = this.generatePositions();
+                this.currentPositionIndex = 0;
+                this.setupSocket();
+            }
+
+            setupSocket() {
+                this.socket = io("http://localhost:8088");
+                this.socket.on('connect', () => console.log('connected'));
+                this.socket.on('disconnect', () => console.log('disconnected'));
+                this.socket.on("overlay-event", (data) => this.handleMessage(data));
+            }
+
+            generatePositions() {
+                let positions = [];
+                for (let x = 8; x <= 88; x += 4) {
+                    for (let y = 8; y <= 88; y += 4) {
+                        positions.push({ x, y });
+                    }
+                }
+                return this.shuffleArray(positions);
+            }
+
+            shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            getNextPosition() {
+                const position = this.positions[this.currentPositionIndex];
+                this.currentPositionIndex = (this.currentPositionIndex + 1) % this.positions.length;
+                return position;
+            }
+
+            predictNextPosition() {
+                let position = this.positions[this.currentPositionIndex];
+                let newY = Math.max(0, position.y - 6);
+                let newX = Math.max(0, position.x + 0.2);
+                return { x: newX, y: newY };
+            }
+
+            getPosition(existingPosition = null) {
+                return existingPosition || this.getNextPosition();
+            }
+
+            setPosition(element, position) {
+                const { x, y } = position;
+                element.style.left = `${x}%`;
+                element.style.top = `${y}%`;
+                element.classList.add('overlay');
+            }
+
+            handleMessage(event) {
+                const { eventType, data, options } = event;
+                console.log('Received message:', event);
+
+                if (eventType === 'play') {
+                    let position = this.getPosition(data.position);
+
+                    if (data.src.endsWith('.mp4') || data.fileType.startsWith('video/')) {
+                        new VideoOverlay(this, data, position, data.options);
+                    } else if (data.src.endsWith('.png') || data.fileType.startsWith('image/')) {
+                        if (options) {
+                            new UserPictureOverlay(this, data, this.predictNextPosition(), data.options);
+                        } else {
+                            new ImageOverlay(this, data, position, data.options);
+                        }
+                    } else if (data.src.endsWith('.mp3') || data.fileType.startsWith('audio/')) {
+                        new AudioOverlay(this, data, position, data.options);
+                    } else {
+                        new UnsupportedOverlay(this, position);
+                    }
+                }
+            }
+        }
+
+        class BaseOverlay {
+            constructor(manager, data, position, options) {
+                this.manager = manager;
+                this.data = data;
+                this.position = position;
+                this.options = options;
+                this.element = null;
+                this.duration = (options.duracion || 1) * 1000;
+                this.create();
+            }
+
+            create() {
+                throw new Error("Method 'create()' must be implemented.");
+            }
+
+            remove() {
+                if (this.element) {
+                    this.manager.container.removeChild(this.element);
+                }
+            }
+        }
+
+        class VideoOverlay extends BaseOverlay {
+            create() {
+                if (this.options.check === false) return;
+
+                this.video = document.createElement('video');
+                this.video.style.display = 'none';
+                this.video.autoplay = true;
+
+                const source = document.createElement('source');
+                source.src = this.data.src;
+                source.type = 'video/mp4';
+                this.video.volume = this.options.rango / 100;
+                this.video.appendChild(source);
+
+                this.canvas = document.createElement('canvas');
+                this.canvas.classList.add('overlay-video');
+                this.context = this.canvas.getContext('2d');
+
+                this.manager.container.appendChild(this.video);
+                this.manager.container.appendChild(this.canvas);
+                this.manager.setPosition(this.canvas, this.position);
+
+                this.video.addEventListener('loadedmetadata', () => this.setupChromaKey());
+                this.video.addEventListener('ended', () => this.remove());
+
+                setTimeout(() => this.remove(), this.duration);
+            }
+
+            setupChromaKey() {
+                this.video.addEventListener('play', () => {
+                    const applyChromaKey = () => {
+                        if (!this.video.paused && !this.video.ended) {
+                            this.context.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+                            let frame = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                            let length = frame.data.length;
+
+                            for (let i = 0; i < length; i += 4) {
+                                let r = frame.data[i];
+                                let g = frame.data[i + 1];
+                                let b = frame.data[i + 2];
+
+                                if (g > 100 && r < 150 && b < 150) {
+                                    frame.data[i + 3] = 0;
+                                }
+                            }
+
+                            this.context.putImageData(frame, 0, 0);
+                            requestAnimationFrame(applyChromaKey);
+                        }
+                    };
+
+                    applyChromaKey();
+                });
+            }
+
+            remove() {
+                super.remove();
+                if (this.video) this.manager.container.removeChild(this.video);
+                if (this.canvas) this.manager.container.removeChild(this.canvas);
+            }
+        }
+
+        class ImageOverlay extends BaseOverlay {
+            create() {
+                this.element = document.createElement('img');
+                this.element.src = this.data.src;
+                this.element.style.maxWidth = '20%';
+                this.element.style.maxHeight = '20%';
+                this.element.classList.add('overlay-image');
+
+                this.manager.setPosition(this.element, this.position);
+                this.manager.container.appendChild(this.element);
+
+                setTimeout(() => this.remove(), this.duration);
+            }
+        }
+
+        class AudioOverlay extends BaseOverlay {
+            create() {
+                this.element = document.createElement('audio');
+                this.element.src = this.data.src;
+                this.element.autoplay = true;
+                this.element.volume = this.options.rango / 100;
+                this.element.style.maxWidth = '50%';
+                this.element.style.maxHeight = '50%';
+
+                this.manager.setPosition(this.element, this.position);
+                this.manager.container.appendChild(this.element);
+
+                setTimeout(() => this.remove(), this.duration);
+            }
+        }
+
+        class UserPictureOverlay extends BaseOverlay {
+            create() {
+                if (this.options.check === false) return;
+
+                if (this.options.texto && this.options.texto.trim() !== '') {
+                    this.createTextOverlay();
+                }
+
+                this.element = document.createElement('img');
+                this.element.src = this.data.src;
+                this.element.style.maxWidth = '10%';
+                this.element.style.maxHeight = '10%';
+                this.element.style.position = 'absolute';
+                this.element.style.zIndex = '10';
+                this.element.classList.add('overlay', 'overlay-image');
+
+                this.manager.setPosition(this.element, this.position);
+                this.manager.container.appendChild(this.element);
+
+                setTimeout(() => this.remove(), this.duration);
+            }
+
+            createTextOverlay() {
+                this.textElement = document.createElement('div');
+                this.textElement.textContent = this.options.texto;
+                this.textElement.style.color = 'white';
+                this.textElement.style.fontSize = '1.5rem';
+                this.textElement.style.zIndex = '11';
+                this.textElement.classList.add('overlay');
+
+                this.manager.setPosition(this.textElement, this.position);
+                this.manager.container.appendChild(this.textElement);
+
+                setTimeout(() => {
+                    if (this.textElement) this.manager.container.removeChild(this.textElement);
+                }, this.duration);
+            }
+        }
+
+        class UnsupportedOverlay extends BaseOverlay {
+            create() {
+                this.element = document.createElement('div');
+                this.element.textContent = 'Unsupported file type';
+                this.element.classList.add('overlay');
+
+                this.manager.setPosition(this.element, this.position);
+                this.manager.container.appendChild(this.element);
+
+                setTimeout(() => this.remove(), 5000);
+            }
+        }
+
+        const overlayManager = new OverlayManager();
+        window.addEventListener('message', (event) => overlayManager.handleMessage(event.data));
+    </script>
+</body>
+</html>

@@ -51,22 +51,7 @@
     color: var(--blue-box-200);
   }
 }
-.card-content {
-  [type=checkbox]:not(:checked),
-  [type=checkbox]:checked {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-.grid-select__option {
-  [type=checkbox]:not(:checked),
-  [type=checkbox]:checked {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-}
+
 .flexbox {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 20rem));

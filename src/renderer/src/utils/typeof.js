@@ -1,9 +1,24 @@
 class TypeofData {
   // Verificar si el valor es un objeto
   static isObject(value) {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
+    return value !== null && typeof value === 'object';
   }
-
+  static ObjectStringify(value) {
+    if (typeof value === 'string') {
+      try {
+        // Intenta analizar la cadena como JSON
+        JSON.parse(value);
+        // Si no hay error, asumimos que ya es una cadena JSON válida
+      } catch (e) {
+        // Si no es JSON válido, lo convertimos a JSON
+        value = JSON.stringify(value);
+      }
+    } else if (typeof value === 'object') {
+      // Si es un objeto, lo convertimos a JSON
+      value = JSON.stringify(value);
+    }
+    return value;
+  }
   // Verificar si el valor es un array
   static isArray(value) {
     return Array.isArray(value);
@@ -54,9 +69,26 @@ class TypeofData {
     if (this.isNumber(value)) {
       return String(value);
     }
+    if (this.isBoolean(value)) {
+      return String(value);
+    }
+    if (this.isObject(value)) {
+      return JSON.stringify(value);
+    }
     return '';
   }
-
+  static toStringParse(value) {
+    if (!value) return value; // Devuelve el valor original si no es una cadena
+    if (this.isString(value)) {
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        console.warn("Failed to parse JSON string:", value);
+        return value; // Devuelve el valor original si no se puede analizar
+      }
+    }
+    return value; // Devuelve el valor original si no es una cadena
+  }
   // Verificar si un string puede ser convertido a número
   static canBeNumber(value) {
     return this.isString(value) && !isNaN(value);
@@ -76,12 +108,12 @@ class TypeofData {
   }
 }
 
-// Ejemplo de uso
-console.log(TypeofData.isString("hello")); // true
-console.log(TypeofData.isNumber(123)); // true
-console.log(TypeofData.isArray([1, 2, 3])); // true
-console.log(TypeofData.toNumber("123")); // 123
-console.log(TypeofData.toString(123)); // "123"
-console.log(TypeofData.getType({})); // "object"
-console.log(TypeofData.canBeNumber("456")); // true
+// Ejemplo de usoquerySnapshot.forEach
+// console.log(TypeofData.isString("hello")); // true
+// console.log(TypeofData.isNumber(123)); // true
+// console.log(TypeofData.isArray([1, 2, 3])); // true
+// console.log(TypeofData.toNumber("123")); // 123
+// console.log(TypeofData.toString(123)); // "123"
+// console.log(TypeofData.getType({})); // "object"
+// console.log(TypeofData.canBeNumber("456")); // true
 export default TypeofData;

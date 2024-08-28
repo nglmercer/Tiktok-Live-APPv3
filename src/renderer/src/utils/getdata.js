@@ -1,4 +1,9 @@
 import { socketurl } from './socket';
+import  { IndexedDBManager, databases, DBObserver } from './indexedDB';
+const observeruserPoints = new DBObserver();
+
+const userPointsDBManager = new IndexedDBManager(databases.userPoints,observeruserPoints);
+
 function getformdatabyid(form,split='_') {
   const formData = {};
   const elements = form.elements;
@@ -41,6 +46,52 @@ async function getdatafromserver(serverurl,data) {
     },
     body: JSON.stringify(data)
   });
-  return response.json();
+  if (response) {
+    return response.json();
+  } else {
+    return { success: false, error: 'No response from server' };
+  }
 }
-export { getformdatabyid, postToFileHandler, getdatafromserver };
+class getdataIndexdb {
+  constructor() {
+    this.dbManager = null;
+  }
+
+  // Método para obtener todos los datos de la base de datos y almacenarlos en la clase
+  async getAllDataFromDB(dbManager) {
+        const dbManagerdata = await getAllData(dbManager);
+        console.log("dbManagerdata", dbManagerdata);
+        this.dbManager = dbManager;
+        return dbManagerdata;
+  }
+
+  // Método para buscar datos en base al 'id' o 'name' y devolver una propiedad específica
+  async getdataIndexdb(data, property = null) {
+    const dbManagerdata = await getAllDataFromDB(userPointsDBManager);
+    if (!dbManagerdata || dbManagerdata.length === 0) {
+      console.log("No data loaded. Please call getAllDataFromDB first.");
+      return null;
+    }
+    const foundItem = dbManagerdata.find(
+      item => item.uniqueId === data.uniqueId || item.name === data.name
+    );
+
+    if (foundItem) {
+      console.log("foundItem", foundItem, property, foundItem[property]);
+      return property ? foundItem[property] : foundItem;
+    } else {
+      console.log("No se encontró un item con el id o name proporcionado.");
+      return null;
+    }
+  }
+}
+async function getAllDataFromDB(dbManager) {
+  try {
+      const dbManagerdata = await dbManager.getAllData();
+      console.log(dbManagerdata);
+      return dbManagerdata;
+  } catch (e) {
+      console.error("Error getting documents: ", e);
+  }
+}
+export { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb };

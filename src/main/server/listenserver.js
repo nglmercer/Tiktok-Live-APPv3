@@ -1,6 +1,6 @@
 import os from "os";
 import QRCode from "qrcode";
-import { showQRModal } from "../qrModal";
+import { showQRModal } from "./qrModal";
 export const getLocalIPAddress = () => {
   const interfaces = os.networkInterfaces();
   for (const interfaceName in interfaces) {

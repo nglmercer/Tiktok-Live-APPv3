@@ -43,6 +43,9 @@ body.dark-theme .tab-link {
     color: rgb(255, 255, 255) !important;
   }
 }
+form {
+  font-size: x-large;
+}
 .grid-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -98,4 +101,18 @@ body.dark-theme .tab-link {
   max-height: 300px;
   overflow-y: auto;
   overflow-x: hidden;
+}
+.gridform {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, auto));
+  gap: 5px;
+  input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+  /* margin: 5px; */
+  .input-group {
+    border: #ccc 1px solid;
+    border-radius: 4px;
+  }
 }

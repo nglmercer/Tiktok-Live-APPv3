@@ -1,5 +1,5 @@
-import { WebcastPushConnection } from 'tiktok-live-connector';
-
+import { WebcastPushConnection, signatureProvider } from 'tiktok-live-connector';
+signatureProvider.config.extraParams.apiKey = "ZTc0MDZkYWQwM2MyMjNlMzIzNDM1ODBiYzY1ZDJjN2NiMDVmMTNmMWU5NGM0ZDFlY2Y2NWU3"
 class TiktokLiveController {
   constructor(uniqueId, options) {
     this.uniqueId = uniqueId;

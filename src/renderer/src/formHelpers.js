@@ -1,3 +1,4 @@
+import TypeofData from './utils/typeof';
 export function createInputField(field) {
   const div = document.createElement('div');
   div.className = 'input-field';
@@ -31,7 +32,7 @@ export function createSelectField(field) {
 
   field.options.forEach(option => {
     const opt = document.createElement('option');
-    opt.value = option.value;
+    opt.value = option.value.index || TypeofData.ObjectStringify(option.value);
     opt.innerText = option.label || option.value;
     select.appendChild(opt);
   });
@@ -73,7 +74,7 @@ export function createMultiSelectField(field) {
       const input = document.createElement('input');
       input.type = 'checkbox';
       input.name = field.name;
-      input.value = option.value;
+      input.value = typeof option.value === 'object' ? JSON.stringify(option.value) : option.value;
       input.dataset.id = option.id;
       input.classList.add('filled-in');
 
@@ -146,7 +147,7 @@ export function createCheckboxField(field) {
   checkboxWrapper.className = 'indeterminate-checkbox';
 
   const label = document.createElement('label');
-  label.setAttribute('for', field.name);
+  label.setAttribute('for', `${field.name}_check`);
   label.textContent = field.label;
 
   const checkbox = document.createElement('input');
@@ -170,8 +171,6 @@ export function createCheckboxField(field) {
 
   return checkboxWrapper;
 }
-
-
 // Método para crear un campo de tipo slider
 export function createSliderField(field) {
   const sliderWrapper = document.createElement('div');
@@ -201,47 +200,128 @@ export function createSliderField(field) {
   return sliderWrapper;
 }
 
+export function createRadioField(field) {
+  const radioWrapper = document.createElement('div');
+  radioWrapper.className = 'radio-field';
+
+  const label = document.createElement('label');
+  label.textContent = field.label;
+
+  radioWrapper.appendChild(label);
+
+  field.options.forEach(option => {
+    const optionWrapper = document.createElement('div');
+    optionWrapper.className = 'radio-option';
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = field.name;
+    radio.id = `${field.name}_${option.value}`;
+    radio.value = option.value;
+    radio.className = 'with-gap';
+
+    const optionLabel = document.createElement('label');
+    optionLabel.setAttribute('for', `${field.name}_${option.value}`);
+    optionLabel.textContent = option.label;
+
+    // Asigna un valor por defecto si coincide con la opción
+    if (field.value && field.value === option.value) {
+      radio.checked = true;
+    }
+
+    optionWrapper.appendChild(radio);
+    optionWrapper.appendChild(optionLabel);
+    radioWrapper.appendChild(optionWrapper);
+  });
+
+  // Si el campo está oculto, se establece display: none
+  if (field.hidden) {
+    radioWrapper.style.display = 'none';
+  }
+
+  return radioWrapper;
+}
+
 export function getFormData(config) {
   const formData = {};
 
   config.forEach(field => {
     let value;
 
-    if (field.type === 'checkbox') {
-      const element = document.querySelector(`[name="${field.name}_check"]`);
-      value = element ? element.checked : false;  // Asegura obtener el valor del checkbox con sufijo '_check'
-      console.log("getFormData", field, value, element);
-      if (field.children) {
-        field.children.forEach(child => {
-          const childElement = document.querySelector(`[name="${child.name}"]`);
-          formData[child.name] = childElement ? childElement.value : null;
-        });
-      }
-    } else if (field.type === 'multiSelect') {
-      const checkboxes = document.querySelectorAll(`[name="${field.name}"]:checked`);
-      value = Array.from(checkboxes).map(checkbox => checkbox.value);
-    } else {
-      const element = document.querySelector(`[name="${field.name}"]`);
-      value = element ? element.value : null;
-    }
-
-    switch (field.returnType) {
-      case 'boolean':
-        formData[field.name] = value === true || value === 'true';
+    switch (field.type) {
+      case 'checkbox':
+        value = getCheckboxValue(field);
+        if (field.children) {
+          processChildren(field, formData);
+        }
         break;
-      case 'number':
-        formData[field.name] = parseFloat(value);
+      case 'multiSelect':
+        value = getMultiSelectValue(field);
         break;
-      case 'array':
-        formData[field.name] = Array.isArray(value) ? value : [value];
-        break;
-      case 'object':
-        formData[field.name] = { value };
+      case 'radio':
+        value = getRadioValue(field);
         break;
       default:
-        formData[field.name] = value;
+        value = getFieldValue(field);
     }
+
+    formData[field.name] = processReturnType(field.returnType, value);
   });
 
   return formData;
+}
+
+function getCheckboxValue(field) {
+  const element = document.querySelector(`[name="${field.name}_check"]`);
+  return element ? element.checked : false;
+}
+
+function getMultiSelectValue(field) {
+  const checkboxes = document.querySelectorAll(`[name="${field.name}"]:checked`);
+  return Array.from(checkboxes).map(checkbox => checkbox.value);
+}
+
+function getFieldValue(field) {
+  const element = document.querySelector(`[name="${field.name}"]`);
+  return element ? element.value : null;
+}
+function getRadioValue(field) {
+  const selectedOption = document.querySelector(`[name="${field.name}"]:checked`);
+  return selectedOption ? selectedOption.value : null;
+}
+
+function processChildren(field, formData) {
+  field.children.forEach(child => {
+    const childElement = document.querySelector(`[name="${child.name}"]`);
+    let childValue;
+
+    switch (child.returnType) {
+      case 'number':
+        childValue = TypeofData.toNumber(childElement ? childElement.value : null);
+        break;
+      case 'object':
+        childValue = TypeofData.toStringParse(childElement ? childElement.value : null);
+        break;
+      default:
+        childValue = childElement ? childElement.value : null;
+    }
+
+    formData[child.name] = childValue;
+  });
+}
+
+function processReturnType(returnType, value) {
+  switch (returnType) {
+    case 'boolean':
+      return value === true || value === 'true';
+    case 'number':
+      return TypeofData.toNumber(value);
+    case 'array':
+      return Array.isArray(value) ? value : [value];
+    case 'object':
+      return value;
+    case 'string':
+    default:
+      return value;
+  }
 }

@@ -1,13 +1,29 @@
-import { createInputField, createSelectField, createMultiSelectField, createColorPickerField, createCheckboxField, createSliderField, getFormData } from '../formHelpers.js';
+import {
+  createInputField,
+  createSelectField,
+  createMultiSelectField,
+  createColorPickerField,
+  createCheckboxField,
+  createSliderField,
+  createRadioField,
+  getFormData
+} from '../formHelpers.js';
 
 export default class FormModal {
   constructor(modalSelector, formSelector, submitButtonId, triggerButtonId) {
     this.modalSelector = modalSelector;
     this.formSelector = formSelector;
     this.submitButtonId = submitButtonId;
-    this.triggerButtonId = document.getElementById(triggerButtonId);
+    this.triggerButtonElement = document.getElementById(triggerButtonId);
     this.modalElement = document.querySelector(this.modalSelector);
     this.formElement = document.querySelector(this.formSelector);
+
+    // Verificar que los elementos se encuentren en el DOM
+    if (!this.triggerButtonElement || !this.modalElement || !this.formElement) {
+      console.error('Error al inicializar: No se pudieron encontrar algunos elementos del DOM.');
+      return;
+    }
+
     this.overlayElement = document.createElement('div');
     this.overlayElement.classList.add('modal-overlay');
     document.body.appendChild(this.overlayElement);
@@ -16,15 +32,18 @@ export default class FormModal {
   }
 
   setupEventListeners() {
-    const triggerButton = this.triggerButtonId;
-    console.log("triggerButton", triggerButton, this.triggerButtonId);
+    const triggerButton = this.triggerButtonElement;
+
     triggerButton.addEventListener('click', () => this.open());
 
     // Ocultar la modal al hacer clic en el overlay
     this.overlayElement.addEventListener('click', () => this.close());
 
     // Ocultar la modal al presionar el botón de cerrar (dentro de la modal)
-    this.modalElement.querySelector('.modal-close').addEventListener('click', () => this.close());
+    const closeModalButton = this.modalElement.querySelector('.modal-close');
+    if (closeModalButton) {
+      closeModalButton.addEventListener('click', () => this.close());
+    }
   }
 
   open(formConfig = [], callback = () => {}, formData = {}, shouldClear = true) {
@@ -37,11 +56,14 @@ export default class FormModal {
     this.modalElement.classList.add('show');
     this.overlayElement.classList.add('show');
 
-    document.querySelector(`#${this.submitButtonId}`).onclick = () => {
-      const data = getFormData(formConfig, this.formElement);
-      callback(data);
-      this.close();
-    };
+    const submitButton = document.querySelector(`#${this.submitButtonId}`);
+    if (submitButton) {
+      submitButton.onclick = () => {
+        const data = getFormData(formConfig, this.formElement);
+        callback(data);
+        this.close();
+      };
+    }
 
     const actionTypeElement = this.formElement.querySelector('[name="actionType"]');
     if (actionTypeElement) {
@@ -83,6 +105,9 @@ export default class FormModal {
           case 'slider':
             formField = createSliderField(field);
             break;
+          case 'radio':
+            formField = createRadioField(field);
+            break;
           default:
             console.warn(`Unsupported field type: ${field.type}`);
         }
@@ -94,19 +119,20 @@ export default class FormModal {
     M.FormSelect.init(this.formElement.querySelectorAll('select'));
     this.initializeFormData(config, formData); // Inicializa el formulario si hay datos
   }
+
   createCheckboxGroup(field) {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'input-group';
 
     const checkboxField = createCheckboxField({
       ...field,
-      name: field.name,  // Sufijo para el nombre del checkbox
+      name: field.name,
       label: field.label
     });
 
     const childrenContainer = document.createElement('div');
     childrenContainer.className = 'children-container';
-    childrenContainer.style.display = 'none';  // Ocultar inicialmente
+    childrenContainer.style.display = 'none';
 
     field.children.forEach(childField => {
       let childElement;
@@ -147,7 +173,6 @@ export default class FormModal {
     return groupDiv;
   }
 
-
   initializeFormData(config, data = {}) {
     config.forEach(field => {
       const element = this.formElement.querySelector(`[name="${field.name}"]`);
@@ -163,10 +188,14 @@ export default class FormModal {
               }
             });
           });
+        } else if (field.type === 'checkbox' && field.children) {
+          element.checked = data[field.name];
+          const childrenContainer = element.closest('.input-group').querySelector('.children-container');
+          childrenContainer.style.display = element.checked ? '' : 'none';
+          this.initializeFormData(field.children, data); // Llamada recursiva para procesar los hijos
         } else {
           element.value = Array.isArray(data[field.name]) ? data[field.name][0] : data[field.name];
 
-          // Asegúrate de que el label se mueva si hay un valor
           const label = this.formElement.querySelector(`label[for="${field.name}"]`);
           if (label && element.value) {
             label.classList.add('active');
@@ -177,15 +206,15 @@ export default class FormModal {
   }
 
   toggleFieldsVisibility(actionType) {
-    const keyvalueField = this.formElement.querySelector('[name="keyvalue"]').closest('.input-field');
-    const applicationField = this.formElement.querySelector('[name="application"]').closest('.input-field');
+    const keyvalueField = this.formElement.querySelector('[name="keyvalue"]')?.closest('.input-field');
+    const applicationField = this.formElement.querySelector('[name="application"]')?.closest('.input-field');
 
     if (actionType === 'keyPress') {
-      keyvalueField.style.display = '';
-      applicationField.style.display = 'none';
+      if (keyvalueField) keyvalueField.style.display = '';
+      if (applicationField) applicationField.style.display = 'none';
     } else if (actionType === 'openApp') {
-      keyvalueField.style.display = 'none';
-      applicationField.style.display = '';
+      if (keyvalueField) keyvalueField.style.display = 'none';
+      if (applicationField) applicationField.style.display = '';
     }
   }
 }
