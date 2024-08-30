@@ -113,62 +113,99 @@ class DynamicRow {
 
     let inputElement;
 
-    if (typeConfig && typeConfig.type === 'slider') {
-      inputElement = document.createElement('input');
-      inputElement.type = 'range';
-      inputElement.min = typeConfig.min || 0;
-      inputElement.max = typeConfig.max || 100;
-      inputElement.value = value;
-
-      inputElement.addEventListener('input', () => {
-        const returnValue = typeConfig.returnType === 'number' ? Number(inputElement.value) : inputElement.value;
-        this.callback(key, returnValue, this.data);
-      });
-
-    } else if (typeof value === 'boolean') {
-      inputElement = document.createElement('input');
-      inputElement.type = 'checkbox';
-      inputElement.checked = value;
-
-      inputElement.addEventListener('change', () => {
-        this.callback(key, inputElement.checked);
-      });
-
-    } else if (typeof value === 'number') {
-      inputElement = document.createElement('input');
-      inputElement.type = 'number';
-      inputElement.value = value;
-
-      inputElement.addEventListener('input', () => {
-        this.callback(key, Number(inputElement.value));
-      });
-
-    } else if (typeof value === 'string') {
-      inputElement = document.createElement('input');
-      inputElement.type = 'text';
-      inputElement.value = value;
-
-      inputElement.addEventListener('input', () => {
-        this.callback(key, inputElement.value);
-      });
-
-    } else if (typeof value === 'object') {
-      inputElement = document.createElement('select');
-
-      Object.keys(value).forEach((optionKey) => {
-        const option = document.createElement('option');
-        option.value = JSON.stringify(value[optionKey]);
-        option.text = value[optionKey].name || optionKey;
-        inputElement.appendChild(option);
-      });
-
-      inputElement.addEventListener('change', () => {
-        this.callback(key, JSON.parse(inputElement.value));
-      });
+    if (typeConfig) {
+      switch (typeConfig.type) {
+        case 'slider':
+          inputElement = this.createSliderElement(value, typeConfig);
+          break;
+        case 'checkbox':
+          inputElement = this.createCheckboxElement(value);
+          break;
+        case 'number':
+          inputElement = this.createNumberElement(value);
+          break;
+        case 'string':
+          inputElement = this.createTextElement(value);
+          break;
+        case 'object':
+          inputElement = this.createSelectElement(value, typeConfig);
+          break;
+        default:
+          inputElement = document.createTextNode(value !== undefined ? value : '');
+      }
     }
 
     return inputElement || document.createTextNode(''); // Retorna un nodo de texto vacío si no se creó ningún input
   }
+
+  createSliderElement(value, typeConfig) {
+    const inputElement = document.createElement('input');
+    inputElement.type = 'range';
+    inputElement.min = typeConfig.min || 0;
+    inputElement.max = typeConfig.max || 100;
+    inputElement.value = value;
+
+    inputElement.addEventListener('input', () => {
+      const returnValue = typeConfig.returnType === 'number' ? Number(inputElement.value) : inputElement.value;
+      this.callback(key, returnValue, this.data);
+    });
+
+    return inputElement;
+  }
+
+  createCheckboxElement(value) {
+    const inputElement = document.createElement('input');
+    inputElement.type = 'checkbox';
+    inputElement.checked = value;
+
+    inputElement.addEventListener('change', () => {
+      this.callback(key, inputElement.checked, this.data);
+    });
+
+    return inputElement;
+  }
+
+  createNumberElement(value) {
+    const inputElement = document.createElement('input');
+    inputElement.type = 'number';
+    inputElement.value = value;
+
+    inputElement.addEventListener('input', () => {
+      this.callback(key, Number(inputElement.value), this.data);
+    });
+
+    return inputElement;
+  }
+
+  createTextElement(value) {
+    const inputElement = document.createElement('input');
+    inputElement.type = 'text';
+    inputElement.value = value;
+
+    inputElement.addEventListener('input', () => {
+      this.callback(value, inputElement.value, this.data);
+    });
+
+    return inputElement;
+  }
+
+  createSelectElement(value, typeConfig) {
+    const inputElement = document.createElement('select');
+
+    Object.keys(value).forEach((optionKey) => {
+      const option = document.createElement('option');
+      option.value = JSON.stringify(value[optionKey]);
+      option.text = value[optionKey].name || optionKey;
+      inputElement.appendChild(option);
+    });
+
+    inputElement.addEventListener('change', () => {
+      this.callback(key, JSON.parse(inputElement.value), this.data);
+    });
+
+    return inputElement;
+  }
 }
+
 
 export default DynamicTable;

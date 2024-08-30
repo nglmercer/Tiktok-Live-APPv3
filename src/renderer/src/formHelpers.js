@@ -247,7 +247,6 @@ export function getFormData(config) {
 
   config.forEach(field => {
     let value;
-
     switch (field.type) {
       case 'checkbox':
         value = getCheckboxValue(field);
@@ -265,7 +264,35 @@ export function getFormData(config) {
         value = getFieldValue(field);
     }
 
-    formData[field.name] = processReturnType(field.returnType, value);
+    // Group properties with underscores
+    const parts = field.name.split('_');
+    if (parts.length > 1) {
+      const group = parts[0];
+      const key = parts.slice(1).join('_');
+      if (!formData[group]) {
+        formData[group] = {};
+      }
+      formData[group][key] = processReturnType(field.returnType, value);
+
+      // Remove the individual property
+      delete formData[field.name];
+    } else {
+      formData[field.name] = processReturnType(field.returnType, value);
+    }
+  });
+
+  // Second pass to ensure all properties are grouped correctly
+  Object.keys(formData).forEach(key => {
+    const parts = key.split('_');
+    if (parts.length > 1) {
+      const group = parts[0];
+      const subKey = parts.slice(1).join('_');
+      if (!formData[group] || typeof formData[group] !== 'object') {
+        formData[group] = {};
+      }
+      formData[group][subKey] = formData[key];
+      delete formData[key];
+    }
   });
 
   return formData;
@@ -324,4 +351,74 @@ function processReturnType(returnType, value) {
     default:
       return value;
   }
+}
+export function fillFormData(formData, config) {
+  config.forEach(field => {
+    const parts = field.name.split('_');
+    let value;
+
+    if (parts.length > 1) {
+      const group = parts[0];
+      const key = parts.slice(1).join('_');
+      value = formData[group] && formData[group][key];
+    } else {
+      value = formData[field.name];
+    }
+
+    if (value !== undefined) {
+      switch (field.type) {
+        case 'checkbox':
+          setCheckboxValue(field, value);
+          if (field.children) {
+            fillChildren(field.children, formData);
+          }
+          break;
+        case 'multiSelect':
+          setMultiSelectValue(field, value);
+          break;
+        case 'radio':
+          setRadioValue(field, value);
+          break;
+        default:
+          setFieldValue(field, value);
+      }
+    }
+  });
+}
+
+function setCheckboxValue(field, value) {
+  const element = document.querySelector(`[name="${field.name}_check"]`);
+  if (element) {
+    element.checked = value === true || value === 'true';
+  }
+}
+
+function setMultiSelectValue(field, value) {
+  const checkboxes = document.querySelectorAll(`[name="${field.name}"]`);
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = Array.isArray(value) ? value.includes(checkbox.value) : false;
+  });
+}
+
+function setFieldValue(field, value) {
+  const element = document.querySelector(`[name="${field.name}"]`);
+  if (element) {
+    element.value = value;
+  }
+}
+
+function setRadioValue(field, value) {
+  const radioButtons = document.querySelectorAll(`[name="${field.name}"]`);
+  radioButtons.forEach(radio => {
+    radio.checked = radio.value === value;
+  });
+}
+
+function fillChildren(children, formData) {
+  children.forEach(child => {
+    const childElement = document.querySelector(`[name="${child.name}"]`);
+    if (childElement && formData[child.name] !== undefined) {
+      childElement.value = formData[child.name];
+    }
+  });
 }

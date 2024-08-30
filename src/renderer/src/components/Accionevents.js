@@ -126,17 +126,111 @@ const formConfig = [
   // formModal.appendTo('#modal');
   const alldata = await AccionEventsDBManager.getAllData();
   console.log("alldata", alldata);
-  openModaltest.addEventListener('click', () => {
-    formModal.open(formConfig, (formData) => {
-      console.log("formData", formData);
-      if (formData.id) {
-        AccionEventsDBManager.updateData(formData);
-      } else {
-        AccionEventsDBManager.saveData(formData);
+function evaldata(finalCallback, dataeval, configevaldata, eventType) {
+  const matchedValues = new Map();
+
+  function findAndEvaluate(keyPath, keytype, verifykey, obj) {
+      const keys = keyPath.split('.');
+      let currentValue = obj;
+
+      for (const key of keys) {
+          if (typeof currentValue === 'object' && currentValue !== null && key in currentValue) {
+              currentValue = currentValue[key];
+          } else {
+              currentValue = undefined;
+              break;
+          }
       }
 
-    }, {}, false);
-  });
+      if (currentValue !== undefined && (keytype === 'any' || keytype === typeof currentValue)) {
+          if (verifykey) {
+              if (typeof currentValue === 'object' && currentValue[verifykey.key] !== undefined) {
+                  if (verifykey.type === 'number' && typeof currentValue[verifykey.key] === 'number') {
+                      if (currentValue[verifykey.key] >= verifykey.value) {
+                          matchedValues.set(keyPath, currentValue);
+                      } else {
+                          matchedValues.set(keyPath, null);
+                      }
+                  } else if (currentValue[verifykey.key] === verifykey.value) {
+                      matchedValues.set(keyPath, currentValue);
+                  } else {
+                      matchedValues.set(keyPath, null);
+                  }
+              } else {
+                  matchedValues.set(keyPath, null);
+              }
+          } else {
+              matchedValues.set(keyPath, currentValue);
+          }
+      } else {
+          matchedValues.set(keyPath, null);
+      }
+  }
+
+  for (const [index, item] of configevaldata.entries()) {
+      findAndEvaluate(item.keyname, item.keytype, item.verifykey, dataeval);
+
+      const matchedValue = matchedValues.get(item.keyname);
+
+      if (item.isBlocking && (matchedValue === null || matchedValue !== item.keyfind)) {
+          // Si es el primer item y es bloqueante, verifica si coincide el valor con el esperado
+          if (index === 0 && matchedValue !== eventType) {
+              finalCallback(false);
+              return;
+          }
+          if (matchedValue === null || matchedValue !== item.keyfind) {
+              finalCallback(false);
+              return;
+          }
+      }
+
+      if (matchedValue !== null && item.callback) {
+          item.callback(matchedValue);
+      }
+  }
+
+  finalCallback(true);
+}
+
+// Ejemplo de uso
+async function datatestevaldata(eventType = "chat") {
+  const configevaldata = [
+      { keytype: 'string', keyfind: eventType, keyname: "Evento", verifykey: null, callback: (data) => console.log("String:", data), isBlocking: true },
+      { keytype: 'any', keyfind: null, keyname: "accionevento", verifykey: { key: "check", value: true }, callback: (data) => console.log("Check:", data), isBlocking: false },
+      { keytype: 'number', keyfind: 5, keyname: "id", verifykey: null, callback: (data) => console.log("Number:", data) },
+      { keytype: 'any', keyfind: null, keyname: "accionevento", verifykey: { key: "number", value: 5, type: 'number' }, callback: (data) => console.log("Likes:", data) },
+      { keytype: 'any', keyfind: null, keyname: "type-video", verifykey: { key: "check", value: true }, callback: (data) => console.log("type-video:", data) },
+  ];
+  alldata.forEach((data) => {
+    evaldata((success) => {
+      if (success) {
+          console.log("Todos los callbacks han sido ejecutados");
+      } else {
+          console.log("El proceso fue interrumpido debido a una condición bloqueante.");
+      }
+  }, data, configevaldata, eventType);
+});
+}
+
+datatestevaldata();
+
+
+
+setInterval(async () => {
+  datatestevaldata("follow");
+}, 1000);
+
+openModaltest.addEventListener('click', () => {
+  formModal.open(formConfig, (formData) => {
+    console.log("formData", formData);
+    if (formData.id) {
+      AccionEventsDBManager.updateData(formData);
+    } else {
+      AccionEventsDBManager.saveData(formData);
+    }
+
+  }, {}, false);
+});
 
 // Ejemplo de uso
 const exampleItem  = {
@@ -168,38 +262,89 @@ const processFile = async (fileId, customOptions) => {
 const callback = async (index, data) => {
   console.log("callback", index, data);
 
-  await processFile(data.mediaVideo_file);
-  await processFile(data.mediaImg_file);
+  // await processFile(data.mediaVideo.file);
+  // await processFile(data.mediaImg.file);
 };
 
 
 const config = {
-  order: ['nombre','profile_text','profile_check','profile_duration', 'mediaVideo_duration','mediaAudio_duration','mediaImg_duration'], // Especifica el orden de las columnas
-  mediaVideo_volume: {
-    type: 'slider',
-    min: 0,
-    max: 100,
-    returnType: 'number',
-  },
-  profile_text: {
-    type: 'text',
+  order: ['nombre','Evento','mediaAudio','mediaImg', 'mediaVideo','profile'],
+  nombre: {
+    type: 'string',
+    returnType: 'string',
+  }, // Especifica el orden de las columnas
+  Evento: {
+    type: 'string',
     returnType: 'string',
   },
-  mediaImg_duration: {
+  mediaAudio: {
+    type: 'object',
+    volume: {
+      type: 'slider',
+      min: 0,
+      max: 100,
+      returnType: 'number',
+    },
+    duration: {
+      type: 'number',
+      returnType: 'number',
+    },
+    file: {
+      type: 'number',
+      returnType: 'number',
+    },
+    check: {
+      type: 'checkbox',
+      returnType: 'boolean',
+    }
+  },
+  mediaVideo: {
+    type: 'object',
+    volume: {
+      type: 'slider',
+      min: 0,
+      max: 100,
+      returnType: 'number',
+    },
+    duration: {
+      type: 'number',
+      returnType: 'number',
+    },
+    file: {
+      type: 'number',
+      returnType: 'number',
+    },
+    check: {
+      type: 'checkbox',
+      returnType: 'boolean',
+    }
+  },
+  mediaImg: {
+    type: 'object',
+    volume: {
+      type: 'slider',
+      min: 0,
+      max: 100,
+      returnType: 'number',
+    },
+    duration: {
+      type: 'number',
+      returnType: 'number',
+    },
+    file: {
+      type: 'number',
+      returnType: 'number',
+    },
+    check: {
+      type: 'checkbox',
+      returnType: 'boolean',
+    }
+  },
+  id: {
     type: 'number',
     returnType: 'number',
-  },
-  profile_duration: {
-    type: 'number',
-    returnType: 'number',
-  },
-  mediaVideo_duration: {
-    type: 'number',
-    returnType: 'number',
-  },
-  // profile_check: {
-  //   hidden: true, // Oculta la columna profile_check
-  // },
+    hidden: true,
+  }
 };
 const table = new DynamicTable('#table-container', callback, config);
 alldata.forEach((data) => {
@@ -209,5 +354,5 @@ alldata.forEach((data) => {
 console.log("table", table);
 document.addEventListener('DOMContentLoaded', () => {
   // Ocultar la columna 'mediaVideo_file'
-  table.hideColumn('mediaVideo_file');
+  table.hideColumn('id');
 });
