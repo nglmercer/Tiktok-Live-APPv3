@@ -7,7 +7,6 @@ import fileIndexer from "./FindFiles";
 import FileOpener from "./FileOpener";
 import AudioController from "./features/audioController";
 import keynut from "./features/keynut";
-import { createOverlayWindow } from "./overlayhandler";
 import SocketHandler from "./server/socketServer";
 import injectQRCode from "./server/listenserver";
 import { HttpExpressServer, HttpsExpressServer } from "./server/ExpressServe";
@@ -105,8 +104,7 @@ async function startServer() {
       server.addRoute("post", "/create-overlaywindow", async (req, res) => {
         const { event, ...params } = req.body;
         console.log("req.body", req.body);
-        const result = await createOverlayWindow();
-        res.json({ result: result, success: true });
+        res.json({ result: "createoverlaywindow", success: true });
       });
       sockets[index].initialize(server.server);
 

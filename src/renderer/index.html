@@ -41,7 +41,7 @@
     <li><a href="#" class="tab-link" data-tab="tab3">Control de audio</a></li>
     <li><a href="#" class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
     <li><a href="#" class="tab-link" data-tab="tab5">Atajos y botones</a></li>
-
+    <li><a href="#" class="tab-link" data-tab="tab6">Control de pantalla</a></li>
 </ul>
 
 <div class="tabcontainer" data-tab="tab1">
@@ -59,15 +59,15 @@
                           <input id="tiktok_name" type="text" placeholder=" " maxlength="40">
                           <label for="tiktok_name">Unique ID <span class="red-text">(Required)</span></label>
                           <!--<span class="supporting-text">Supporting Text</span>-->
-                          <button class="btn waves-effect waves-light btn filled" id="btnConnectTikTok" type="submit" name="action">Connectar a ... LIVE</button>
+                          <button class="btn waves-effect waves-light btn filled bg-green" id="btnConnectTikTok" type="submit" name="action">Connectar a ... LIVE</button>
                         </div>
 
                     </div>
 
               </form>
-              <div class="bordercontent-purple">
-                <button id="btnDisconnectTikTok" class="btn waves-effect waves-light btn filled">Desconectar</button>
-                <button id="websocketConnect" class="btn waves-effect waves-light btn filled">Tikfinityapi connect</button>
+              <div class="bordercontent-purple justify-content-center">
+                <button id="btnDisconnectTikTok" class="btn waves-effect waves-light border-red">Desconectar</button>
+                <button id="websocketConnect" class="btn waves-effect waves-light border-blue">Tikfinityapi connect</button>
               </div>
             </div>
         </div>
@@ -166,13 +166,6 @@
           <h2>Tabla de usuarios y Puntos</h2>
           <table id="userPointsTable" class="highlight centered">
             <thead>
-            <tr>
-                <th>Profile <button id="loadMoreUsers">loadMoreUsers</button></th>
-                <th><a id="sortByUsername">User</a></th>
-                <th><a id="sortByPoints">Points Total</a></th>
-                <th>First Activity</th>
-                <th>Last Activity</th>
-            </tr>
             </thead>
             <tbody>
             <!-- Rows will be inserted dynamically -->
@@ -406,6 +399,12 @@
 <div class="tabcontainer" data-tab="tab4">
   <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y atajos</button>
   <div id="table-container" class="table-container"></div>
+  <style>
+    .table-container {
+      width: 100% !important;
+      overflow-x: scroll !important ;
+    }
+  </style>
   <div id="modal1" class="modal">
     <div class="modal-content">
       <form id="dynamicForm2" class="gridform">
@@ -434,14 +433,30 @@
   <button id="toogleEditModeBtn" class="waves-effect waves-light btn">Editar</button>
   <div id="buttonContainer"></div>
 </div>
+<div class="tabcontainer" data-tab="tab6">
+  <div class="containerbox relative">
+    <h3>Overlay Previews</h3>
+    <span id="overlay-preview-container"></span>
+    <script>
+      const urltext = document.getElementById("overlay-preview-container");
+      urltext.innerHTML = `${window.location.href}/overlay.html`;
+    </script>
+    <iframe src="/overlayfull.html" width="100%" height="100%" frameborder="0"></iframe>
+  </div>
 
+</div>
 <script>
     // Inicialización del sidenav
     var elems = document.querySelectorAll('.sidenav');
     elems.forEach(function(elem) {
         new M.Sidenav(elem);
     });
-
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('select');
+      var instances = M.FormSelect.init(elems, {
+        // specify options here
+      });
+    });
     var tabContainers = document.querySelectorAll('.tabcontainer');
     var tabLinks = document.querySelectorAll('.tab-link');
 

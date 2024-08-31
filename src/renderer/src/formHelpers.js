@@ -155,6 +155,7 @@ export function createCheckboxField(field) {
   checkbox.name = `${field.name}_check`;
   checkbox.id = `${field.name}_check`;
   checkbox.className = 'filled-in';
+  checkbox.setAttribute('data-ignore-save', '');
 
   // Asigna un valor por defecto si está presente en los datos iniciales del formulario
   if (field.value) {

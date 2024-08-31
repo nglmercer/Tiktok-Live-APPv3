@@ -6,9 +6,10 @@ import TypeofData from './src/utils/typeof';
 import { Counter } from './src/utils/counters';
 import showAlert from './assets/alerts'
 import { ChatContainer, ChatMessage } from './assets/items';
-import { UserPointsTable } from './src/utils/UserPoints';
+import { UserPointsTable, StaticTable } from './src/utils/UserPoints';
 import { handleleermensaje } from './src/voice/tts';
 import { loadFileList, setupDragAndDrop, handlePlayButton, getfileId, handlePasteFromClipboard} from './src/components/Fileshtml'
+import { evalandfinddata } from './src/components/AccionEvents'
 const observeruserPoints = new DBObserver();
 const newChatContainer = new ChatContainer('.chatcontainer', 500);
 const newGiftContainer = new ChatContainer('.giftcontainer', 500);
@@ -25,47 +26,62 @@ async function sendcreateserver(serverurl,data) {
 sendcreateserver(`${socketurl.getport()}/create-overlaywindow`, {});
 const textcontent = {
   content: {
-    1: ["text", "hola","white"],
-    2: ["text", "mundo","white"],
+    1: ["text", "Aqui esta el chat","white"],
+    2: ["text", "de tiktok","white"],
     3: ["text", "!","gold"],
   }
 }
 const numbercontent = {
   content: {
-    1: ["text", "hola","white"],
-    2: ["number", 12345,"blue"],
+    1: ["text", "UniqueId regalo","white"],
+    2: ["number", 1,"gold"],
     3: ["text", "gift x","gold"],
-    4: ["number", 12345,"blue"],
-    5: ["text", "!","gold"],
+    4: ["text", "rose","white"],
+    5: ["text", "!","cyan"],
+  }
+}
+const eventcontent = {
+  content: {
+    1: ["text", "UniqueId","white"],
+    2: ["text", "te","white"],
+    3: ["text", "sigue!","yellow"],
   }
 }
 
 const message1 = new ChatMessage( `msg${counterchat.increment()}`, 'https://cdn-icons-png.flaticon.com/128/6422/6422200.png', textcontent);
 const message2 = new ChatMessage( `msg${counterchat.increment()}`, 'https://cdn-icons-png.flaticon.com/128/6422/6422200.png', numbercontent);
+const message3 = new ChatMessage( `msg${counterchat.increment()}`, 'https://cdn-icons-png.flaticon.com/128/6422/6422200.png', eventcontent);
 newChatContainer.addMessage(message1);
 newGiftContainer.addMessage(message2);
-newEventsContainer.addMessage(message2);
+newEventsContainer.addMessage(message3);
 const userPointsDBManager = new IndexedDBManager(databases.userPoints,observeruserPoints);
 const optionstable = {
-  th: ['nickname', 'imageUrl', 'points', 'Last Activity'],
+  th: ['nickname', 'imageUrl', 'points'],
   initialVisibleUsers: 10,
   maxVisibleUsers: 10
 };
 
 const initialData = await getAllDataFromDB(userPointsDBManager);
-
+const configinitialData = {
+  uniqueId: { type: 'string' },
+  nickname: { type: 'string' },
+  name: { type: 'string'},
+  points: { type: 'number' },
+  imageUrl: { type: 'image' }
+}
 console.log("initialData", initialData);
-const userPointsTable = new UserPointsTable('userPointsTable', optionstable, initialData);
+const PointsTable = new StaticTable('#userPointsTable',configinitialData)
+initialData.forEach(item => PointsTable.clearAndAddRows(item));
 observeruserPoints.subscribe(async (action, data) => {
  if (action === "delete") {
-    console.log("observer.subscribe", data, action);
+  const updatedata = await getAllDataFromDB(userPointsDBManager);
+  PointsTable.clearAndAddRows(updatedata);
   } else if (action === "update") {
-    console.log("observer.subscribe", data, action);
-    userPointsTable.renderTable();
-
+    const updatedata = await getAllDataFromDB(userPointsDBManager);
+    PointsTable.clearAndAddRows(updatedata);
   } else if (action === "save") {
-    console.log("observer.subscribe", data, action);
-    userPointsTable.renderTable();
+    const updatedata = await getAllDataFromDB(userPointsDBManager);
+    PointsTable.clearAndAddRows(updatedata);
   }
 });
 

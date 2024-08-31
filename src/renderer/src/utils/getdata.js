@@ -94,4 +94,16 @@ async function getAllDataFromDB(dbManager) {
       console.error("Error getting documents: ", e);
   }
 }
+// observeruserPoints.subscribe(async (action, data) => {
+//   if (action === "save") {
+//   const dataupdate = await getAllDataFromDB(userPointsDBManager);
+//   table.updateRows(dataupdate);
+//   } else if (action === "delete") {
+//   const dataupdate = await getAllDataFromDB(userPointsDBManager);
+//   table.updateRows(dataupdate);
+//   } else if (action === "update") {
+//   const dataupdate = await getAllDataFromDB(userPointsDBManager);
+//   table.updateRows(dataupdate);
+//   }
+// });
 export { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb };

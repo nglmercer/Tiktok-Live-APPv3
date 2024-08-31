@@ -1,8 +1,9 @@
 import FormModal from './FormModal'
+import DynamicTable from './datatable';
+import { getfileId } from './Fileshtml'
 import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
 import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb } from '../utils/getdata';
 import { socketManager } from '../../tiktoksocketdata';
-import DynamicTable from './datatable';
 // const filescontent = await postToFileHandler("get-files-in-folder", {});
 const ObserverEvents = new DBObserver();
 const AccionEventsDBManager = new IndexedDBManager(databases.eventsDB,ObserverEvents);
@@ -62,13 +63,14 @@ const categorizedFiles = filterFilesByType(files);
 const audioOptions = mapFilesToSelectOptions(categorizedFiles.Audio);
 const imageOptions = mapFilesToSelectOptions(categorizedFiles.Imagen);
 const videoOptions = mapFilesToSelectOptions(categorizedFiles.Video);
+console.log("Archivos categorizados: audioOptions , imageOptions, videoOptions", audioOptions , imageOptions, videoOptions);
 console.log("Archivos categorizados:", categorizedFiles.Audio);
 const formConfig = [
   { type: 'input', name: 'id', label: 'ID', inputType: 'Number', returnType: 'Number', hidden: true },
   { type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
   { type: 'radio', name: 'Evento', label: 'Seleccione el Evento', options:
-  [{ value: 'chat', label: 'Evento de Chat' }, { value: 'follow', label: 'Evento de Seguimiento' },{ value: 'likes', label: 'Evento de likes'},
-   {value: 'share', label: 'compartir'}, { value: 'subscribe', label: 'Evento de suscripcion' }, { value: 'gift', label: 'Evento de Gift' }], returnType: 'string' },
+  [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },{ value: 'likes', label: 'likes'},
+   {value: 'share', label: 'compartir'}, { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' }], returnType: 'string' },
   {
     type: 'checkbox',
     name: 'profile_check',
@@ -126,7 +128,7 @@ const formConfig = [
   // formModal.appendTo('#modal');
   const alldata = await AccionEventsDBManager.getAllData();
   console.log("alldata", alldata);
-function evaldata(finalCallback, dataeval, configevaldata, eventType) {
+function evalandfinddata(finalCallback, dataeval, configevaldata, eventType) {
   const matchedValues = new Map();
 
   function findAndEvaluate(keyPath, keytype, verifykey, obj) {
@@ -185,26 +187,55 @@ function evaldata(finalCallback, dataeval, configevaldata, eventType) {
       }
 
       if (matchedValue !== null && item.callback) {
-          item.callback(matchedValue);
+          item.callback(dataeval);
       }
   }
 
   finalCallback(true);
 }
+async function sendMediaManager(data) {
+  console.log("sendMediaManager options", data);
+
+  const mediaTypes = ['mediaAudio', 'mediaImg', 'mediaVideo'];
+
+  for (const mediaType of mediaTypes) {
+    if (data[mediaType]) {
+      const options = {
+        check: data[mediaType].check ?? true, // Valor predeterminado si no existe
+        select: data[mediaType].file,
+        rango: data[mediaType].volume ?? 50, // Solo si 'volume' existe
+        duracion: (data[mediaType]?.duration ?? 0) < 1 ? 1 : data[mediaType].duration,
+      };
+      console.log("datafile options",mediaType,mediaTypes, options.check);
+      if (options.check) {
+        const file = await getfileId(options.select);
+        const datafile = {
+          eventType: 'play',
+          data: { src: file.path, fileType: file.type, options },
+        };
+        socketManager.emitMessage("overlaydata", datafile);
+      }
+    }
+  }
+}
 
 // Ejemplo de uso
-async function datatestevaldata(eventType = "chat") {
+async function datatestevaldata(eventType = "chat",indexdbdata,data) {
   const configevaldata = [
       { keytype: 'string', keyfind: eventType, keyname: "Evento", verifykey: null, callback: (data) => console.log("String:", data), isBlocking: true },
-      { keytype: 'any', keyfind: null, keyname: "accionevento", verifykey: { key: "check", value: true }, callback: (data) => console.log("Check:", data), isBlocking: false },
-      { keytype: 'number', keyfind: 5, keyname: "id", verifykey: null, callback: (data) => console.log("Number:", data) },
-      { keytype: 'any', keyfind: null, keyname: "accionevento", verifykey: { key: "number", value: 5, type: 'number' }, callback: (data) => console.log("Likes:", data) },
-      { keytype: 'any', keyfind: null, keyname: "type-video", verifykey: { key: "check", value: true }, callback: (data) => console.log("type-video:", data) },
+      { keytype: 'any', keyfind: null, keyname: "mediaAudio", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data), isBlocking: false },
+      { keytype: 'any', keyfind: null, keyname: "mediaImg", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data), isBlocking: false },
+      { keytype: 'any', keyfind: null, keyname: "mediaVideo", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data), isBlocking: false },
+      // { keytype: 'any', keyfind: null, keyname: "accionevento", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data), isBlocking: false },
+      // { keytype: 'number', keyfind: 5, keyname: "id", verifykey: null, callback: (data) => console.log("Number:", data) },
+      // { keytype: 'any', keyfind: null, keyname: "accionevento", verifykey: { key: "number", value: 5, type: 'number' }, callback: (data) => console.log("Likes:", data) },
+      // { keytype: 'any', keyfind: null, keyname: "type-video", verifykey: { key: "check", value: true }, callback: (data) => console.log("type-video:", data) },
   ];
-  alldata.forEach((data) => {
-    evaldata((success) => {
+  indexdbdata.forEach((data) => {
+    evalandfinddata((success) => {
       if (success) {
-          console.log("Todos los callbacks han sido ejecutados");
+          console.log("Todos los callbacks han sido ejecutados",success);
+          // sendMediaManager(data);
       } else {
           console.log("El proceso fue interrumpido debido a una condición bloqueante.");
       }
@@ -212,13 +243,11 @@ async function datatestevaldata(eventType = "chat") {
 });
 }
 
-datatestevaldata();
-
-
 
 setInterval(async () => {
-  datatestevaldata("follow");
-}, 1000);
+  datatestevaldata("follow",alldata,null);
+  // console.log("setInterval");
+}, 5000);
 
 openModaltest.addEventListener('click', () => {
   formModal.open(formConfig, (formData) => {
@@ -231,19 +260,6 @@ openModaltest.addEventListener('click', () => {
 
   }, {}, false);
 });
-
-// Ejemplo de uso
-const exampleItem  = {
-  mediaImg_volume: 50,
-  mediaVideo_check: true,
-  mediaVideo_duration: 5,
-  mediaVideo_file: 'ejemplo',
-  mediaVideo_volume: 50,
-  nombre: 'test',
-  profile_check: true,
-  profile_duration: 222222,
-  profile_text: '{uniqueid} para usuario',
-};
 
 const processFile = async (fileId, customOptions) => {
   const file = await getdatabyid(fileId);
@@ -259,86 +275,136 @@ const processFile = async (fileId, customOptions) => {
   }
 };
 
-const callback = async (index, data) => {
-  console.log("callback", index, data);
-
-  // await processFile(data.mediaVideo.file);
-  // await processFile(data.mediaImg.file);
-};
-
-
+const editcallback = async (index, data,modifiedData) => {
+  console.log("editcallback", index, data,modifiedData);
+  if (modifiedData.id) {
+    AccionEventsDBManager.updateData(modifiedData);
+  }
+}
+const deletecallback = async (index, data,modifiedData) => {
+  console.log("deletecallback", index, data,modifiedData);
+  if (modifiedData.id) {
+    AccionEventsDBManager.deleteData(modifiedData.id);
+  }
+}
 const config = {
-  order: ['nombre','Evento','mediaAudio','mediaImg', 'mediaVideo','profile'],
   nombre: {
+    class: 'input-default',
     type: 'string',
     returnType: 'string',
   }, // Especifica el orden de las columnas
   Evento: {
-    type: 'string',
+    class: 'select-default',
+    // label: 'Evento',
+    type: 'select',
     returnType: 'string',
+    options: [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },{ value: 'likes', label: 'likes'},
+   {value: 'share', label: 'compartir'}, { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' }],
+  },
+  profile: {
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    duration: {
+      class: 'input-50px',
+      label: 'duration',
+      type: 'number',
+      returnType: 'number',
+    },
+    text: {
+      class: 'input-default',
+      label: 'text',
+      type: 'string',
+      returnType: 'string',
+    },
   },
   mediaAudio: {
     type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
     volume: {
+      class: 'max-width-90p',
+      label: 'volume',
       type: 'slider',
       min: 0,
       max: 100,
       returnType: 'number',
     },
     duration: {
+      class: 'input-50px',
+      label: 'duration',
       type: 'number',
       returnType: 'number',
     },
     file: {
-      type: 'number',
+      class: 'input-default',
+      label: 'file',
+      type: 'select',
       returnType: 'number',
+      options: audioOptions
     },
-    check: {
-      type: 'checkbox',
-      returnType: 'boolean',
-    }
   },
   mediaVideo: {
     type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
     volume: {
+      class: 'max-width-90p',
+      label: 'volume',
       type: 'slider',
       min: 0,
       max: 100,
       returnType: 'number',
     },
     duration: {
+      class: 'input-50px',
+      label: 'duration',
       type: 'number',
       returnType: 'number',
     },
     file: {
-      type: 'number',
+      class: 'input-default',
+      label: 'file',
+      type: 'select',
       returnType: 'number',
+      options: videoOptions
     },
-    check: {
-      type: 'checkbox',
-      returnType: 'boolean',
-    }
+
   },
   mediaImg: {
     type: 'object',
-    volume: {
-      type: 'slider',
-      min: 0,
-      max: 100,
-      returnType: 'number',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
     },
     duration: {
+      class: 'input-50px',
+      label: 'duration',
       type: 'number',
       returnType: 'number',
     },
     file: {
-      type: 'number',
+      class: 'input-default',
+      label: 'file',
+      type: 'select',
       returnType: 'number',
+      options: imageOptions
     },
-    check: {
-      type: 'checkbox',
-      returnType: 'boolean',
-    }
+
   },
   id: {
     type: 'number',
@@ -346,9 +412,9 @@ const config = {
     hidden: true,
   }
 };
-const table = new DynamicTable('#table-container', callback, config);
+const table = new DynamicTable('#table-container',editcallback, config,deletecallback);
 alldata.forEach((data) => {
-    console.log("alldata", data);
+  console.log("alldata", data);
   table.addRow(data);
 });
 console.log("table", table);
@@ -356,3 +422,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // Ocultar la columna 'mediaVideo_file'
   table.hideColumn('id');
 });
+ObserverEvents.subscribe(async (action, data) => {
+  if (action === "save") {
+  const dataupdate = await AccionEventsDBManager.getAllData();
+  table.updateRows(dataupdate);
+  } else if (action === "delete") {
+  const dataupdate = await AccionEventsDBManager.getAllData();
+  table.updateRows(dataupdate);
+  } else if (action === "update") {
+  const dataupdate = await AccionEventsDBManager.getAllData();
+  table.updateRows(dataupdate);
+  }
+});
+export { evalandfinddata }
