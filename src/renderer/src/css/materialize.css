@@ -6479,7 +6479,7 @@ button:focus {
 }
 */
 label {
-  font-size: 1.2rem;
+  font-size: 1rem;
   color: var(--md-sys-color-on-surface-variant);
 }
 
@@ -6608,7 +6608,7 @@ textarea.materialize-textarea {
      -moz-user-select: none;
       -ms-user-select: none;
           user-select: none;
-  font-size: 1.2rem;
+  font-size: 0.7rem;
   position: absolute;
   left: 16px;
   top: 16px;

@@ -9,7 +9,7 @@ import { ChatContainer, ChatMessage } from './assets/items';
 import { UserPointsTable, StaticTable } from './src/utils/UserPoints';
 import { handleleermensaje } from './src/voice/tts';
 import { loadFileList, setupDragAndDrop, handlePlayButton, getfileId, handlePasteFromClipboard} from './src/components/Fileshtml'
-import { evalandfinddata } from './src/components/AccionEvents'
+import { evalandfinddata, AccionEventoOverlayEval } from './src/components/AccionEvents'
 const observeruserPoints = new DBObserver();
 const newChatContainer = new ChatContainer('.chatcontainer', 500);
 const newGiftContainer = new ChatContainer('.giftcontainer', 500);

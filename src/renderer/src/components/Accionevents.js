@@ -3,6 +3,7 @@ import DynamicTable from './datatable';
 import { getfileId } from './Fileshtml'
 import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
 import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb } from '../utils/getdata';
+import { replaceVariables } from '../utils/replaceVariables';
 import { socketManager } from '../../tiktoksocketdata';
 // const filescontent = await postToFileHandler("get-files-in-folder", {});
 const ObserverEvents = new DBObserver();
@@ -127,6 +128,9 @@ const formConfig = [
   console.log("formModal", formModal);
   // formModal.appendTo('#modal');
   const alldata = await AccionEventsDBManager.getAllData();
+  async function getalldatafromAccionEventsDBManager() {
+    return await AccionEventsDBManager.getAllData();
+  }
   console.log("alldata", alldata);
 function evalandfinddata(finalCallback, dataeval, configevaldata, eventType) {
   const matchedValues = new Map();
@@ -193,8 +197,8 @@ function evalandfinddata(finalCallback, dataeval, configevaldata, eventType) {
 
   finalCallback(true);
 }
-async function sendMediaManager(data) {
-  console.log("sendMediaManager options", data);
+async function sendMediaManager(data,userdata = {}) {
+  console.log("sendMediaManager options", data,userdata);
 
   const mediaTypes = ['mediaAudio', 'mediaImg', 'mediaVideo'];
 
@@ -217,15 +221,33 @@ async function sendMediaManager(data) {
       }
     }
   }
+  if (data.profile && data.profile.check) {
+      const textprofile = replaceVariables(data.profile.text, userdata);
+      console.log("textprofile",textprofile);
+      const profileoptions = {
+        check: data.profile.check ?? true, // Valor predeterminado si no existe
+        select: data.profile.file,
+        rango: data.profile.volume ?? 50, // Solo si 'volume' existe
+        duracion: (data.profile?.duration ?? 0) < 1 ? 1 : data.profile.duration,
+        texto: textprofile,
+      };
+      const datafileprofile = {
+        eventType: 'play',
+        data: { src: userdata.ProfilepictureUrl, fileType: "image/jpeg", options: profileoptions },
+        options: profileoptions,
+      }
+      socketManager.emitMessage("overlaydata", datafileprofile);
+  }
 }
 
 // Ejemplo de uso
-async function datatestevaldata(eventType = "chat",indexdbdata,data) {
+async function AccionEventoOverlayEval(eventType = "chat",indexdbdata,userdata = {}) {
   const configevaldata = [
       { keytype: 'string', keyfind: eventType, keyname: "Evento", verifykey: null, callback: (data) => console.log("String:", data), isBlocking: true },
-      { keytype: 'any', keyfind: null, keyname: "mediaAudio", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data), isBlocking: false },
-      { keytype: 'any', keyfind: null, keyname: "mediaImg", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data), isBlocking: false },
-      { keytype: 'any', keyfind: null, keyname: "mediaVideo", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data), isBlocking: false },
+      { keytype: 'any', keyfind: null, keyname: "mediaAudio", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data,userdata), isBlocking: false },
+      { keytype: 'any', keyfind: null, keyname: "mediaImg", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data,userdata), isBlocking: false },
+      { keytype: 'any', keyfind: null, keyname: "mediaVideo", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data,userdata), isBlocking: false },
+      { keytype: 'any', keyfind: null, keyname: "profile", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data,userdata), isBlocking: false },
       // { keytype: 'any', keyfind: null, keyname: "accionevento", verifykey: { key: "check", value: true }, callback: (data) => sendMediaManager(data), isBlocking: false },
       // { keytype: 'number', keyfind: 5, keyname: "id", verifykey: null, callback: (data) => console.log("Number:", data) },
       // { keytype: 'any', keyfind: null, keyname: "accionevento", verifykey: { key: "number", value: 5, type: 'number' }, callback: (data) => console.log("Likes:", data) },
@@ -245,7 +267,15 @@ async function datatestevaldata(eventType = "chat",indexdbdata,data) {
 
 
 setInterval(async () => {
-  datatestevaldata("follow",alldata,null);
+  const userdata = {
+    uniqueId: "testUser",
+    nickname: "testUser",
+    name: "testUser",
+    points: 0,
+    ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg"
+  };
+  const alldatadb = await getalldatafromAccionEventsDBManager();
+  AccionEventoOverlayEval("follow",alldatadb,userdata);
   // console.log("setInterval");
 }, 5000);
 
@@ -260,20 +290,6 @@ openModaltest.addEventListener('click', () => {
 
   }, {}, false);
 });
-
-const processFile = async (fileId, customOptions) => {
-  const file = await getdatabyid(fileId);
-  if (file) {
-    console.log("file", file);
-    const options = { check: true, select: '11', rango: '50', duracion: '15' };
-    const datafile = {
-      eventType: 'play',
-      data: { src: file.path, fileType: file.type, options },
-    };
-    // getdatafromserver(`${socketurl.getport()}/overlay`, datafile);
-    socketManager.emitMessage("overlaydata", datafile);
-  }
-};
 
 const editcallback = async (index, data,modifiedData) => {
   console.log("editcallback", index, data,modifiedData);
@@ -434,4 +450,4 @@ ObserverEvents.subscribe(async (action, data) => {
   table.updateRows(dataupdate);
   }
 });
-export { evalandfinddata }
+export { evalandfinddata, AccionEventoOverlayEval }

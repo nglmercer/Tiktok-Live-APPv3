@@ -7,7 +7,7 @@
     <style>
         body {
             margin: 0;
-            background-color: rgba(0, 0, 255, 0);
+            background-color: rgba(0, 0, 255, 0.259);
             width: 100%;
             height: 100%;
             overflow: hidden;
@@ -18,9 +18,12 @@
         .overlay-image {
             box-sizing: content-box;
             height: auto;
+            position: absolute;
+            top: 0;
+            left: 30%;
             width: 100%;
-            max-width: 100px;
-            max-height: 100px;
+            max-width: 400px;
+            max-height: 500px;
         }
         .overlay-video, .overlay-canvas {
             box-sizing: content-box;
@@ -46,15 +49,22 @@
         constructor() {
             this.container = document.getElementById('container');
             this.setupSocket();
-            this.setupFullscreen(); // Configurar pantalla completa
-            this.setupFooter(); // Configurar pie de página
+            this.setupFullscreen();
+            this.setupFooter();
+            this.setupAutoRefresh();
         }
 
         setupSocket() {
             this.socket = io("http://localhost:8088");
-            this.socket.on('connect', () => console.log('connected'));
+            this.socket.on('connect', () => {
+                console.log('connected');
+                this.resetAutoRefresh();
+            });
             this.socket.on('disconnect', () => console.log('disconnected'));
-            this.socket.on("overlay-event", (data) => this.handleMessage(data));
+            this.socket.on("overlay-event", (data) => {
+                this.handleMessage(data);
+                this.resetAutoRefresh();
+            });
         }
 
         handleMessage(event) {
@@ -62,20 +72,19 @@
             console.log('Received message:', event);
 
             if (eventType === 'play') {
-
-                if (data.src.endsWith('.mp4') || data.fileType.startsWith('video/')) {
+                if (data.fileType.startsWith('video/')) {
                     new VideoOverlay(this, data,  data.options);
-                } else if (data.src.endsWith('.png') || data.fileType.startsWith('image/')) {
+                } else if (data.fileType.startsWith('image/')) {
                     if (options) {
-                        new UserPictureOverlay(this, data, this.predictNextPosition(), data.options);
+                        new UserPictureOverlay(this, data, data.options);
                     } else {
                         new ImageOverlay(this, data, data.options);
                     }
-                } else if (data.src.endsWith('.mp3') || data.fileType.startsWith('audio/')) {
+                } else if (data.fileType.startsWith('audio/')) {
                     new AudioOverlay(this, data, data.options);
                 } else {
-                  console.log("Unsupported file type");
-                  //new UnsupportedOverlay(this, data);
+                    console.log("Unsupported file type");
+                    //new UnsupportedOverlay(this, data);
                 }
             }
         }
@@ -92,18 +101,31 @@
             this.footer = document.createElement('div');
             this.footer.id = 'overlay-footer';
             this.footer.className = 'overlay-footer';
-            this.footer.textContent = 'Elemento Activo';
+            this.footer.textContent = 'by melser';
             this.footer.style.position = 'absolute';
             this.footer.style.bottom = '0';
             this.footer.style.width = '100%';
             this.footer.style.textAlign = 'center';
             this.footer.style.color = 'white';
-            this.footer.style.fontSize = '3rem'; // Tamaño grande del texto
+            this.footer.style.fontSize = '3rem';
             this.footer.style.padding = '10px 0';
             this.container.appendChild(this.footer);
             setTimeout(() => this.footer.style.display = 'none', 9999);
         }
+
+        setupAutoRefresh() {
+            this.autoRefreshTimer = setTimeout(() => {
+                console.log('No connection or events received in 3 seconds. Refreshing page...');
+                window.location.reload();
+            }, 3000);
+        }
+
+        resetAutoRefresh() {
+            clearTimeout(this.autoRefreshTimer);
+            this.setupAutoRefresh();
+        }
     }
+
 
     class BaseOverlay {
         constructor(manager, data, options) {
@@ -182,7 +204,56 @@
       }
   }
 
-  const overlayManager = new OverlayManager();
+  class UserPictureOverlay extends BaseOverlay {
+    create() {
+        if (this.options.check === false) return;
+
+        if (this.options.texto && this.options.texto.trim() !== '') {
+            this.createTextOverlay();
+        }
+
+        this.element = document.createElement('img');
+        this.element.src = this.data.src;
+        this.element.style.position = 'absolute';
+        this.element.style.zIndex = '10';
+        this.element.classList.add('overlay', 'overlay-image');
+
+        this.manager.container.appendChild(this.element);
+
+        setTimeout(() => this.remove(), this.duration);
+    }
+
+    createTextOverlay() {
+        this.textElement = document.createElement('div');
+        this.textElement.textContent = this.options.texto;
+        this.textElement.style.color = 'white';
+        this.textElement.style.fontSize = '1.5rem';
+        this.textElement.style.zIndex = '11';
+        this.textElement.classList.add('overlay');
+
+        this.manager.container.appendChild(this.textElement);
+
+        setTimeout(() => {
+            if (this.textElement) this.manager.container.removeChild(this.textElement);
+        }, this.duration);
+    }
+}
+
+class UnsupportedOverlay extends BaseOverlay {
+    create() {
+        this.element = document.createElement('div');
+        this.element.textContent = 'Unsupported file type';
+        this.element.classList.add('overlay');
+
+        this.manager.setPosition(this.element, this.position);
+        this.manager.container.appendChild(this.element);
+
+        setTimeout(() => this.remove(), 5000);
+    }
+}
+
+
+const overlayManager = new OverlayManager();
     </script>
 </body>
 </html>
