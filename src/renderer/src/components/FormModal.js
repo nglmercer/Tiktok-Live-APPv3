@@ -65,11 +65,6 @@ export default class FormModal {
       };
     }
 
-    const actionTypeElement = this.formElement.querySelector('[name="actionType"]');
-    if (actionTypeElement) {
-      actionTypeElement.addEventListener('change', () => this.toggleFieldsVisibility(actionTypeElement.value));
-      this.toggleFieldsVisibility(actionTypeElement.value);
-    }
   }
 
   close() {
@@ -107,19 +102,38 @@ export default class FormModal {
             break;
           case 'radio':
             formField = createRadioField(field);
+            formField.querySelectorAll('input[type="radio"]').forEach(radio => {
+              radio.addEventListener('change', (event) => {
+                this.handleRadioChange(event.target.value);
+              });
+            });
             break;
           default:
             console.warn(`Unsupported field type: ${field.type}`);
         }
       }
 
-      if (formField) this.formElement.appendChild(formField);
+      if (formField) {
+        if (field.dataAssociated) {
+          formField.setAttribute('data-associated', field.dataAssociated);
+        }
+        this.formElement.appendChild(formField);
+      }
     });
 
     M.FormSelect.init(this.formElement.querySelectorAll('select'));
     this.initializeFormData(config, formData); // Inicializa el formulario si hay datos
   }
-
+  handleRadioChange(selectedValue) {
+    const fields = this.formElement.querySelectorAll('[data-associated]');
+    fields.forEach(field => {
+      if (field.getAttribute('data-associated') === selectedValue) {
+        field.style.display = 'block';
+      } else {
+        field.style.display = 'none';
+      }
+    });
+  }
   createCheckboxGroup(field) {
     const groupDiv = document.createElement('div');
     groupDiv.className = 'input-group';
@@ -205,16 +219,4 @@ export default class FormModal {
     });
   }
 
-  toggleFieldsVisibility(actionType) {
-    const keyvalueField = this.formElement.querySelector('[name="keyvalue"]')?.closest('.input-field');
-    const applicationField = this.formElement.querySelector('[name="application"]')?.closest('.input-field');
-
-    if (actionType === 'keyPress') {
-      if (keyvalueField) keyvalueField.style.display = '';
-      if (applicationField) applicationField.style.display = 'none';
-    } else if (actionType === 'openApp') {
-      if (keyvalueField) keyvalueField.style.display = 'none';
-      if (applicationField) applicationField.style.display = '';
-    }
-  }
 }

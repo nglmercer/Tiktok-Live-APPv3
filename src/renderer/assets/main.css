@@ -147,3 +147,8 @@ input[type="text"] {
 input[type="number"] {
   min-width: 80px;
 }
+form {
+  label {
+    font-size: 1.2rem !important;
+  }
+}

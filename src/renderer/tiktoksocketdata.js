@@ -176,6 +176,7 @@ async function handleevents(evenType, data) {
         break;
     case "follow":
         handlefollow(data);
+        // AccionEventoOverlayEval(evenType,alldata,userdata);
         break;
     case "gift":
         handlegift(data);

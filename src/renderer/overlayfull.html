@@ -79,6 +79,7 @@
                         new UserPictureOverlay(this, data, data.options);
                     } else {
                         new ImageOverlay(this, data, data.options);
+                        console.log("ImageOverlay", data);
                     }
                 } else if (data.fileType.startsWith('audio/')) {
                     new AudioOverlay(this, data, data.options);
@@ -101,7 +102,7 @@
             this.footer = document.createElement('div');
             this.footer.id = 'overlay-footer';
             this.footer.className = 'overlay-footer';
-            this.footer.textContent = 'by melser';
+            this.footer.textContent = 'a';
             this.footer.style.position = 'absolute';
             this.footer.style.bottom = '0';
             this.footer.style.width = '100%';
@@ -117,7 +118,7 @@
             this.autoRefreshTimer = setTimeout(() => {
                 console.log('No connection or events received in 3 seconds. Refreshing page...');
                 window.location.reload();
-            }, 3000);
+            }, 99999);
         }
 
         resetAutoRefresh() {
@@ -133,7 +134,7 @@
             this.data = data;
             this.options = options;
             this.element = null;
-            this.duration = (options.duracion || 1) * 1000;
+            this.duration = (options.duracion || 3) * 1000;
             this.create();
         }
 
