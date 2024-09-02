@@ -9,7 +9,7 @@ import { ChatContainer, ChatMessage } from './assets/items';
 import { UserPointsTable, StaticTable } from './src/utils/UserPoints';
 import { handleleermensaje } from './src/voice/tts';
 import { loadFileList, setupDragAndDrop, handlePlayButton, getfileId, handlePasteFromClipboard} from './src/components/Fileshtml'
-import { evalandfinddata, AccionEventoOverlayEval } from './src/components/AccionEvents'
+import { AccionEventoOverlayEval, getalldatafromAccionEventsDBManager } from './src/components/AccionEvents'
 const observeruserPoints = new DBObserver();
 const newChatContainer = new ChatContainer('.chatcontainer', 500);
 const newGiftContainer = new ChatContainer('.giftcontainer', 500);
@@ -130,6 +130,7 @@ function handleWebsocketMessage(event) {
 }
 async function handleevents(evenType, data) {
     let userpoints;
+    let alldatadb = [];
     if (data.uniqueId) {
       userpoints = {
         uniqueId: data.uniqueId,
@@ -163,8 +164,12 @@ async function handleevents(evenType, data) {
         }
         if (userpoints.points  <= -1) return userpoints.points = -1;
         handleleermensaje(data.comment);
+        alldatadb = await getalldatafromAccionEventsDBManager();
+        AccionEventoOverlayEval(evenType,alldatadb,data);
         break;
     case "share":
+      alldatadb = await getalldatafromAccionEventsDBManager();
+      AccionEventoOverlayEval(evenType,alldatadb,data);
         handleshare(data);
         break;
     case "social":
@@ -172,15 +177,23 @@ async function handleevents(evenType, data) {
         break;
     case "likes":
     case "like":
+      alldatadb = await getalldatafromAccionEventsDBManager();
+      AccionEventoOverlayEval(evenType,alldatadb,data);
         handlelike(data);
         break;
     case "follow":
         handlefollow(data);
-        // AccionEventoOverlayEval(evenType,alldata,userdata);
+        alldatadb = await getalldatafromAccionEventsDBManager();
+        AccionEventoOverlayEval(evenType,alldatadb,data);
         break;
     case "gift":
+      alldatadb = await getalldatafromAccionEventsDBManager();
+      AccionEventoOverlayEval(evenType,alldatadb,data);
         handlegift(data);
         break;
+    case "suscribe":
+      console.log("suscribe", data);
+      break;
     case "connected":
         onConnected(data);
         break;

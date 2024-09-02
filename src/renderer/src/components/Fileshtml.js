@@ -207,9 +207,9 @@ async function handlePlayButton(button) {
 // console.log("datafile", datafile);
 //   socketManager.emitMessage("overlaydata", datafile);
 // }, 5000);
-socketManager.onMessage("overlay-event", (data) => {
-  console.log("overlay-event", data);
-});
+// socketManager.onMessage("overlay-event", (data) => {
+//   console.log("overlay-event", data);
+// });
 async function getfileId(id) {
     if (id === undefined || id === null || id === false) {
         return null;

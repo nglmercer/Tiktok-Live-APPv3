@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, globalShortcut, ipcMain } from "electron";
 import path, { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import icon from "../../resources/icon.png?asset";
+import iconico from "../../resources/icon.ico?asset";
 import fs from "fs";
 import fileIndexer from "./FindFiles";
 import FileOpener from "./FileOpener";
@@ -307,7 +308,7 @@ function createWindow() {
     height: 670,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === "linux" ? { icon } : {}),
+    ...(process.platform === "linux" ? { icon } : {iconico}),
     webPreferences: {
       // preload: join(__dirname, "../preload/index.mjs"),
       contextIsolation: true,

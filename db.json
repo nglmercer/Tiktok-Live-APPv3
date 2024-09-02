@@ -1,0 +1,35 @@
+{
+  "fileIndex": 17,
+  "fileData": [
+    {
+      "index": 13,
+      "name": "GrassBlock_HighRes minecraft.webp",
+      "path": "C:\\Users\\melser\\Pictures\\GrassBlock_HighRes minecraft.webp",
+      "type": "image/webp"
+    },
+    {
+      "index": 14,
+      "name": "TWITCHtwitch3f.png",
+      "path": "C:\\Users\\melser\\Pictures\\TWITCHtwitch3f.png",
+      "type": "image/png"
+    },
+    {
+      "index": 15,
+      "name": "TESTQR3descarga (2).png",
+      "path": "C:\\Users\\melser\\Downloads\\TESTQR3descarga (2).png",
+      "type": "image/png"
+    },
+    {
+      "index": 16,
+      "name": "SaveTik.co_7403799409252764933-hd.mp4",
+      "path": "C:\\Users\\melser\\Downloads\\SaveTik.co_7403799409252764933-hd.mp4",
+      "type": "video/mp4"
+    },
+    {
+      "index": 17,
+      "name": "31-minutos-y-tercero-que-le-importa.mp3",
+      "path": "C:\\Users\\melser\\Music\\sonidos\\31-minutos-y-tercero-que-le-importa.mp3",
+      "type": "audio/mpeg"
+    }
+  ]
+}

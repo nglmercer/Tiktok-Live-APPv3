@@ -29,13 +29,14 @@ export function createSelectField(field) {
   const select = document.createElement('select');
   select.name = field.name;
   select.id = field.name;
-
-  field.options.forEach(option => {
-    const opt = document.createElement('option');
-    opt.value = option.value.index || TypeofData.ObjectStringify(option.value);
-    opt.innerText = option.label || option.value;
-    select.appendChild(opt);
-  });
+  if (!field.option ||field.options.length <= 0) {
+    field.options.forEach(option => {
+      const opt = document.createElement('option');
+      opt.value = option.value.index || TypeofData.ObjectStringify(option.value);
+      opt.innerText = option.label || option.value;
+      select.appendChild(opt);
+    });
+  };
 
   const label = document.createElement('label');
   label.htmlFor = field.name;

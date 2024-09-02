@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>Electron</title>
+    <title>Tiktokliveappv3</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <!-- <meta
       http-equiv="Content-Security-Policy"
@@ -18,6 +18,8 @@
         </script> -->
     <script src="https://cdn.jsdelivr.net/npm/@materializecss/materialize@2.1.0/dist/js/materialize.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <script src="./htmlcomponents/iframePreview.js" type="module"></script>
+    <script src="./src/utils/Giftdata.js" type="module"></script>
   </head>
   <body>
     <nav>
@@ -410,7 +412,7 @@
       <form id="dynamicForm2" class="gridform">
 
       </form>
-      <a id="submitFormBtn2" href="#!" class="modal-close btn filled waves-effect waves-light">Añadir acciones </a>
+      <a id="submitFormBtn2" href="#!" class="modal-close btn filled waves-effect waves-light m-10">Añadir acciones </a>
 
     </div>
   </div>
@@ -441,7 +443,7 @@
       const urltext = document.getElementById("overlay-preview-container");
       urltext.innerHTML = `${window.location.href}/overlay.html`;
     </script>
-    <iframe src="/overlayfull.html" width="100%" height="100%" frameborder="0"></iframe>
+    <iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
   </div>
 
 </div>

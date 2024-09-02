@@ -152,3 +152,6 @@ form {
     font-size: 1.2rem !important;
   }
 }
+.m-10 {
+  margin: 10px;
+}

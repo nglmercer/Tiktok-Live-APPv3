@@ -206,7 +206,7 @@ class DynamicRow {
     const selectElement = document.createElement('select');
     selectElement.id = key;
     selectElement.classList.add('select');
-    console.log("select",typeConfig);
+    // console.log("select",typeConfig);
     if (typeConfig.options) {
       typeConfig.options.forEach(option => {
         const optionElement = document.createElement('option');
