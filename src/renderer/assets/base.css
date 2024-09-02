@@ -58,7 +58,12 @@ form {
   gap: 10px;
 }
 .stateText {
-  background-color: red;
+  color: red;
+}
+.input-field {
+  label {
+    font-size: 0.8rem !important;
+  }
 }
 .grid-select option {
   display: block;

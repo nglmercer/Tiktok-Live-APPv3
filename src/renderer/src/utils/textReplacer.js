@@ -6,7 +6,7 @@ const textReplacer = (() => {
    * @param {string} selector - El ID o className de los elementos (incluyendo # para ID y . para className)
    * @param {string} newText - El nuevo texto que reemplazará al texto existente
    */
-  function replaceText(selector, newText) {
+  function replaceText(selector, newText, color) {
     // Selecciona todos los elementos que coinciden con el selector
     const elements = document.querySelectorAll(selector);
 
@@ -15,14 +15,16 @@ const textReplacer = (() => {
       elements.forEach(element => {
         // Verifica si el elemento tiene nodos de texto o un span interno
         if (element.tagName.toLowerCase() === 'button' || element.querySelector('span')) {
-          const span = element.querySelector('span');
-          if (span) {
-            span.textContent = newText; // Reemplaza el texto dentro del span
-          } else {
-            element.textContent = newText; // Reemplaza el texto directamente
+          const span = element.querySelector('span') || element;
+          span.textContent = newText; // Reemplaza el texto
+          if (color) {
+            span.style.color = color; // Cambia el color si se proporciona
           }
         } else {
           element.textContent = newText; // Reemplaza el texto directamente
+          if (color) {
+            element.style.color = color; // Cambia el color si se proporciona
+          }
         }
       });
     } else {

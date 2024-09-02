@@ -269,9 +269,9 @@ async function evalsystempoints(evenType, data) {
           break;
       }
   }
-  if (userpoints.points  <=0) return userpoints;
   userPointsDBManager.saveOrUpdateDataByName(userpoints);
   console.log("Puntos asignados:",evenType, userpoints);
+  if (userpoints.points  <=0) return userpoints;
   return userpoints;
 }
 
@@ -337,7 +337,7 @@ function sendToServer(evenType, data) {
 }
 function onConnected(data) {
   console.log("onConnected", data);
-  textReplacer.replaceText("#stateText", `conectado ? ${data.isConnected}` );
+  textReplacer.replaceText("#stateText", `conectado ? ${data.isConnected}`, "green");
   showAlert('info', `${data.isConnected} to ${data.roomId}`, 10000);
   showAlert('success', `${data.isConnected} to ${data.roomId}`, 10000);
 }
@@ -346,10 +346,12 @@ function onRoominfo(data) {
   if (data.cover) {
     imageManipulator.manipulateImage("#uniqueIdImage", data.cover.url_list[0], "src");
   } else if (data.owner) {
-    textReplacer.replaceText("#btnConnectTikTok", `Conectado a ${data.owner.nickname}` );
+    textReplacer.replaceText("#btnConnectTikTok", `Conectado a ${data.owner.nickname}`, "green" );
   }
   console.log("onRoominfo", data.nickname,data);
   showAlert('info', `${data.cover}`, 10000);
+  textReplacer.replaceText("#stateText", `conectado ? ${data.isConnected}`, "green");
+
 }
 
 const events = ['connected', 'chat', 'share', 'social', 'like', 'follow', 'gift', 'streamEnd', 'disconnected', 'emote', 'envelope', 'questionNew', 'subscribe', 'member', 'roomUser'];
