@@ -84,7 +84,7 @@ const formConfig = [
       { type: 'input', name: 'profile_text', label: 'Texto', inputType: 'text', returnType: 'object' },
     ],
     returnType: 'boolean',
-  },
+  },//profile_check
   {
     type: 'checkbox',
     name: 'mediaAudio_check',
@@ -96,7 +96,7 @@ const formConfig = [
       { type: 'select', name: 'mediaAudio_file', label: 'audio', options: audioOptions, returnType: 'object' },
     ],
     returnType: 'boolean',
-  },
+  },//mediaAudio_check
   {
     type: 'checkbox',
     name: 'mediaImg_check',
@@ -108,7 +108,7 @@ const formConfig = [
       { type: 'select', name: 'mediaImg_file', label: 'imagen', options: imageOptions, returnType: 'object' },
     ],
     returnType: 'boolean',
-  },
+  },//mediaImg_check
   {
     type: 'checkbox',
     name: 'mediaVideo_check',
@@ -120,22 +120,20 @@ const formConfig = [
       { type: 'select', name: 'mediaVideo_file', label: 'video', options: videoOptions, returnType: 'object' },
     ],
     returnType: 'boolean',
-  },
+    // hidden:false, dataAssociated: 'chat'
+  },//mediaVideo_check
   { type: 'radio', name: 'Evento_eventType', label: 'Seleccione el Evento', options:
   [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },
   { value: 'likes', label: 'likes'},{value: 'share', label: 'compartir'},
   { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' }],
   returnType: 'string', hidden: false
 },
-{ type: 'input', name: 'Evento_chat_check', label: 'verificar comentario', inputType: 'checkbox', returnType: 'boolean', hidden:true, dataAssociated: 'chat'},////    //////
-{ type: 'input', name: 'Evento_chat', label: 'Chat', inputType: 'text', returnType: 'string', hidden:true, dataAssociated: 'chat'},////    //////
-{ type: 'input', name: 'Evento_likes_check', label: 'likes especifico', inputType: 'checkbox', returnType: 'boolean', hidden:true, dataAssociated: 'likes'},   //////
-{ type: 'input', name: 'Evento_likes', label: 'likes', inputType: 'number', returnType: 'number', hidden:true, dataAssociated: 'likes'},   //////
-{ type: 'input', name: 'Evento_gift_check', label: 'verificar gift', inputType: 'checkbox', returnType: 'boolean', hidden:true, dataAssociated: 'gift'},///   //////
-{ type: 'select', name: 'Evento_gift', label: 'gift', options: getmapselectgift(), returnType: 'number', hidden:true, dataAssociated: 'gift'},///   //////
-{ type: 'input', name: 'Evento_share', label: 'share', inputType: 'number', returnType: 'number', hidden:true, dataAssociated: 'share'},// //////
-{ type: 'input', name: 'Evento_follow', label: 'follow', inputType: 'number', returnType: 'number', hidden:true, dataAssociated: 'follow'},//////
-
+{ type: 'input', name: 'Evento_chat', label: 'Chat', inputType: 'text', returnType: 'string', hidden:false,valuedata:'default', dataAssociated: 'chat'},////    //////
+{ type: 'input', name: 'Evento_likes', label: 'likes', inputType: 'number', returnType: 'number', hidden:false,valuedata: 15, dataAssociated: 'likes'},   //////
+{ type: 'select', name: 'Evento_gift', label: 'gift', options: getmapselectgift(), returnType: 'number', hidden:false, dataAssociated: 'gift'},///   //////
+{ type: 'input', name: 'Evento_share', label: 'share', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'share'},// //////
+{ type: 'input', name: 'Evento_follow', label: 'follow', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'follow'},//////
+{ type: 'input', name: 'Evento_suscripcion', label: 'suscripcion', inputType: 'text', returnType: 'number', hidden:true,valuedata:'default', dataAssociated: 'suscripcion'},//////
 { type: 'input', name: 'id', label: 'ID', inputType: 'Number', returnType: 'Number', hidden: true },
 { type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
   // { type: 'checkbox', name: 'activetesteeeeeeeeeeeeeee', label: 'active', inputType: 'checkbox', returnType: 'boolean' },
@@ -232,13 +230,13 @@ const formConfig = [
     compareStrings(actualValue, expectedValue, compare = '===') {
         switch (compare) {
             case '===':
-                return actualValue === expectedValue;
+                return expectedValue === actualValue;
             case 'contains':
-                return actualValue.includes(expectedValue);
+                return expectedValue.includes(actualValue);
             case 'startsWith':
-                return actualValue.startsWith(expectedValue);
+                return expectedValue.startsWith(actualValue);
             case 'endsWith':
-                return actualValue.endsWith(expectedValue);
+                return expectedValue.endsWith(actualValue);
             default:
                 return false;
         }
@@ -250,20 +248,27 @@ const formConfig = [
       for (let index = 0; index < this.configevaldata.length; index++) {
           const item = this.configevaldata[index];
 
-          // Verificar si existe el parámetro especial 'forceTrue'
-          if (Array.isArray(item.verifykey)) {
-              const forceTrueKey = item.verifykey.find(key => key.forceTrue === true);
-              if (forceTrueKey) {
-                  // Si se encuentra 'forceTrue', ejecutar el callback si existe y continuar con el siguiente item
-                  if (item.callback) {
-                      item.callback(dataeval);
-                  }
-                  continue;
-              }
-          }
-
           this.findAndEvaluate(item.keyname, item.keytype, item.verifykey, dataeval);
           const matchedValue = this.matchedValues.get(item.keyname);
+          if (Array.isArray(item.verifykey)) {
+            const forceTrueKey = item.verifykey.find(key => key.forceTrue === true);
+              if (forceTrueKey) {
+                    if (dataeval,item.keyname){
+                      const defaultvalue = this.finddefaultMatch(item.keyname, dataeval);
+                      console.log("defaultvalue",defaultvalue,"dataeval",dataeval,"matchedValue",matchedValue);
+                      if (dataeval.Evento.chat) {
+                        console.log("Eventype",defaultvalue[this.eventType]);
+                        if(defaultvalue[this.eventType]==="default"){
+                          if (item.callback) {
+                              item.callback(dataeval);
+                          continue;
+                        }
+
+                        }
+                      }
+                    }
+              }
+          }
 
           if (item.isBlocking && (matchedValue === null || !this.allKeysMatched(matchedValue, item.verifykey))) {
               isValid = false;
@@ -289,11 +294,32 @@ const formConfig = [
         return verifykeys.every(verifykey => {
             if (typeof currentValue === 'object' && currentValue !== null && verifykey.key in currentValue) {
                 const valueToCheck = currentValue[verifykey.key];
-                return this.isValid(valueToCheck, verifykey);
+                const matchresult = this.isValid(valueToCheck, verifykey);
+                console.log("allKeysMatched", matchresult, verifykey,   );
+                return matchresult;
             }
             return false;
         });
     }
+    finddefaultMatch(currentValue, verifykeys) {
+      if (!Array.isArray(verifykeys)) {
+          verifykeys = [verifykeys];
+      }
+      let finddata = false;
+
+      for (const verifykey of verifykeys) {
+          if (currentValue && verifykey) {
+              // Comprobar si el currentValue tiene la clave de evento deseada
+              if (verifykey[currentValue]) {
+                  finddata = verifykey[currentValue];
+                  break;  // Si encuentras la coincidencia, puedes salir del loop
+              }
+          }
+      }
+
+      return finddata;
+  }
+
 }
 
 
@@ -341,9 +367,12 @@ async function sendMediaManager(data,userdata = {}) {
 }
 
 // Ejemplo de uso
-async function AccionEventoOverlayEval(eventType = "gift", indexdbdata, userdata = {}) {
+async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata = {}) {
   let customoptions = [];
   switch (eventType) {
+    case "chat":
+      customoptions = [{key: "eventType", value: eventType, type:"string"}, {key: "chat", value: userdata.comment, type:"string", compare: "startsWith", forceTrue: true}]
+      break;
     case "gift":
       customoptions = [{key: "eventType", value: eventType, type:"string"}, {key: "gift", value: userdata.giftId, type:"number", compare: "==="}]
       break;
@@ -381,21 +410,22 @@ async function AccionEventoOverlayEval(eventType = "gift", indexdbdata, userdata
 }
 
 
-// setInterval(async () => {
-//   const userdata = {
-//     uniqueId: "testUser",
-//     nickname: "testUser",
-//     name: "testUser",
-//     points: 0,
-//     likeCount: 50,
-//     diamondCost: 50,
-//     giftId: 6064,
-//     ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg"
-//   };
-//   const alldatadb = await getalldatafromAccionEventsDBManager();
-//   AccionEventoOverlayEval("likes",alldatadb,userdata);
-//   // console.log("setInterval");
-// }, 6666);
+setInterval(async () => {
+  const userdata = {
+    uniqueId: "testUser",
+    nickname: "testUser",
+    name: "testUser",
+    comment: "nodefault 123124124",
+    points: 0,
+    likeCount: 50,
+    diamondCost: 50,
+    giftId: 6064,
+    ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg"
+  };
+  const alldatadb = await getalldatafromAccionEventsDBManager();
+  AccionEventoOverlayEval("chat",alldatadb,userdata);
+  // console.log("setInterval");
+}, 6666);
 
 openModaltest.addEventListener('click', () => {
   openModaltest.addEventListener('click', () => {
@@ -441,12 +471,14 @@ const config = {
      {value: 'share', label: 'compartir'}, { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' }],
     },
     chat: {
+      label: 'chat',
       class: 'input-default',
       type: 'string',
       returnType: 'string',
       hidden: true,
     },
     likes: {
+      label: 'likes',
       class: 'input-default',
       type: 'number',
       returnType: 'number',
@@ -454,9 +486,10 @@ const config = {
     },
     gift: {
       class: 'input-default',
-      type: 'number',
+      label: 'gift',
+      type: 'select',
       returnType: 'number',
-      hidden: true,
+      options: getmapselectgift()
     },
   },
   profile: {

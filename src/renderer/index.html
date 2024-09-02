@@ -24,26 +24,27 @@
   <body>
     <nav>
       <div class="nav-wrapper light-blue">
-        <a href="#" data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">menu📚</i></a>
+        <a data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">menu📚</i></a>
 
         <ul class="right hide-on-med-and-down">
-          <li><a href="#" class="tab-link" data-tab="tab1">Inicio</a></li>
-          <li><a href="#" class="tab-link" data-tab="tab2">Chat y Voz</a></li>
-          <li><a href="#" class="tab-link" data-tab="tab3">Control de audio</a></li>
-          <li><a href="#" class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
-          <li><a href="#" class="tab-link" data-tab="tab5">Atajos y botones</a></li>
-          <li><span id="stateText">Desconectado</span></li>
+          <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
+          <li><a class="tab-link" data-tab="tab2">Chat y Voz</a></li>
+          <li><a class="tab-link" data-tab="tab3">Control de audio</a></li>
+          <li><a class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
+          <li><a class="tab-link" data-tab="tab5">Atajos y botones</a></li>
+          <li><a class="tab-link" data-tab="tab6">Control de pantalla</a></li>
+          <li><span id="stateText" class="stateText">Desconectado</span></li>
         </ul>
       </div>
     </nav>
 
   <ul class="sidenav" id="mobile-demo">
-    <li><a href="#" class="tab-link" data-tab="tab1">Inicio</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab2">Chat y Voz</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab3">Control de audio</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab5">Atajos y botones</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab6">Control de pantalla</a></li>
+    <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
+    <li><a class="tab-link" data-tab="tab2">Chat y Voz</a></li>
+    <li><a class="tab-link" data-tab="tab3">Control de audio</a></li>
+    <li><a class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
+    <li><a class="tab-link" data-tab="tab5">Atajos y botones</a></li>
+    <li><a class="tab-link" data-tab="tab6">Control de pantalla</a></li>
 </ul>
 
 <div class="tabcontainer" data-tab="tab1">
@@ -412,7 +413,7 @@
       <form id="dynamicForm2" class="gridform">
 
       </form>
-      <a id="submitFormBtn2" href="#!" class="modal-close btn filled waves-effect waves-light m-10">Añadir acciones </a>
+      <a id="submitFormBtn2" class="modal-close btn filled waves-effect waves-light m-10">Añadir acciones </a>
 
     </div>
   </div>
@@ -425,7 +426,7 @@
   <a id="openModalBtn" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y atajos</a>
   <div id="modal" class="modal">
     <div class="modal-content">
-  <a id="submitFormBtn" href="#!" class="modal-close btn filled waves-effect waves-light">Añadir acciones </a>
+  <a id="submitFormBtn" class="modal-close btn filled waves-effect waves-light">Añadir acciones </a>
 
       <form id="dynamicForm1">
         <!-- Form fields will be appended here -->
@@ -439,11 +440,15 @@
   <div class="containerbox relative">
     <h3>Overlay Previews</h3>
     <span id="overlay-preview-container"></span>
+    <iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
+    <span id="overlaypreviewcontainer2"></span>
+    <iframe-preview src="/overlay.html" muted="true"></iframe-preview>
     <script>
       const urltext = document.getElementById("overlay-preview-container");
-      urltext.innerHTML = `${window.location.href}/overlay.html`;
+      urltext.innerHTML = `${window.location.href}overlay.html`;
+      const urltext2 = document.getElementById("overlaypreviewcontainer2");
+      urltext2.innerHTML = `${window.location.href}overlayfull.html`;
     </script>
-    <iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
   </div>
 
 </div>

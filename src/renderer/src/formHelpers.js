@@ -14,7 +14,9 @@ export function createInputField(field) {
   const label = document.createElement('label');
   label.htmlFor = field.name;
   label.innerText = field.label;
-
+  if (field.valuedata) {
+    input.value = field.valuedata;
+  }
   div.appendChild(input);
   div.appendChild(label);
   return div;

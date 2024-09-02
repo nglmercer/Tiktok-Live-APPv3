@@ -80,6 +80,7 @@ export default class FormModal {
 
       if (field.type === 'checkbox' && field.children) {
         formField = this.createCheckboxGroup(field);
+        if (formField && field.dataAssociated) {formField.setAttribute('data-associated', field.dataAssociated);}
       } else {
         switch (field.type) {
           case 'input':
@@ -116,7 +117,9 @@ export default class FormModal {
       if (formField) {
         if (field.dataAssociated) {
           formField.setAttribute('data-associated', field.dataAssociated);
+          this.handleRadioChange(field.dataAssociated);
         }
+
         this.formElement.appendChild(formField);
       }
     });

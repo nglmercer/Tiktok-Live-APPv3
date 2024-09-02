@@ -57,7 +57,9 @@ form {
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 10px;
 }
-
+.stateText {
+  background-color: red;
+}
 .grid-select option {
   display: block;
   padding: 10px;
