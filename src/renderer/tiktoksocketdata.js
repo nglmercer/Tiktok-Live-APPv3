@@ -26,9 +26,11 @@ async function sendcreateserver(serverurl,data) {
 sendcreateserver(`${socketurl.getport()}/create-overlaywindow`, {});
 const textcontent = {
   content: {
-    1: ["text", "Aqui esta el chat","white"],
+    1: ["text", "Aqui esta el chat","white","QWDQWDQWDQWDCHAT"],
     2: ["text", "de tiktok","white"],
     3: ["text", "!","gold"],
+    // 4: ["url", "https://example.com", "blue", "Click para ir a mi perfil"]
+
   }
 }
 const numbercontent = {
@@ -55,12 +57,6 @@ newChatContainer.addMessage(message1);
 newGiftContainer.addMessage(message2);
 newEventsContainer.addMessage(message3);
 const userPointsDBManager = new IndexedDBManager(databases.userPoints,observeruserPoints);
-const optionstable = {
-  th: ['nickname', 'imageUrl', 'points'],
-  initialVisibleUsers: 10,
-  maxVisibleUsers: 10
-};
-
 const initialData = await getAllDataFromDB(userPointsDBManager);
 const configinitialData = {
   uniqueId: { type: 'string' },
@@ -131,7 +127,7 @@ function handleWebsocketMessage(event) {
 async function handleevents(evenType, data) {
     let userpoints;
     let alldatadb = [];
-    if (data.uniqueId) {
+    if (data && data.uniqueId) {
       userpoints = {
         uniqueId: data.uniqueId,
         nickname: data.nickname,
@@ -139,6 +135,7 @@ async function handleevents(evenType, data) {
         name: data.uniqueId,
         points: 0,
         imageUrl: data.profilePictureUrl,
+        id: data.userId,
     }
     }
   const evaldata = evalBadge(data);
@@ -158,7 +155,7 @@ async function handleevents(evenType, data) {
         if (evalmessagecontainsfilter(data.comment)) {
             console.log("evalmessagecontainsfilter",evalmessagecontainsfilter(data.comment), data)
             let getpoinifexists = TypeofData.toNumber(await getdataIndexdbInstance.getdataIndexdb(data, 'points')) || 0;
-            userpoints.points = getpoinifexists -= 5;
+            userpoints.points = getpoinifexists -= 4;
             userPointsDBManager.saveOrUpdateDataByName(userpoints);
             return;
         }
@@ -222,6 +219,7 @@ async function evalsystempoints(evenType, data) {
       name: data.uniqueId,
       points: 0,
       imageUrl: data.profilePictureUrl,
+      id: data.userId,
   };
   const form = document.getElementById('pointsForm');
   const config = getformdatabyid(form);
@@ -242,45 +240,46 @@ async function evalsystempoints(evenType, data) {
   };
 
   if (eventPointscheck[evenType]) {
-      switch (evenType) {
-        case "chat":
-          userpoints.points = ponistvalue.chat += getpoinifexists || 0;
-          console.log("chat", userpoints.points);
-          break;
-        case "share":
-          userpoints.points = ponistvalue.share += getpoinifexists || 0;
-          console.log("share", userpoints.points);
-          break;
-        case "gift":
-          const numbergiftcoins = TypeofData.toNumber(data.diamondCount) || 0;
-          userpoints.points = ponistvalue.gift += getpoinifexists * numbergiftcoins || 0;
-          console.log("gift", userpoints.points);
-          break;
-        case "follow":
-          userpoints.points = ponistvalue.follow += getpoinifexists || 0;
-          console.log("follow", userpoints.points);
-          break;
-        case "like":
-          userpoints.points = ponistvalue.like += getpoinifexists || 0;
-          console.log("like", userpoints.points);
-          break;
-        default:
-          userpoints.points = 0;
-          break;
-      }
+    switch (evenType) {
+      case "chat":
+        userpoints.points = getpoinifexists + (TypeofData.toNumber(config.Pointsperchat.value) || 1);
+        console.log("chat", userpoints.points);
+        break;
+      case "share":
+        userpoints.points = getpoinifexists + (TypeofData.toNumber(config.Pointspershare.value) || 1);
+        console.log("share", userpoints.points);
+        break;
+      case "gift":
+        const numbergiftcoins = TypeofData.toNumber(data.diamondCount) || 2;
+        userpoints.points = getpoinifexists + (TypeofData.toNumber(config.Pointspercoin.value) || 2) + numbergiftcoins;
+        console.log("gift", userpoints.points);
+        break;
+      case "follow":
+        userpoints.points = getpoinifexists + (TypeofData.toNumber(config.Pointsperfollow.value) || 1);
+        console.log("follow", userpoints.points);
+        break;
+      case "like":
+        userpoints.points = getpoinifexists + (TypeofData.toNumber(config.Pointsperlike.value) || 1);
+        console.log("like", userpoints.points);
+        break;
+      default:
+        userpoints.points = 0;
+        break;
+    }
   }
+
+  if (userpoints.points  === 0) return userpoints;
   userPointsDBManager.saveOrUpdateDataByName(userpoints);
   console.log("Puntos asignados:",evenType, userpoints);
-  if (userpoints.points  <=0) return userpoints;
   return userpoints;
 }
 
 function handlechat(data) {
   const parsedchatdata = {
     content: {
-      1: ["text", data.uniqueId,"white"],
+      1: ["url", `http://tiktok.com/@${data.uniqueId}`,"blue",`${data.nickname}`],
       2: ["text", data.comment,"white"],
-      3: ["text", "!","gold"],
+      // 3: ["text", "!","gold"],
     }
   }
   const newMessage = new ChatMessage( `msg${counterchat.increment()}`, data.profilePictureUrl, parsedchatdata);
@@ -307,8 +306,8 @@ function handlelike(data) {
   console.log("like", data);
   const parsedlikedata = {
     content: {
-      1: ["text", data.uniqueId,"white"],
-      2: ["text", "likes","white"],
+      1: ["url", `http://tiktok.com/@${data.uniqueId}`,"blue",`${data.nickname}`],
+      2: ["text", "likes","gold"],
       3: ["number", data.likeCount,"gold"],
     }
   }
@@ -415,6 +414,7 @@ function evalBadge(data) {
 }
 
 function evalmessagecontainsfilter(text) {
+  if (typeof text !== 'string') return false;
   const filterWords = JSON.parse(localStorage.getItem('filterWords')) || [];
   if (filterWords.length === 0) return false;
 

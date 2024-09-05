@@ -21,6 +21,32 @@ export function createInputField(field) {
   div.appendChild(label);
   return div;
 }
+export function createTextareaField(field) {
+  const div = document.createElement('div');
+  div.className = 'input-field';
+
+  if (field.hidden) {
+    div.style.display = 'none'; // Oculta el campo si `hidden` es true
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.name = field.name;
+  textarea.id = field.name;
+
+  if (field.valuedata) {
+    textarea.value = field.valuedata;
+  }
+
+  const label = document.createElement('label');
+  label.htmlFor = field.name;
+  label.innerText = field.label;
+
+  div.appendChild(label);
+  div.appendChild(textarea);
+
+  return div;
+}
+
 export function createSelectField(field) {
   const div = document.createElement('div');
   div.className = 'input-field';

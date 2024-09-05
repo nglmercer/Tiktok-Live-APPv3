@@ -1,7 +1,7 @@
 import SliderCreator from "./components/slider";
 import {socketManager} from "../tiktoksocketdata";
 import keyboardMap  from '../json/keyboard.json';
-import { initializeFilterComponent, addFilterItemToGroup } from './filters/filters'
+import { initializeFilterComponent,initializecomponents ,addFilterItemToGroup } from './filters/filters'
 const sliderCreator = new SliderCreator('sliders-container');
 
 socketManager.onMessage("audioData", (data) => {
@@ -36,7 +36,4 @@ function setupSliders(element) {
     }
   });
 }
-document.addEventListener('DOMContentLoaded', function () {
-  initializeFilterComponent('filter-words', 'addfilter-words', 'containerfilter-words', 'filterWords', 'load-known-filters');
-  initializeFilterComponent('filter-users', 'addfilter-users', 'containerfilter-users', 'filterUsers');
-});
+initializecomponents();

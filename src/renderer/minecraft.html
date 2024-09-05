@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: rgba(0, 0, 255, 0.259);
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .overlay {
+            position: absolute;
+        }
+        .overlay-image {
+            box-sizing: content-box;
+            height: auto;
+            position: absolute;
+            top: 0;
+            left: 30%;
+            width: 100%;
+            max-width: 400px;
+            max-height: 500px;
+        }
+        .overlay-video, .overlay-canvas {
+            box-sizing: content-box;
+            height: auto;
+            width: 100%;
+            max-width: 400px;
+            max-height: 400px;
+        }
+        video, img {
+          display: flex;
+          position: absolute;
+          width: 100vw;
+          height: 100vh;
+          object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <div id="container"></div>
+    <!-- <script>
+      class OverlayManager {
+        constructor() {
+            this.container = document.getElementById('container');
+            this.setupSocket();
+            this.setupFullscreen();
+            this.setupFooter();
+            this.setupAutoRefresh();
+        }
+
+        setupSocket() {
+            this.socket = io("http://localhost:8088");
+            this.socket.on('connect', () => {
+                console.log('connected');
+                this.resetAutoRefresh();
+            });
+            this.socket.on('disconnect', () => console.log('disconnected'));
+            this.socket.on("overlay-event", (data) => {
+                this.handleMessage(data);
+                this.resetAutoRefresh();
+            });
+        }
+
+        handleMessage(event) {
+            const { eventType, data, options } = event;
+            console.log('Received message:', event);
+            switch (eventType) {
+              case "play":
+                if (data.fileType.startsWith('video/')) {
+                    new VideoOverlay(this, data, data.options);
+                }
+                if (data.fileType.startsWith('audio/')) {
+                    new AudioOverlay(this, data, data.options);
+                }
+                if (data.fileType.startsWith('image/')) {
+                    if (options) {
+                      new UserPictureOverlay(this, data, data.options);
+                  } else {
+                    new ImageOverlay(this, data, data.options);
+                    console.log("ImageOverlay", data);
+                }
+              }
+                if (data.fileType.startsWith('audio/')) {
+                  new AudioOverlay(this, data, data.options);
+              }
+              break;
+              case "overlay-event":
+                console.log("Overlay event received:", data);
+                break;
+              default:
+                console.log("Received unknown message type:", eventType);
+              break;
+          }
+        }
+
+        setupFullscreen() {
+            this.container.style.position = 'fixed';
+            this.container.style.top = 0;
+            this.container.style.left = 0;
+            this.container.style.width = '100%';
+            this.container.style.height = '100%';
+        }
+
+        setupFooter() {
+            this.footer = document.createElement('div');
+            this.footer.id = 'overlay-footer';
+            this.footer.className = 'overlay-footer';
+            this.footer.textContent = 'a';
+            this.footer.style.position = 'absolute';
+            this.footer.style.bottom = '0';
+            this.footer.style.width = '100%';
+            this.footer.style.textAlign = 'center';
+            this.footer.style.color = 'white';
+            this.footer.style.fontSize = '3rem';
+            this.footer.style.padding = '10px 0';
+            this.container.appendChild(this.footer);
+            setTimeout(() => this.footer.style.display = 'none', 9999);
+        }
+
+        setupAutoRefresh() {
+            this.autoRefreshTimer = setTimeout(() => {
+                console.log('No connection or events received in 3 seconds. Refreshing page...');
+                window.location.reload();
+            }, 99999);
+        }
+
+        resetAutoRefresh() {
+            clearTimeout(this.autoRefreshTimer);
+            this.setupAutoRefresh();
+        }
+    }
+
+
+const overlayManager = new OverlayManager();
+    </script> -->
+</body>
+</html>

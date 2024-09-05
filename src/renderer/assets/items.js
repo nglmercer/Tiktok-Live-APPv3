@@ -16,6 +16,8 @@ class ChatMessage {
           return `Número: ${this.getContentByType('number')}`;
         case 'image':
           return `Imagen: ${this.getContentByType('image')}`;
+        case 'url':
+          return `URL: ${this.getContentByType('url')}`;
         default:
           return `Tipo desconocido: ${this.getContentByType(type)}`;
       }
@@ -41,36 +43,51 @@ class ChatMessage {
       profileImg.alt = 'Profile Image';
       profileImg.classList.add('profile-img');
       messageDiv.appendChild(profileImg);
-  }
+    }
 
     // Contenido del mensaje
     const textElement = document.createElement('p');
     textElement.classList.add('message-text');
 
     Object.keys(this.messageContent.content).forEach((key, index) => {
-      const [type, text, color] = this.messageContent.content[key];
+      const [type, content, color, tooltip] = this.messageContent.content[key];
       const span = document.createElement('span');
-      span.textContent = text;
-      span.style.color = color;
+
+      if (type === 'url') {
+        const link = document.createElement('a');
+        link.href = content;
+        link.textContent = tooltip;
+        link.style.color = color;
+        if (tooltip) {
+          link.title = content;
+        }
+        span.appendChild(link);
+      } else {
+        span.textContent = content;
+        span.style.color = color;
+        if (tooltip){
+          span.title = tooltip;
+        }
+      }
 
       if (index > 0) {
-          textElement.appendChild(document.createTextNode(' ')); // Añadir un espacio entre los textos
+        textElement.appendChild(document.createTextNode(' ')); // Añadir un espacio entre los textos
       }
 
       textElement.appendChild(span);
 
       // Si hay un callback, adjuntar el evento
       if (this.callback) {
-          span.addEventListener('click', () => {
-              console.log('Callback ejecutado con:', type);
-              this.callback(type);
-          });
+        span.addEventListener('click', () => {
+          console.log('Callback ejecutado con:', type);
+          this.callback(type);
+        });
       }
-  });
+    });
 
-  messageDiv.appendChild(textElement);
+    messageDiv.appendChild(textElement);
 
-  return messageDiv;
+    return messageDiv;
   }
 }
 
@@ -88,7 +105,7 @@ class ChatContainer {
         const oldMessages = this.messages.splice(0, this.messages.length - 9);
         oldMessages.forEach(message => {
             const messageElement = document.getElementById(message.id);
-            if (messageElement) {
+            if (messageElement && this.container.contains(messageElement)) {
                 this.container.removeChild(messageElement);
             }
         });
@@ -98,7 +115,7 @@ class ChatContainer {
     this.messages.push(chatMessage);
     this.container.appendChild(messageElement);
     this.container.scrollTop = this.container.scrollHeight; // Scroll automático hacia el último mensaje
-}
+  }
 
   searchMessages(keyword) {
     const lowerKeyword = keyword.toLowerCase();
@@ -115,5 +132,6 @@ class ChatContainer {
     });
   }
 }
+
 
 export { ChatContainer, ChatMessage };

@@ -102,6 +102,7 @@ function setupLoadButton(loadButtonId, filterManager, containerId) {
 }
 
 function initializeFilterComponent(inputId, buttonId, containerId, storageKey, loadButtonId = null) {
+  console.log("initializeFilterComponent", inputId, buttonId, containerId, storageKey, loadButtonId);
   const filterManager = createFilterManager(storageKey);
   const container = document.getElementById(containerId);
 
@@ -109,14 +110,20 @@ function initializeFilterComponent(inputId, buttonId, containerId, storageKey, l
       container.removeChild(itemDiv);
       filterManager.removeItem(item);
   }
-
+  console.log("initializeFilterComponent", filterManager);
   renderItems(container, filterManager.getItems(), onRemove);
   setupAddButton(inputId, buttonId, filterManager, containerId);
   if (loadButtonId) {
       setupLoadButton(loadButtonId, filterManager, containerId);
   }
 }
-
+function initializecomponents() {
+  setTimeout(function () {
+    initializeFilterComponent('filter-words', 'addfilter-words', 'containerfilter-words', 'filterWords', 'load-known-filters');
+    initializeFilterComponent('filter-users', 'addfilter-users', 'containerfilter-users', 'filterUsers');
+  }, 1000);
+  console.log("initializecomponents");
+}
 function addFilterItemToGroup(inputId, containerId, storageKey, item) {
   const input = document.getElementById(inputId);
   input.value = item;
@@ -133,4 +140,4 @@ function addFilterItemToGroup(inputId, containerId, storageKey, item) {
 }
 
 // Export the necessary functions
-export { initializeFilterComponent, addFilterItemToGroup };
+export { initializeFilterComponent, addFilterItemToGroup, initializecomponents };

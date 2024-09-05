@@ -38,7 +38,7 @@ class TiktokLiveController {
 
   initializeEventHandlers() {
     const events = [
-      'chat', 'gift', 'connected', 'disconnected', 'streamEnd',
+      'chat', 'gift', 'connected', 'disconnected',
       'websocketConnected', 'error', 'member', 'roomUser',
       'like', 'social', 'emote', 'envelope', 'questionNew',
       'subscribe', 'follow', 'share'
@@ -58,7 +58,7 @@ class TiktokLiveController {
 
     // Debug events
     this.tiktokLiveConnection.on('disconnected', data => {
-      this.isConnected = false;
+      this.isConnected = null;
       console.log('disconnected', data);
       setTimeout(() => {
         console.log('reconnecting...');
@@ -68,10 +68,12 @@ class TiktokLiveController {
 
     this.tiktokLiveConnection.on('streamEnd', data => {
       console.log('streamEnd', data);
+      this.lastConnectedData = null;
+      this.lastRoominfo = null;
+      this.isConnected = null;
       this.subscribers.forEach((_, subscriber) => {
         subscriber.emit('streamEnd', data);
       });
-      this.isConnected = false;
     });
   }
 

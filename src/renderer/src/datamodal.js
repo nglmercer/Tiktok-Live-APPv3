@@ -10,7 +10,7 @@ const streamcontrolsDBManager = new IndexedDBManager(databases.streamcontrols,ob
 const filescontent = await postToFileHandler("get-files-in-folder", {});
 
 const openModalBtn = document.querySelector('#openModalBtn');
-const options = Object.entries(datajson).map(([value, label]) => ({
+const optionskeyboard = Object.entries(datajson).map(([value, label]) => ({
   value,
   label,
 }));
@@ -23,7 +23,7 @@ const formConfig = [
   { type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
   { type: 'colorPicker', name: 'color', label: 'Color', inputType: 'color', returnType: 'string' },
   { type: 'select', name: 'actionType', label: 'Tipo de Acción', options: [{ value: 'keyPress', label: 'Presionar Tecla' }, { value: 'openApp', label: 'Abrir Aplicación' }], returnType: 'string' },
-  { type: 'multiSelect', name: 'keyvalue', label: 'Keyvalue', options: options, returnType: 'array', hidden: true },
+  { type: 'multiSelect', name: 'keyvalue', label: 'Keyvalue', options: optionskeyboard, returnType: 'array', hidden: true },
   { type: 'select', name: 'application', label: 'Application', options: appOptions, returnType: 'string' },
   // { type: 'select', name: 'overlaytype', label: 'Overlay Type', options: [{ value: 'audio', label: 'Audio' }, { value: 'video', label: 'Video' }, { value: 'image', label: 'Image' }], returnType: 'string' },
 

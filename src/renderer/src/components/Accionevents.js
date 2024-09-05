@@ -5,7 +5,13 @@ import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
 import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb } from '../utils/getdata';
 import { replaceVariables } from '../utils/replaceVariables';
 import { socketManager } from '../../tiktoksocketdata';
+import { ws } from '../minecraft';
 import { giftManager, getdatagiftparsed } from '../utils/Giftdata';
+import datajson from '../../json/keyboard.json';
+const optionskeyboard = Object.entries(datajson).map(([value, label]) => ({
+  value,
+  label,
+}));
 // const filescontent = await postToFileHandler("get-files-in-folder", {});
 const ObserverEvents = new DBObserver();
 const AccionEventsDBManager = new IndexedDBManager(databases.eventsDB,ObserverEvents);
@@ -72,8 +78,11 @@ const audioOptions = mapFilesToSelectOptions(categorizedFiles.Audio);
 const imageOptions = mapFilesToSelectOptions(categorizedFiles.Imagen);
 const videoOptions = mapFilesToSelectOptions(categorizedFiles.Video);
 console.log("Archivos categorizados: audioOptions , imageOptions, videoOptions", audioOptions , imageOptions, videoOptions);
-console.log("Archivos categorizados:", categorizedFiles.Audio);
+// console.log("Archivos categorizados:", categorizedFiles.Audio);
 const formConfig = [
+{ type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
+{ type: 'input', name: 'id', label: 'ID', inputType: 'Number', returnType: 'Number', hidden: true },
+
   {
     type: 'checkbox',
     name: 'profile_check',
@@ -122,6 +131,18 @@ const formConfig = [
     returnType: 'boolean',
     // hidden:false, dataAssociated: 'chat'
   },//mediaVideo_check
+  {
+    type: 'checkbox', name: 'minecraft_check', label: 'Minecraft comandos', inputType: 'checkbox', returnType: 'boolean',
+    children: [
+      { type: 'textarea', name: 'minecraft_command', label: 'Comando', inputType: 'text', returnType: 'string' },
+    ],
+  },
+  // {
+  //   type: 'checkbox', name: 'keyboard_check', label: 'Keyboard control', inputType: 'checkbox', returnType: 'boolean',
+  //   children: [
+  //     { type: 'multiSelect', name: 'keyvalue', label: 'Keyvalue', options: optionskeyboard, returnType: 'array'},
+  //   ]
+  // },
   { type: 'radio', name: 'Evento_eventType', label: 'Seleccione el Evento', options:
   [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },
   { value: 'likes', label: 'likes'},{value: 'share', label: 'compartir'},
@@ -134,8 +155,7 @@ const formConfig = [
 { type: 'input', name: 'Evento_share', label: 'share', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'share'},// //////
 { type: 'input', name: 'Evento_follow', label: 'follow', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'follow'},//////
 { type: 'input', name: 'Evento_suscripcion', label: 'suscripcion', inputType: 'text', returnType: 'number', hidden:true,valuedata:'default', dataAssociated: 'suscripcion'},//////
-{ type: 'input', name: 'id', label: 'ID', inputType: 'Number', returnType: 'Number', hidden: true },
-{ type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
+
   // { type: 'checkbox', name: 'activetesteeeeeeeeeeeeeee', label: 'active', inputType: 'checkbox', returnType: 'boolean' },
   // { type: 'multiSelect', name: 'keyvalue', label: 'Keyvalue', options: options, returnType: 'array', hidden: true },
   // { type: 'select', name: 'application', label: 'Application', options: appOptions, returnType: 'string' },
@@ -204,6 +224,7 @@ const formConfig = [
     isValid(valueToCheck, verifykey) {
         switch (verifykey.type) {
             case 'number':
+                if (typeof valueToCheck !== 'number') return false;
                 return this.compareNumbers(valueToCheck, verifykey.value, verifykey.compare);
             case 'string':
                 return this.compareStrings(valueToCheck, verifykey.value, verifykey.compare);
@@ -255,7 +276,7 @@ const formConfig = [
               if (forceTrueKey) {
                     if (dataeval,item.keyname){
                       const defaultvalue = this.finddefaultMatch(item.keyname, dataeval);
-                      console.log("defaultvalue",defaultvalue,"dataeval",dataeval,"matchedValue",matchedValue);
+                      // console.log("defaultvalue",defaultvalue,"dataeval",dataeval,"matchedValue",matchedValue);
                       if (dataeval.Evento.chat) {
                         console.log("Eventype",defaultvalue[this.eventType]);
                         if(defaultvalue[this.eventType]==="default"){
@@ -295,7 +316,7 @@ const formConfig = [
             if (typeof currentValue === 'object' && currentValue !== null && verifykey.key in currentValue) {
                 const valueToCheck = currentValue[verifykey.key];
                 const matchresult = this.isValid(valueToCheck, verifykey);
-                console.log("allKeysMatched", matchresult, verifykey,   );
+                // console.log("allKeysMatched", matchresult, verifykey,   );
                 return matchresult;
             }
             return false;
@@ -395,6 +416,7 @@ async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata
       { keytype: 'any', keyfind: "object", keyname: "mediaImg", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => sendMediaManager(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "mediaVideo", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => sendMediaManager(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "profile", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => sendMediaManager(data, userdata), isBlocking: false },
+      { keytype: 'any', keyfind: "object", keyname: "minecraft", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleMinecraft(data, userdata), isBlocking: false },
   ];
 
   for (const data of indexdbdata) {
@@ -408,24 +430,27 @@ async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata
       });
   }
 }
+function handleMinecraft(data, userdata) {
+  console.log("handleMinecraft", data, userdata);
+  ws.sendCommand("/say mensaje de prueba")
+}
 
-
-setInterval(async () => {
-  const userdata = {
-    uniqueId: "testUser",
-    nickname: "testUser",
-    name: "testUser",
-    comment: "nodefault 123124124",
-    points: 0,
-    likeCount: 50,
-    diamondCost: 50,
-    giftId: 6064,
-    ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg"
-  };
-  const alldatadb = await getalldatafromAccionEventsDBManager();
-  AccionEventoOverlayEval("chat",alldatadb,userdata);
-  // console.log("setInterval");
-}, 6666);
+// setInterval(async () => {
+//   const userdata = {
+//     uniqueId: "testUser",
+//     nickname: "testUser",
+//     name: "testUser",
+//     comment: "nodefault 123124124",
+//     points: 0,
+//     likeCount: 50,
+//     diamondCost: 50,
+//     giftId: 6064,
+//     ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg"
+//   };
+//   const alldatadb = await getalldatafromAccionEventsDBManager();
+//   AccionEventoOverlayEval("chat",alldatadb,userdata);
+//   // console.log("setInterval");
+// }, 6666);
 
 openModaltest.addEventListener('click', () => {
   openModaltest.addEventListener('click', () => {

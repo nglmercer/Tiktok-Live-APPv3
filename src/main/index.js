@@ -8,6 +8,7 @@ import fileIndexer from "./FindFiles";
 import FileOpener from "./FileOpener";
 import AudioController from "./features/audioController";
 import keynut from "./features/keynut";
+import { BotManager } from "./features/Botmanager";
 import SocketHandler from "./server/socketServer";
 import injectQRCode from "./server/listenserver";
 import { HttpExpressServer, HttpsExpressServer } from "./server/ExpressServe";
@@ -21,6 +22,8 @@ const newsocketHandler = new SocketHandler();
 const httpServer = new HttpExpressServer();
 const httpsServer = new HttpsExpressServer();
 const audioController = new AudioController();
+const botManager = new BotManager();
+
 const UPDATE_INTERVAL = 5000;
 let tiktokController; // Variable para almacenar la instancia de TiktokLiveController
 const servers = [httpServer, httpsServer];
@@ -161,6 +164,8 @@ function handleSocketEvents(socket, index) {
   socket.on("openapp", (data) => handleAppOpen(socket, data));
   socket.on("uniqueid", (data) => handleUniqueId(socket, data));
   socket.on("disconnect_tiktok", () => handleDisconnectTiktok(socket));
+  socket.on("botmanager", (data) => handleBotManager(socket, data));
+  socket.on("connect-rcon",(data) => handleRconConnect(socket, data));
 }
 function overlaydatahandler(socket, event, data, index = 1) {
   console.log("overlay-event", event, data);
@@ -289,7 +294,15 @@ function handleAppOpen(socket, data) {
   fileOpener.openDefault(data.path);
   socket.emit("openapp", data);
 }
-
+function handleBotManager(socket, data) {
+  console.log("handleBotManager", data);
+  socket.emit("botmanagerresponse", data);
+}
+function handleRconConnect(socket, data) {
+  console.log("handleRconConnect", data);
+  botManager.createRconClient(data);
+  socket.emit("rconconnectresponse", data);
+}
 function getInstalledApplications() {
   return fileIndexer.searchFiles(".lnk");
 }

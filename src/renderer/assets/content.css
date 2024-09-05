@@ -2,11 +2,26 @@
   --blue-box-900: #091455;
   --blue-box-200: #63baec;
 }
+.grid-autofit-40rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(40rem, 1fr));
+}
 .grid-autofit-28rem {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
 }
-
+.grid-autofit-24rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+}
+.grid-autofit-18rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+.grid-autofit-10rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
 .containerbox {
   box-sizing: content-box;
   padding: 0.5rem;

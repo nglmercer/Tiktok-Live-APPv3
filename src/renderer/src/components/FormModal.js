@@ -6,6 +6,7 @@ import {
   createCheckboxField,
   createSliderField,
   createRadioField,
+  createTextareaField,
   getFormData
 } from '../formHelpers.js';
 
@@ -86,6 +87,9 @@ export default class FormModal {
           case 'input':
             formField = createInputField(field);
             break;
+          case 'textarea':
+            formField = createTextareaField(field);
+            break;
           case 'select':
             formField = createSelectField(field);
             break;
@@ -160,6 +164,9 @@ export default class FormModal {
           break;
         case 'select':
           childElement = createSelectField(childField);
+          break;
+        case 'textarea':
+          childElement = createTextareaField(childField);
           break;
         case 'multiSelect':
           childElement = createMultiSelectField(childField);

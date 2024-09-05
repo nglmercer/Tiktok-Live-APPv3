@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-16" />
     <title>Tiktokliveappv3</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <!-- <meta
@@ -33,6 +33,7 @@
           <li><a class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
           <li><a class="tab-link" data-tab="tab5">Atajos y botones</a></li>
           <li><a class="tab-link" data-tab="tab6">Control de pantalla</a></li>
+          <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
           <li><span id="stateText" class="stateText">Desconectado</span></li>
         </ul>
       </div>
@@ -45,6 +46,7 @@
     <li><a class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
     <li><a class="tab-link" data-tab="tab5">Atajos y botones</a></li>
     <li><a class="tab-link" data-tab="tab6">Control de pantalla</a></li>
+    <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
 </ul>
 
 <div class="tabcontainer" data-tab="tab1">
@@ -452,6 +454,185 @@
   </div>
 
 </div>
+<div class="tabcontainer" data-tab="tab7">
+  <h2>Minecraft</h2>
+  <div class="containerbox relative">
+    <div class="grid-autofit-40rem">
+      <div class="grid-autofit-24rem">
+        <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
+          <span class="link link-primary">Leer Tutorial Minecraft</span>
+        </a>
+        <label >
+          <input type="checkbox" class="checkbox checkbox-lg" id="MinecraftLive" checked>
+          <span class="hover:text-blue-500">MinecraftLive</span> </label>
+        <label data-translate="Minecraftplayername">Tu nombre de Minecraft:</label>
+        <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
+
+        <label data-translate="Minecraftinitialcommand">Comando Inicial de BOT:</label>
+        <input type="text" id="InitcommandInput" placeholder="login">
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-item">
+            <div class="accordion-header">
+                Minecraft bot server
+                <span class="toggle">+</span>
+            </div>
+            <div class="accordion-content">
+              <form id="botform" class="form-grid">
+                <div class="form-row">
+                  <label for="keyBOT">Nombre del Bot</label>
+                  <input name="keyBOT" type="text" id="keyBOT" placeholder="nombre del bot">
+              </div>
+                <div class="form-row">
+                    <label for="ip">Ip del server</label>
+                    <input name="ip" type="text" id="ip" placeholder="ip del server">
+                </div>
+                <div class="form-row">
+                    <label for="port">Port</label>
+                    <input name="port" type="number" id="port" placeholder="25565">
+                </div>
+                <!-- <div class="form-row">
+                    <label for="version">version</label>
+                    <input name="version" type="number" id="password" placeholder="1.18.2">
+                </div> -->
+                <input type="submit" value="Connectar Bot">
+
+            </form>
+          </div>
+        </div>
+        <div class="accordion-item">
+            <div class="accordion-header">
+                Rcon server minecraft
+                <span class="toggle">+</span>
+            </div>
+            <div class="accordion-content">
+
+              <h2>Rcon server and port</h2>
+              <form id="Rconform" class="form-grid">
+                  <div class="form-row">
+                      <label for="ip">IP</label>
+                      <input name="ip" type="text" id="ipRcon" placeholder="ip del server">
+                  </div>
+                  <div class="form-row">
+                      <label for="port">Port</label>
+                      <input name="port" type="number" id="portRcon" placeholder="25575" value="25575">
+                  </div>
+                  <div class="form-row">
+                      <label for="password">Password</label>
+                      <input name="password" type="text" id="passwordRcon" placeholder="server password">
+                  </div>
+                  <input type="submit" value="Connectar Rcon server">
+              </form>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <div class="accordion-header">
+                Minecraft Servertap plugin server
+                <span class="toggle">-</span>
+            </div>
+            <div class="accordion-content">
+                <h3>ServerTap Plugin Configuration</h3>
+                <form id="pluginform" class="form-grid">
+                  <div class="form-row">
+                      <label for="ip">IP</label>
+                      <input name="ip" type="text" id="ipPlugin" placeholder="ip del server" value="127.0.0.1">
+                  </div>
+                  <div class="form-row">
+                      <label for="port">Port</label>
+                      <input name="port" type="text" id="portPlugin" placeholder="4567" value="4567">
+                  </div>
+                  <div class="form-row">
+                      <label for="password">Password</label>
+                      <input name="password" type="text" id="passwordPlugin" placeholder="(optional)" value="change_me">
+                  </div>
+                  <input type="submit" value="Connectar Plugin server">
+              </form>
+            </div>
+        </div>
+    </div>
+    </div>
+
+  <script>
+
+    document.querySelectorAll('.accordion-header').forEach(header => {
+      header.addEventListener('click', () => {
+          // Cerrar todas las secciones abiertas
+          document.querySelectorAll('.accordion-content').forEach(content => {
+              content.classList.remove('active');
+              content.previousElementSibling.querySelector('.toggle').textContent = '+';
+          });
+
+          // Abrir la sección seleccionada
+          const content = header.nextElementSibling;
+          content.classList.add('active');
+          header.querySelector('.toggle').textContent = '-';
+      });
+  });
+
+</script>
+
+  </div>
+  <div class="containerbox relative">
+    <div class="container mx-auto p-4">
+      <h1 class="text-2xl font-bold mb-4">Generador de Comandos de Minecraft</h1>
+
+      <div class="form-group mb-4">
+          <label for="playerName" class="block font-semibold">Nombre del Jugador:</label>
+          <input type="text" id="playerName" class="border p-2 w-full" placeholder="Introduce tu nombre">
+      </div>
+
+      <div class="form-group mb-4">
+          <label for="action" class="block font-semibold">Acción:</label>
+          <select id="action" class="border p-2 w-full">
+              <option value="summon">Summon</option>
+              <option value="give">Give</option>
+              <option value="title">Title</option>
+              <option value="subtitle">Subtitle</option>
+              <option value="tellraw">Tellraw</option>
+              <option value="actionbar">Actionbar</option>
+              <option value="setblock">setblock</option>
+          </select>
+      </div>
+
+      <div class="form-group mb-4" id="mobTypeGroup">
+          <label for="mobType" class="block font-semibold">Tipo de Mob:</label>
+          <select id="mobType" class="border p-2 w-full"></select>
+      </div>
+
+      <div class="form-group mb-4" id="mobOptionsGroup" style="display: none;">
+          <label for="mobOptions" class="block font-semibold">Opciones de Mob:</label>
+          <input type="text" id="mobOptions" class="border p-2 w-full" placeholder="key:value,key:value">
+      </div>
+
+      <div class="form-group mb-4" id="itemTypeGroup" style="display: none;">
+          <label for="itemType" class="block font-semibold">Tipo de Item:</label>
+          <select id="itemType" class="border p-2 w-full"></select>
+      </div>
+
+      <div class="form-group mb-4" id="setblockGroup" style="display: none;">
+          <label for="setblock" class="block font-semibold">Tipo de Item:</label>
+          <select id="setblock" class="border p-2 w-full"></select>
+      </div>
+
+      <div class="form-group mb-4" id="messageGroup" style="display: none;">
+          <label for="message" class="block font-semibold">Mensaje:</label>
+          <input type="text" id="message" class="border p-2 w-full" placeholder="Introduce tu mensaje">
+      </div>
+
+      <div class="form-group mb-4" id="messageOptionsGroup" style="display: none;">
+          <label for="messageOptions" class="block font-semibold">Opciones de Mensaje:</label>
+          <input type="text" id="messageOptions" class="border p-2 w-full" placeholder="key:value,key:value">
+      </div>
+
+      <button id="generateCommand" class="btn btn-primary">Generar Comando</button>
+
+      <div id="outputcommand" class="mt-4"></div>
+  </div>
+</div>
+
+
+</div>
 <script>
     // Inicialización del sidenav
     var elems = document.querySelectorAll('.sidenav');
@@ -501,6 +682,7 @@
   <script type="module" src="./src/components/Accionevents.js"></script>
     <script type="module" src="./src/renderer.js"></script>
     <script type="module" src="./src/datamodal.js"></script>
+    <script type="module" src="./src/minecraft.js"> </script>
     <script type="module" src="./tiktoksocketdata.js"></script>
     <script type="module" src="./src/utils/localstorage.js"></script>
 
