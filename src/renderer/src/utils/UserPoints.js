@@ -80,6 +80,7 @@ export class UserPointsTable {
       username: 'nickname', // Si decides usar 'username' en la tabla, seguirá refiriéndose a 'nickname' en los datos
       points: 'points',
       imageUrl: 'imageUrl',
+      userId: 'userId',
     };
 
     this.renderHeader();

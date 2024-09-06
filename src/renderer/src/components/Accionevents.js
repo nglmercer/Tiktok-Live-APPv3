@@ -249,6 +249,7 @@ const formConfig = [
     }
 
     compareStrings(actualValue, expectedValue, compare = '===') {
+      if (!actualValue) return false;
         switch (compare) {
             case '===':
                 return expectedValue === actualValue;
@@ -432,7 +433,16 @@ async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata
 }
 function handleMinecraft(data, userdata) {
   console.log("handleMinecraft", data, userdata);
-  ws.sendCommand("/say mensaje de prueba")
+  console.log("handleMinecraft", data.minecraft.command);
+  const splitcommand = data.minecraft.command.split('\n');
+  if (splitcommand.length >= 1) {
+    splitcommand.forEach(command => {
+      const resultcommand = replaceVariables(command, userdata);
+      ws.sendCommand(resultcommand);
+      console.log("resultcommand",userdata, resultcommand);
+    });
+  }
+  // ws.sendCommand("/say mensaje de prueba")
 }
 
 // setInterval(async () => {
@@ -440,7 +450,7 @@ function handleMinecraft(data, userdata) {
 //     uniqueId: "testUser",
 //     nickname: "testUser",
 //     name: "testUser",
-//     comment: "nodefault 123124124",
+//     comment: "texto nodefault 123124124",
 //     points: 0,
 //     likeCount: 50,
 //     diamondCost: 50,

@@ -63,7 +63,8 @@ const configinitialData = {
   nickname: { type: 'string' },
   name: { type: 'string'},
   points: { type: 'number' },
-  imageUrl: { type: 'image' }
+  imageUrl: { type: 'image' },
+  userId: { type: 'number' },
 }
 console.log("initialData", initialData);
 const PointsTable = new StaticTable('#userPointsTable',configinitialData)
@@ -135,7 +136,8 @@ async function handleevents(evenType, data) {
         name: data.uniqueId,
         points: 0,
         imageUrl: data.profilePictureUrl,
-        id: data.userId,
+        userId: TypeofData.toNumber(data.userId),
+        id: TypeofData.toNumber(data.userId),
     }
     }
   const evaldata = evalBadge(data);
@@ -213,13 +215,14 @@ async function evalsystempoints(evenType, data) {
   if (!data.uniqueId) return;
   const getpoinifexists = TypeofData.toNumber(await getdataIndexdbInstance.getdataIndexdb(data, 'points')) || 0;
   let userpoints = {
-      uniqueId: data.uniqueId,
-      nickname: data.nickname,
-      uniqueId: data.uniqueId,
-      name: data.uniqueId,
-      points: 0,
-      imageUrl: data.profilePictureUrl,
-      id: data.userId,
+    uniqueId: data.uniqueId,
+    nickname: data.nickname,
+    uniqueId: data.uniqueId,
+    name: data.uniqueId,
+    points: 0,
+    imageUrl: data.profilePictureUrl,
+    userId: TypeofData.toNumber(data.userId),
+    id: TypeofData.toNumber(data.userId),
   };
   const form = document.getElementById('pointsForm');
   const config = getformdatabyid(form);
