@@ -106,7 +106,8 @@ export class BotManager extends EventEmitter {
           console.log("sendMessage", message);
           return { success: true, response };
         } else {
-          const response = await this.rcon.send(message);
+          // if (this.rcon) {};
+          const response = await this.rcon.executeCommand(message);
           console.log("sendMessage", message);
           return { success: true, response };
         }

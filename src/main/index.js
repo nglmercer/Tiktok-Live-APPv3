@@ -166,6 +166,7 @@ function handleSocketEvents(socket, index) {
   socket.on("disconnect_tiktok", () => handleDisconnectTiktok(socket));
   socket.on("botmanager", (data) => handleBotManager(socket, data));
   socket.on("connect-rcon",(data) => handleRconConnect(socket, data));
+  socket.on("sendcommandMinecraft", (data) => sendcommandMinecraft(socket, data));
 }
 function overlaydatahandler(socket, event, data, index = 1) {
   console.log("overlay-event", event, data);
@@ -302,6 +303,10 @@ function handleRconConnect(socket, data) {
   console.log("handleRconConnect", data);
   botManager.createRconClient(data);
   socket.emit("rconconnectresponse", data);
+}
+async function sendcommandMinecraft(socket, data) {
+  const response = await botManager.sendMessage(data);
+  socket.emit("sendcommandMinecraftresponse", response);
 }
 function getInstalledApplications() {
   return fileIndexer.searchFiles(".lnk");

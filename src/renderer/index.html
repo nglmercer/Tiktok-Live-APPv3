@@ -25,6 +25,7 @@
     <nav>
       <div class="nav-wrapper light-blue">
         <a data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">menu📚</i></a>
+        <a><span id="stateText" class="stateText">Desconectado</span></a>
 
         <ul class="right hide-on-med-and-down">
           <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
@@ -34,20 +35,22 @@
           <li><a class="tab-link" data-tab="tab5">Atajos y botones</a></li>
           <li><a class="tab-link" data-tab="tab6">Control de pantalla</a></li>
           <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
-          <li><span id="stateText" class="stateText">Desconectado</span></li>
+          <li><a class="tab-link" data-tab="tab8">vrchat</a></li>
         </ul>
       </div>
     </nav>
+    <ul class="sidenav" id="mobile-demo">
+      <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
+      <li><a class="tab-link" data-tab="tab2">Chat y Voz</a></li>
+      <li><a class="tab-link" data-tab="tab3">Control de audio</a></li>
+      <li><a class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
+      <li><a class="tab-link" data-tab="tab5">Atajos y botones</a></li>
+      <li><a class="tab-link" data-tab="tab6">Control de pantalla</a></li>
+      <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
+      <li><a class="tab-link" data-tab="tab8">vrchat</a></li>
 
-  <ul class="sidenav" id="mobile-demo">
-    <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
-    <li><a class="tab-link" data-tab="tab2">Chat y Voz</a></li>
-    <li><a class="tab-link" data-tab="tab3">Control de audio</a></li>
-    <li><a class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
-    <li><a class="tab-link" data-tab="tab5">Atajos y botones</a></li>
-    <li><a class="tab-link" data-tab="tab6">Control de pantalla</a></li>
-    <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
-</ul>
+  </ul>
+
 
 <div class="tabcontainer" data-tab="tab1">
       <div class="containerbox grid-autofit-28rem">
@@ -470,6 +473,10 @@
 
         <label data-translate="Minecraftinitialcommand">Comando Inicial de BOT:</label>
         <input type="text" id="InitcommandInput" placeholder="login">
+          <form action="sendcommandmc" id="sendcommandmc">
+            <input name="commandinput" type="text" id="sendcommandmcinput" placeholder="command">
+            <button type="submit" id="sendcommandmcbutton" >Send</button>
+          </form>
       </div>
 
       <div class="accordion">
@@ -629,9 +636,22 @@
 
       <div id="outputcommand" class="mt-4"></div>
   </div>
+
+
+
+  </div>
 </div>
-
-
+<div class="tabcontainer" data-tab="tab8">
+  <h2>vrchat</h2>
+  <div class="containerbox relative">
+    <form action="vrchatForm" id="vrchatForm">
+      <input name="username" type="text" id="vrchatUsername" placeholder="username">
+      <input name="password" type="text" id="vrchatPassword" placeholder="password">
+      <button type="submit">Connectar</button>
+    </form>
+    <button id="vrchatConnect" class="btn btn-large filled waves-effect waves-light">Connectar a vrchat</button>
+    <div id="vrchatContainer"></div>
+  </div>
 </div>
 <script>
     // Inicialización del sidenav

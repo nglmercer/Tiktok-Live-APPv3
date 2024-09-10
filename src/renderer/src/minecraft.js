@@ -14,6 +14,12 @@ document.getElementById('pluginform').addEventListener('submit', function(e) {
   const data = Object.fromEntries(new FormData(e.target).entries());
   handlebotconnect("connect-plugin",data);
 });
+document.getElementById('sendcommandmc').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const data = Object.fromEntries(new FormData(e.target).entries());
+  sendcommandmc(data);
+});
+
 function handlebotconnect(eventType,data) {
   switch (eventType) {
     case "connect-bot":
@@ -86,7 +92,12 @@ class WebSocketManager {
   }
 }
 const ws = new WebSocketManager();
-
+function sendcommandmc(data) {
+  const command = data.commandinput;
+  ws.sendCommand(command);
+  socketManager.emitMessage("sendcommandMinecraft", command);
+  console.log("sendcommandmc", command);
+}
 function pluginconnect(data) {
   let defaultOptions = {
     host: data.host || "localhost",
