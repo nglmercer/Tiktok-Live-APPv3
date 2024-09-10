@@ -12,6 +12,14 @@ const optionskeyboard = Object.entries(datajson).map(([value, label]) => ({
   value,
   label,
 }));
+let oscOptions = [
+  {label: 'moveForward', value: 'MoveForward'},
+  {label: 'moveBackward', value: 'MoveBackward'},
+  {label: 'moveLeft', value: 'MoveLeft'},
+  {label: 'moveRight', value: 'MoveRight'},
+  {label: 'jump', value: 'Jump'},
+  {label: 'run', value: 'Run'},
+]
 // const filescontent = await postToFileHandler("get-files-in-folder", {});
 const ObserverEvents = new DBObserver();
 const AccionEventsDBManager = new IndexedDBManager(databases.eventsDB,ObserverEvents);
@@ -135,6 +143,13 @@ const formConfig = [
     type: 'checkbox', name: 'minecraft_check', label: 'Minecraft comandos', inputType: 'checkbox', returnType: 'boolean',
     children: [
       { type: 'textarea', name: 'minecraft_command', label: 'Comando', inputType: 'text', returnType: 'string' },
+    ],
+  },
+  {
+    type: 'checkbox', name: 'vrchat_check', label: 'VRChat osc', inputType: 'checkbox', returnType: 'boolean',
+    children: [
+      {  type: 'input', name: 'vrchat_chatbox', label: 'oscmensaje', inputType: 'text', returnType: 'string' },
+      { type: 'select', name: 'vrchat_input', label: 'control', options: oscOptions, returnType: 'string' },
     ],
   },
   // {
@@ -525,6 +540,22 @@ const config = {
       type: 'select',
       returnType: 'number',
       options: getmapselectgift()
+    },
+  },
+  minecraft:{
+    class: 'input-default',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    command: {
+      class: 'input-default',
+      label: 'command',
+      type: 'textarea',
+      returnType: 'string',
     },
   },
   profile: {

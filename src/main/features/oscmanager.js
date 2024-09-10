@@ -1,11 +1,12 @@
 import { Client, Server } from 'node-osc';
-class OSCManager {
+import osc from 'osc';
+export class OSCManager {
   constructor() {
     this.client = null;
     this.server = null;
   }
 
-  createClient(host, port) {
+  createClient(host = "127.0.0.1", port = 9000) {
     if (this.client) {
       this.client.close();
     }
@@ -14,7 +15,7 @@ class OSCManager {
     return { success: true };
   }
 
-  createServer(port, host) {
+  createServer(port = 9001, host = "0.0.0.0") {
     if (this.server) {
       this.server.close();
     }
@@ -35,12 +36,14 @@ class OSCManager {
       return { success: true };
     } else {
       console.error('OSC Client not created');
+      this.createClient();
       return { success: false, error: 'OSC Client not created' };
     }
   }
   sendAction(action, value) {
     if (this.client) {
       this.client.send(`${action}`, value, true);
+
       console.log(`OSC Action sent: ${action}`);
       return { success: true };
     } else {
@@ -68,7 +71,7 @@ class OSCManager {
   }
 }
 
-class InputManager {
+export class InputManager {
   constructor(oscManager) {
     this.oscManager = oscManager;
   }
@@ -83,8 +86,86 @@ class InputManager {
   }
 }
 
-const oscManager = new OSCManager();
-const inputManager = new InputManager(oscManager);
+export class OSCManagerV2 {
+  constructor() {
+    const defaultConfig = {
+      localAddress: "0.0.0.0",
+      localPort: 9001,
+      remoteAddress: "127.0.0.1",
+      remotePort: 9000,
+    };
+    this.config = defaultConfig;
+    this.udpPort = null;
+  }
+
+  // Permite parámetros opcionales con valores por defecto
+  connect(config = {}) {
+    this.config = { ...this.config, ...config };
+    this.udpPort = new osc.UDPPort({
+      localAddress: this.config.localAddress,
+      localPort: this.config.localPort,
+      remoteAddress: this.config.remoteAddress,
+      remotePort: this.config.remotePort,
+    });
+
+    this.udpPort.on("ready", () => {
+      console.log(`OSC UDP Port ready: ${this.config.localAddress}:${this.config.localPort}`);
+    });
+
+    this.udpPort.on("message", (oscMessage) => {
+      console.log(`OSC Message received: ${JSON.stringify(oscMessage)}`);
+    });
+
+    try {
+      this.udpPort.open();
+      console.log("UDP Port opened successfully.");
+    } catch (err) {
+      console.error(`Error opening UDP Port: ${err.message}`);
+    }
+  }
+
+  close() {
+    try {
+      if (this.udpPort) {
+        this.udpPort.close();
+        console.log("UDP Port closed successfully.");
+      }
+    } catch (err) {
+      console.error(`Error closing UDP Port: ${err.message}`);
+    }
+  }
+
+  sendAction(action, value) {
+    try {
+      this.udpPort.send({
+        address: `/input/${action}`,
+        args: [value, true],
+      });
+      console.log(`OSC Message sent to ${action}: ${value}`);
+    } catch (err) {
+      console.error(`Error sending OSC message: ${err.message}`);
+    }
+  }
+
+  sendMessage(message) {
+    try {
+      this.udpPort.send({
+        address: "/chatbox/input",
+        args: [message, true],
+      });
+      console.log(`OSC Message sent: ${message}`);
+    } catch (err) {
+      console.error(`Error sending OSC message: ${err.message}`);
+    }
+  }
+
+  getStatus() {
+    return this.udpPort ? "Connected" : "Not connected";
+  }
+}
+
+// export default { OSCManager,InputManager }
+
 // ipcMain.handle('create-client-osc', (event, options) => {
 //   const { host, port } = options;
 //   return oscManager.createClient(host, Number(port));

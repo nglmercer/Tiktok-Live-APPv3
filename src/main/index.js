@@ -9,6 +9,7 @@ import FileOpener from "./FileOpener";
 import AudioController from "./features/audioController";
 import keynut from "./features/keynut";
 import { BotManager } from "./features/Botmanager";
+import { OSCManager,InputManager } from './features/oscmanager';
 import SocketHandler from "./server/socketServer";
 import injectQRCode from "./server/listenserver";
 import { HttpExpressServer, HttpsExpressServer } from "./server/ExpressServe";
@@ -23,6 +24,8 @@ const httpServer = new HttpExpressServer();
 const httpsServer = new HttpsExpressServer();
 const audioController = new AudioController();
 const botManager = new BotManager();
+const oscManager = new OSCManager();
+const inputManager = new InputManager(oscManager);
 
 const UPDATE_INTERVAL = 5000;
 let tiktokController; // Variable para almacenar la instancia de TiktokLiveController
@@ -167,6 +170,9 @@ function handleSocketEvents(socket, index) {
   socket.on("botmanager", (data) => handleBotManager(socket, data));
   socket.on("connect-rcon",(data) => handleRconConnect(socket, data));
   socket.on("sendcommandMinecraft", (data) => sendcommandMinecraft(socket, data));
+  socket.on("oscmanager", (data) => handleOscManager(socket, data));
+  socket.on("oscmessage", (data) => sendOscMessage(socket, data));
+  socket.on("oscHandler", (data) => handleOscHandler(socket, data));
 }
 function overlaydatahandler(socket, event, data, index = 1) {
   console.log("overlay-event", event, data);
@@ -307,6 +313,28 @@ function handleRconConnect(socket, data) {
 async function sendcommandMinecraft(socket, data) {
   const response = await botManager.sendMessage(data);
   socket.emit("sendcommandMinecraftresponse", response);
+}
+function handleOscManager(socket, data) {
+  console.log("handleOscManager", data);
+  if (data.clientipport && data.serveripport) {
+    const clientIP = data.clientipport.split(":")[0];
+    const serverIP = data.serveripport.split(":")[0];
+    const clientPort = data.clientipport.split(":")[1];
+    const serverPort = data.serveripport.split(":")[1];
+    oscManager.createServer(Number(serverPort), serverIP);
+    oscManager.createClient(clientIP, Number(clientPort));
+  }
+
+  // oscManager.createServer(Number(port), host);
+  // oscManager.createClient(host, Number(port));
+}
+function sendOscMessage(socket, data) {
+  console.log("sendOscMessage", data);
+  oscManager.sendMessage(data);
+}
+function handleOscHandler(socket, data) {
+  console.log("handleOscHandler", data);
+  inputManager.sendInput(data.action, data.isDown);
 }
 function getInstalledApplications() {
   return fileIndexer.searchFiles(".lnk");

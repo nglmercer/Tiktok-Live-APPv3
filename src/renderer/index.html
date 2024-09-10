@@ -645,13 +645,50 @@
   <h2>vrchat</h2>
   <div class="containerbox relative">
     <form action="vrchatForm" id="vrchatForm">
-      <input name="username" type="text" id="vrchatUsername" placeholder="username">
-      <input name="password" type="text" id="vrchatPassword" placeholder="password">
-      <button type="submit">Connectar</button>
+      <label for="clientipport">IP client:</label>
+      <input name="clientipport" type="text" id="clientipport" value="127.0.0.1:9000" required>
+      <label for="serveripport">IP server:</label>
+      <input name="serveripport" type="text" id="serveripport" value="127.0.0.1:9001" required>
+      <div class="oscindicator" id="oscindicator"></div>
+      <button type="submit" class="btn btn-large filled waves-effect waves-light">Connectar a vrchat</button>
     </form>
-    <button id="vrchatConnect" class="btn btn-large filled waves-effect waves-light">Connectar a vrchat</button>
     <div id="vrchatContainer"></div>
+    <input type="text" id="testosctext" value="test">
+    <button id="testoscbutton" class="custombutton">send message OSC</button>
+    <select name="oscAction" id="oscAction"></select>
+    <button id="oscActionButton" class="custombutton">Send Action</button>
   </div>
+  <div class="containerbox">
+      <h1>Panel de Control VRChat</h1>
+      <div id="connection-status">Desconectado</div>
+
+      <div>
+          <button id="moveForward" class="btn btn-primary">Adelante</button>
+          <button id="moveBackward" class="btn btn-primary">Atrás</button>
+          <button id="moveLeft" class="btn btn-primary">Izquierda</button>
+          <button id="moveRight" class="btn btn-primary">Derecha</button>
+
+      </div>
+
+      <div>
+          <button id="jump" class="btn btn-primary">Saltar</button>
+          <button id="run" class="btn btn-primary">Correr</button>
+      </div>
+
+      <div>
+        <button id="lookVertical">lookVertical</button>
+          <label for="lookHorizontal" class="label">Mirar Horizontal:</label>
+          <input type="range" id="lookHorizontal" min="-1" max="1" step="0.01" value="0">
+      </div>
+
+      <div>
+          <input type="text" id="chatMessage" placeholder="Mensaje de chat">
+          <button id="sendChat" class="btn btn-primary">Enviar</button>
+      </div>
+
+      <button id="stopAll" class="btn btn-primary">Detener Todas las Acciones</button>
+
+</div>
 </div>
 <script>
     // Inicialización del sidenav
@@ -700,9 +737,10 @@
 
   </script>
   <script type="module" src="./src/components/Accionevents.js"></script>
+  <script type="module" src="./src/components/vrchat.js"> </script>
     <script type="module" src="./src/renderer.js"></script>
     <script type="module" src="./src/datamodal.js"></script>
-    <script type="module" src="./src/minecraft.js"> </script>
+    <script type="module" src="./src/minecraft.js"> </script>´
     <script type="module" src="./tiktoksocketdata.js"></script>
     <script type="module" src="./src/utils/localstorage.js"></script>
 
