@@ -30,6 +30,7 @@ export class OSCManager {
   }
 
   sendMessage(text) {
+    if (!text) return;
     if (this.client) {
       this.client.send('/chatbox/input', text.toString(), true);
       console.log(`OSC Message sent: ${text}`);
@@ -77,6 +78,8 @@ export class InputManager {
   }
 
   sendInput(action, value) {
+    console.log("sendInput", action, value);
+    if (!action) return;
     return this.oscManager.sendAction(`/input/${action}`, value);
   }
 

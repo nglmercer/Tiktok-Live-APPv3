@@ -1,6 +1,8 @@
 import mineflayer from 'mineflayer';
 import { RCONClient } from '@minecraft-js/rcon';
+import { Rcon } from 'yamrc';
 import EventEmitter from 'events';
+let defaultoptionsRcon = { ip: 'localhost', port: '25575', password: 'hello' }
 
 export class BotManager extends EventEmitter {
   constructor() {
@@ -68,11 +70,14 @@ export class BotManager extends EventEmitter {
   }
 
   async createRconClient(options, keyLOGIN) {
-    this.rcon = new RCONClient(options.ip, options.password, options.port);
+    if (this.rcon) {
+      return
+    }
+    this.rcon = new RCONClient(options.ip, options.password);
     console.log("RCONClient", options);
-
+    if (options.ip) { defaultoptionsRcon = options }
     try {
-      await this.rcon.connect();
+      this.rcon.connect();
       console.log('Connected to RCON server');
 
       this.rcon.on('authenticated', () => {
@@ -88,6 +93,7 @@ export class BotManager extends EventEmitter {
 
       this.rcon.on('error', (error) => {
         console.error('RCON error:', error);
+        this.createRconClient(defaultoptionsRcon)
       });
 
       return { success: true };
@@ -98,16 +104,23 @@ export class BotManager extends EventEmitter {
   }
 
   async sendMessage(message) {
+    // if(!this.rcon || !this.rcon.connected) {
+    //   this.createRconClient(defaultoptionsRcon)
+    // }
     if (this.rcon && this.rcon.authenticated) {
       try {
-        if (message.startsWith('/')) {
+        if (typeof message !== 'string'){
+          console.log("messageno string", message)
+          message = `${message}`
+        }
+        if (message && message.startsWith('/')) {
           const command = message.replace('/', '');
-          const response = await this.rcon.executeCommand(command);
+          const response = this.rcon.executeCommand(command);
           console.log("sendMessage", message);
           return { success: true, response };
         } else {
           // if (this.rcon) {};
-          const response = await this.rcon.executeCommand(message);
+          const response = this.rcon.executeCommand(message);
           console.log("sendMessage", message);
           return { success: true, response };
         }
@@ -149,5 +162,43 @@ export class BotManager extends EventEmitter {
       this.bot = null;
     }
     this.emit('disconnected');
+  }
+}
+export class MinecraftRcon {
+  constructor() {
+      this.rconClient = null;
+  }
+
+  // Method to connect to the RCON server
+  async connectRcon(options = defaultRconoptios) {
+      try {
+        if ( typeof options.port !== 'number' )
+        {
+          options.port = Number(options.port);
+        }
+        // Pass individual parameters (host, port, password) instead of an object
+          this.rconClient = new Rcon(options.host, options.port, options.password);
+          await this.rconClient.connect();
+          console.log(await this.rconClient.send('list'));
+      } catch (error) {
+          console.error('Error connecting to RCON:', error);
+      }
+  }
+
+  // Method to send a command to the RCON server
+  async sendMessage(command) {
+      try {
+          if (this.rconClient) {
+              const response = await this.rconClient.send(command);
+              console.log(response);
+              return { success: true, response };
+          } else {
+              console.log('RCON client not connected.');
+              return { success: false, error: 'RCON client not connected.' };
+          }
+      } catch (error) {
+          console.error('Error sending command to RCON:', error);
+          return { success: false, error: 'Error sending command to RCON:' };
+      }
   }
 }

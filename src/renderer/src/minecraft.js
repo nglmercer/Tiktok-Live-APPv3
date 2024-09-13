@@ -1,9 +1,9 @@
 import {socketManager} from "../tiktoksocketdata";
-document.getElementById('botform').addEventListener('submit', function(e) {
-  e.preventDefault();
-  const data = Object.fromEntries(new FormData(e.target).entries());
-  handlebotconnect("connect-bot",data);
-});
+// document.getElementById('botform').addEventListener('submit', function(e) {
+//   e.preventDefault();
+//   const data = Object.fromEntries(new FormData(e.target).entries());
+//   handlebotconnect("connect-bot",data);
+// });
 document.getElementById('Rconform').addEventListener('submit', function(e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(e.target).entries());
@@ -17,7 +17,7 @@ document.getElementById('pluginform').addEventListener('submit', function(e) {
 document.getElementById('sendcommandmc').addEventListener('submit', function(e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(e.target).entries());
-  sendcommandmc(data);
+  sendcommandmc(data.commandinput);
 });
 
 function handlebotconnect(eventType,data) {
@@ -92,11 +92,10 @@ class WebSocketManager {
   }
 }
 const ws = new WebSocketManager();
-function sendcommandmc(data) {
-  const command = data.commandinput;
-  ws.sendCommand(command);
-  socketManager.emitMessage("sendcommandMinecraft", command);
-  console.log("sendcommandmc", command);
+function sendcommandmc(command) {
+    ws.sendCommand(command);
+    socketManager.emitMessage("sendcommandMinecraft", command);
+    console.log("sendcommandmc", command);
 }
 function pluginconnect(data) {
   let defaultOptions = {
@@ -183,4 +182,4 @@ function getFormDataByClass(e,formClass) {
 
   return formObject;
 }
-export { socketManager, ws }
+export { socketManager, ws, sendcommandmc }

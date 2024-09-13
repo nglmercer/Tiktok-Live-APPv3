@@ -110,7 +110,8 @@ class DynamicRow {
       if (typeConfig && typeConfig.type === 'object') {
         const objectContainer = document.createElement('details');
         const summary = document.createElement('summary');
-        summary.textContent = 'Mostrar detalles';
+        console.log("typeConfig", typeConfig, key);
+        summary.textContent = 'Mostrar '+ key;
 
         objectContainer.appendChild(summary);
 
@@ -152,11 +153,13 @@ class DynamicRow {
     const actionCell = row.insertCell(cellIndex);
     const actionButton = document.createElement('button');
     actionButton.textContent = 'Guardar cambios';
+    actionButton.className = 'savebutton custombutton';
     actionButton.addEventListener('click', () => {
       this.callback(row.rowIndex, this.originalData, this.modifiedData);
     });
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Eliminar';
+    deleteButton.className = 'deletebutton custombutton';
     deleteButton.addEventListener('click', () => {
       this.deletecallback(row.rowIndex, this.originalData, this.modifiedData);
     });
@@ -184,6 +187,9 @@ class DynamicRow {
       case 'text':
       case 'string':
         inputElement = this.createTextElement(key, subKey, value);
+        break;
+      case 'textarea':
+        inputElement = this.createtexareaElement(key, subKey, value);
         break;
       case 'select':
         inputElement = this.createSelectElement(key, subKey, value, typeConfig);
@@ -273,6 +279,7 @@ class DynamicRow {
     const inputElement = document.createElement('input');
     inputElement.type = 'number';
     inputElement.value = value;
+    inputElement.placeholder = key + ' ' + subKey;
 
     inputElement.addEventListener('input', () => {
       const returnValue = Number(inputElement.value);
@@ -285,7 +292,8 @@ class DynamicRow {
   createTextElement(key, subKey, value) {
     const inputElement = document.createElement('input');
     inputElement.type = 'text';
-    inputElement.value = value;
+    inputElement.value = value || '';
+    inputElement.placeholder = key + ' ' + subKey;
 
     inputElement.addEventListener('input', () => {
       const returnValue = inputElement.value;
@@ -294,7 +302,20 @@ class DynamicRow {
 
     return inputElement;
   }
-
+  createtexareaElement(key, subKey, value) {
+    const inputElement = document.createElement('textarea');
+    inputElement.value = value || '';
+    inputElement.autocomplete = 'on';
+    inputElement.placeholder = key + ' ' + subKey;
+    console.log("createtexareaElement", key, subKey, value);
+    inputElement.rows = 50;
+    inputElement.cols = 50;
+    inputElement.addEventListener('input', () => {
+      const returnValue = inputElement.value;
+      this.updateModifiedData(key, subKey, returnValue);
+    });
+    return inputElement;
+  }
   // createSelectElement(key, subKey, value, typeConfig) {
   //   const selectElement = document.createElement('select');
 

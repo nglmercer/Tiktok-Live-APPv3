@@ -8,7 +8,7 @@ import fileIndexer from "./FindFiles";
 import FileOpener from "./FileOpener";
 import AudioController from "./features/audioController";
 import keynut from "./features/keynut";
-import { BotManager } from "./features/Botmanager";
+import { BotManager,MinecraftRcon } from "./features/Botmanager";
 import { OSCManager,InputManager } from './features/oscmanager';
 import SocketHandler from "./server/socketServer";
 import injectQRCode from "./server/listenserver";
@@ -24,6 +24,7 @@ const httpServer = new HttpExpressServer();
 const httpsServer = new HttpsExpressServer();
 const audioController = new AudioController();
 const botManager = new BotManager();
+const minecraftRcon = new MinecraftRcon();
 const oscManager = new OSCManager();
 const inputManager = new InputManager(oscManager);
 
@@ -307,11 +308,12 @@ function handleBotManager(socket, data) {
 }
 function handleRconConnect(socket, data) {
   console.log("handleRconConnect", data);
-  botManager.createRconClient(data);
+  minecraftRcon.connectRcon(data);
   socket.emit("rconconnectresponse", data);
 }
 async function sendcommandMinecraft(socket, data) {
-  const response = await botManager.sendMessage(data);
+  console.log(data)
+  const response = await minecraftRcon.sendMessage(data);
   socket.emit("sendcommandMinecraftresponse", response);
 }
 function handleOscManager(socket, data) {
@@ -334,7 +336,7 @@ function sendOscMessage(socket, data) {
 }
 function handleOscHandler(socket, data) {
   console.log("handleOscHandler", data);
-  inputManager.sendInput(data.action, data.isDown);
+  inputManager.sendInput(data.action, data.value);
 }
 function getInstalledApplications() {
   return fileIndexer.searchFiles(".lnk");
@@ -393,7 +395,8 @@ function createWindow() {
     // console.log(process.env["ELECTRON_RENDERER_URL"]);
     // console.log(join(__dirname, "../renderer/index.html"));
   } else {
-    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+    // mainWindow.loadURL(join(__dirname, "../renderer/index.html"));
+    mainWindow.loadURL(`http://localhost:8088`);
   }
 }
 

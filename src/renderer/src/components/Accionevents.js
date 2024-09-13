@@ -5,21 +5,32 @@ import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
 import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb } from '../utils/getdata';
 import { replaceVariables } from '../utils/replaceVariables';
 import { socketManager } from '../../tiktoksocketdata';
-import { ws } from '../minecraft';
+import { ws, sendcommandmc } from '../minecraft';
 import { giftManager, getdatagiftparsed } from '../utils/Giftdata';
 import datajson from '../../json/keyboard.json';
 const optionskeyboard = Object.entries(datajson).map(([value, label]) => ({
   value,
   label,
 }));
-let oscOptions = [
-  {label: 'moveForward', value: 'MoveForward'},
-  {label: 'moveBackward', value: 'MoveBackward'},
-  {label: 'moveLeft', value: 'MoveLeft'},
-  {label: 'moveRight', value: 'MoveRight'},
-  {label: 'jump', value: 'Jump'},
-  {label: 'run', value: 'Run'},
-]
+const movementButtons = {
+  'movimiento...': false,
+  'mover atras': 'MoveBackward',
+  'mover adelante': 'MoveForward',
+  'mover izquierda': 'MoveLeft',
+  'mover derecha': 'MoveRight',
+  'saltar': 'Jump',
+  'correr': 'Run',
+  'mirar hacia arriba': 'LookVertical.up',
+  'mirar hacia abajo': 'LookVertical.down',
+  'mirar hacia la derecha': 'LookHorizontal.right',
+  'mirar hacia la izquierda': 'LookHorizontal.left',
+  };
+
+const oscOptions = Object.entries(movementButtons).map(([label, value]) => ({
+  value,
+  label,
+}));
+
 // const filescontent = await postToFileHandler("get-files-in-folder", {});
 const ObserverEvents = new DBObserver();
 const AccionEventsDBManager = new IndexedDBManager(databases.eventsDB,ObserverEvents);
@@ -149,7 +160,7 @@ const formConfig = [
     type: 'checkbox', name: 'vrchat_check', label: 'VRChat osc', inputType: 'checkbox', returnType: 'boolean',
     children: [
       {  type: 'input', name: 'vrchat_chatbox', label: 'oscmensaje', inputType: 'text', returnType: 'string' },
-      { type: 'select', name: 'vrchat_input', label: 'control', options: oscOptions, returnType: 'string' },
+      { type: 'select', name: 'vrchat_input', label: 'control', options: oscOptions, returnType: 'object' },
     ],
   },
   // {
@@ -161,11 +172,11 @@ const formConfig = [
   { type: 'radio', name: 'Evento_eventType', label: 'Seleccione el Evento', options:
   [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },
   { value: 'likes', label: 'likes'},{value: 'share', label: 'compartir'},
-  { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' }],
+  { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' },{ value: 'member', label: 'Ingreso al live' }],
   returnType: 'string', hidden: false
 },
 { type: 'input', name: 'Evento_chat', label: 'Chat', inputType: 'text', returnType: 'string', hidden:false,valuedata:'default', dataAssociated: 'chat'},////    //////
-{ type: 'input', name: 'Evento_likes', label: 'likes', inputType: 'number', returnType: 'number', hidden:false,valuedata: 15, dataAssociated: 'likes'},   //////
+{ type: 'input', name: 'Evento_likes', label: 'likes', inputType: 'number', returnType: 'number', hidden:false,valuedata: 15, dataAssociated: 'likes'}, //////
 { type: 'select', name: 'Evento_gift', label: 'gift', options: getmapselectgift(), returnType: 'number', hidden:false, dataAssociated: 'gift'},///   //////
 { type: 'input', name: 'Evento_share', label: 'share', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'share'},// //////
 { type: 'input', name: 'Evento_follow', label: 'follow', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'follow'},//////
@@ -179,7 +190,7 @@ const formConfig = [
   console.log("formModal", formModal);
   // formModal.appendTo('#modal');
   const alldata = await AccionEventsDBManager.getAllData();
-  async function getalldatafromAccionEventsDBManager() {
+  export async function getalldatafromAccionEventsDBManager() {
     return await AccionEventsDBManager.getAllData();
   }
   console.log("alldata", alldata);
@@ -293,9 +304,9 @@ const formConfig = [
                     if (dataeval,item.keyname){
                       const defaultvalue = this.finddefaultMatch(item.keyname, dataeval);
                       // console.log("defaultvalue",defaultvalue,"dataeval",dataeval,"matchedValue",matchedValue);
-                      if (dataeval.Evento.chat) {
-                        console.log("Eventype",defaultvalue[this.eventType]);
-                        if(defaultvalue[this.eventType]==="default"){
+                      if (dataeval.Evento.chat && this.eventType === defaultvalue.eventType) {
+                        console.log("Eventype",defaultvalue[this.eventType], defaultvalue, this.eventType);
+                        if(defaultvalue[this.eventType]=== "default"){
                           if (item.callback) {
                               item.callback(dataeval);
                           continue;
@@ -404,7 +415,7 @@ async function sendMediaManager(data,userdata = {}) {
 }
 
 // Ejemplo de uso
-async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata = {}) {
+export async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata = {}) {
   let customoptions = [];
   switch (eventType) {
     case "chat":
@@ -433,7 +444,8 @@ async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata
       { keytype: 'any', keyfind: "object", keyname: "mediaVideo", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => sendMediaManager(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "profile", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => sendMediaManager(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "minecraft", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleMinecraft(data, userdata), isBlocking: false },
-  ];
+      { keytype: 'any', keyfind: "object", keyname: "vrchat", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleOsc(data, userdata), isBlocking: false },
+    ];
 
   for (const data of indexdbdata) {
       const evaluator = new DataEvaluator(configevaldata, eventType);
@@ -446,14 +458,50 @@ async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata
       });
   }
 }
+function handleOsc(data, userdata) {
+  const resultmessage = replaceVariables(data.vrchat.chatbox, userdata);
+  socketManager.emitMessage('oscmessage', resultmessage);
+  if (data.vrchat.input && data.vrchat.input !== false) {
+    const inputname = data.vrchat.input;
+    console.log("inputname",inputname);
+    if (inputname.startsWith("LookHorizontal")) {
+      const handleMovementsplitkeys = inputname.split('.');
+      if (handleMovementsplitkeys[1] === "left") {
+        socketManager.emitMessage('oscHandler', { action:handleMovementsplitkeys[0] , value: -0.6 });
+        setTimeout(() => socketManager.emitMessage('oscHandler', { action:handleMovementsplitkeys[0] , value: 0.1 }), 200);
+      } else {
+        socketManager.emitMessage('oscHandler', { action:handleMovementsplitkeys[0] , value: 0.6 });
+        setTimeout(() => socketManager.emitMessage('oscHandler', { action:handleMovementsplitkeys[0] , value: 0.1 }), 200);
+      }
+      console.log("handleMovementsplitkeys",handleMovementsplitkeys);
+      return;
+    }
+    if (inputname.startsWith("LookVertical")) {
+      const handleMovementsplitkeys = inputname.split('.');
+      if (handleMovementsplitkeys[1] === "up") {
+        socketManager.emitMessage('oscHandler', { action:handleMovementsplitkeys[0] , value: 0.4 });
+        setTimeout(() => socketManager.emitMessage('oscHandler', { action:handleMovementsplitkeys[0] , value: 0.1 }), 500);
+      } else {
+        socketManager.emitMessage('oscHandler', { action:handleMovementsplitkeys[0] , value: -0.4 });
+        setTimeout(() => socketManager.emitMessage('oscHandler', { action:handleMovementsplitkeys[0] , value: 0.1 }), 500);
+      }
+      console.log("handleMovementsplitkeys",handleMovementsplitkeys);
+
+      return;
+    }
+    socketManager.emitMessage('oscHandler', { action: inputname, value: true });
+    setTimeout(() => socketManager.emitMessage('oscHandler', { action: inputname, value: false }), 500);
+    console.log("resultmessage",userdata, resultmessage);
+  }
+}
 function handleMinecraft(data, userdata) {
   console.log("handleMinecraft", data, userdata);
-  console.log("handleMinecraft", data.minecraft.command);
+  // console.log("handleMinecraft", data.minecraft.command);
   const splitcommand = data.minecraft.command.split('\n');
   if (splitcommand.length >= 1) {
     splitcommand.forEach(command => {
       const resultcommand = replaceVariables(command, userdata);
-      ws.sendCommand(resultcommand);
+      sendcommandmc(resultcommand);
       console.log("resultcommand",userdata, resultcommand);
     });
   }
@@ -506,7 +554,7 @@ const deletecallback = async (index, data,modifiedData) => {
 const config = {
   nombre: {
     class: 'input-default',
-    type: 'string',
+    type: 'textarea',
     returnType: 'string',
   }, // Especifica el orden de las columnas
   Evento: {
@@ -523,7 +571,7 @@ const config = {
     chat: {
       label: 'chat',
       class: 'input-default',
-      type: 'string',
+      type: 'textarea',
       returnType: 'string',
       hidden: true,
     },
@@ -536,7 +584,7 @@ const config = {
     },
     gift: {
       class: 'input-default',
-      label: 'gift',
+      label: '',
       type: 'select',
       returnType: 'number',
       options: getmapselectgift()
@@ -553,9 +601,33 @@ const config = {
     },
     command: {
       class: 'input-default',
-      label: 'command',
+      label: '',
       type: 'textarea',
       returnType: 'string',
+    },
+  },
+  vrchat: {
+    class: 'input-default',
+    label: 'vrchat',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    chatbox: {
+      class: 'input-default',
+      label: '',
+      type: 'textarea',
+      returnType: 'string',
+    },
+    input: {
+      class: 'input-default',
+      label: '',
+      type: 'select',
+      returnType: 'string',
+      options: oscOptions,
     },
   },
   profile: {
@@ -574,8 +646,8 @@ const config = {
     },
     text: {
       class: 'input-default',
-      label: 'text',
-      type: 'string',
+      label: '',
+      type: 'textarea',
       returnType: 'string',
     },
   },
@@ -603,7 +675,7 @@ const config = {
     },
     file: {
       class: 'input-default',
-      label: 'file',
+      label: '',
       type: 'select',
       returnType: 'number',
       options: audioOptions
@@ -633,7 +705,7 @@ const config = {
     },
     file: {
       class: 'input-default',
-      label: 'file',
+      label: '',
       type: 'select',
       returnType: 'number',
       options: videoOptions
@@ -656,7 +728,7 @@ const config = {
     },
     file: {
       class: 'input-default',
-      label: 'file',
+      label: '',
       type: 'select',
       returnType: 'number',
       options: imageOptions
@@ -681,15 +753,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 ObserverEvents.subscribe(async (action, data) => {
   if (action === "save") {
-  const dataupdate = await AccionEventsDBManager.getAllData();
-  table.updateRows(dataupdate);
+    table.clearRows();
+    const dataupdate = await AccionEventsDBManager.getAllData();
+    dataupdate.forEach((data) => {
+      table.addRow(data);
+    });
   } else if (action === "delete") {
-  const dataupdate = await AccionEventsDBManager.getAllData();
-  table.updateRows(dataupdate);
+    table.clearRows();
+    const dataupdate = await AccionEventsDBManager.getAllData();
+    dataupdate.forEach((data) => {
+      table.addRow(data);
+    });
   } else if (action === "update") {
-  const dataupdate = await AccionEventsDBManager.getAllData();
-  table.updateRows(dataupdate);
+    table.clearRows();
+    const dataupdate = await AccionEventsDBManager.getAllData();
+    dataupdate.forEach((data) => {
+      table.addRow(data);
+    });
   }
 });
-export { AccionEventoOverlayEval, getalldatafromAccionEventsDBManager }
 

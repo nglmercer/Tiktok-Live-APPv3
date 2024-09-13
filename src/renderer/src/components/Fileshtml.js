@@ -92,9 +92,11 @@ async function loadFileList() {
 
 function setupDragAndDrop() {
     const dropArea = document.getElementById('drop-area');
+    console.log("dropArea setupDragAndDrop", dropArea);
 
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropArea.addEventListener(eventName, preventDefaults, false);
+        dropArea.classList.add('highlight');
     });
 
     function preventDefaults(e) {

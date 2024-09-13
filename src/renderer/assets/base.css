@@ -109,6 +109,7 @@ form {
   overflow-y: auto;
   overflow-x: hidden;
 }
+
 .gridform {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, auto));
@@ -126,4 +127,22 @@ form {
     grid-column: 1 / -1; /* Hace que el primer elemento ocupe todo el ancho */
     grid-row: 1; /* Asegura que esté en la primera fila */
   }
+}
+.custombutton {
+  border: none;
+  border-radius: 0.5rem;
+  margin: 10px;
+  padding: 10px;
+}
+.savebutton {
+  background-color: #4caf50;
+}
+.savebutton:hover {
+  background-color: #43a047;
+}
+.deletebutton {
+  background-color: #f44336;
+}
+.delete-button:hover {
+  background-color: #f44336;
 }

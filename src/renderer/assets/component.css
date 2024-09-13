@@ -407,3 +407,10 @@ input[type="range"]::-ms-fill-upper {
   align-items: center;
   gap: 1rem;
 }
+.transparent {
+  background-color: transparent !important;
+}
+.centerbutton {
+  display: inline-flex;
+
+}

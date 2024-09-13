@@ -9,7 +9,7 @@ import { ChatContainer, ChatMessage } from './assets/items';
 import { UserPointsTable, StaticTable } from './src/utils/UserPoints';
 import { handleleermensaje } from './src/voice/tts';
 import { loadFileList, setupDragAndDrop, handlePlayButton, getfileId, handlePasteFromClipboard} from './src/components/Fileshtml'
-import { AccionEventoOverlayEval, getalldatafromAccionEventsDBManager } from './src/components/AccionEvents'
+import { AccionEventoOverlayEval, getalldatafromAccionEventsDBManager } from './src/components/Accionevents'
 const observeruserPoints = new DBObserver();
 const newChatContainer = new ChatContainer('.chatcontainer', 500);
 const newGiftContainer = new ChatContainer('.giftcontainer', 500);
@@ -19,6 +19,7 @@ const countergift = new Counter(0, 1000);
 const countershare = new Counter(0, 1000);
 const counterlike = new Counter(0, 1000);
 const counterfollow = new Counter(0, 1000);
+const countermember = new Counter(0, 1000);
 async function sendcreateserver(serverurl,data) {
   const respone = await getdatafromserver(serverurl,data);
   console.log("getdatafromserver", respone, serverurl, data);
@@ -174,6 +175,11 @@ async function handleevents(evenType, data) {
     case "social":
         handlesocial(data);
         break;
+    case "member":
+      alldatadb = await getalldatafromAccionEventsDBManager();
+        handlemember(data);
+        AccionEventoOverlayEval(evenType,alldatadb,data);
+        break
     case "likes":
     case "like":
       alldatadb = await getalldatafromAccionEventsDBManager();
@@ -191,7 +197,9 @@ async function handleevents(evenType, data) {
         handlegift(data);
         break;
     case "suscribe":
+      alldatadb = await getalldatafromAccionEventsDBManager();
       console.log("suscribe", data);
+      AccionEventoOverlayEval(evenType,alldatadb,data);
       break;
     case "connected":
         onConnected(data);
@@ -212,7 +220,7 @@ async function handleevents(evenType, data) {
 }
 
 async function evalsystempoints(evenType, data) {
-  if (!data.uniqueId) return;
+  if (!data || !data.uniqueId) return;
   const getpoinifexists = TypeofData.toNumber(await getdataIndexdbInstance.getdataIndexdb(data, 'points')) || 0;
   let userpoints = {
     uniqueId: data.uniqueId,
@@ -316,10 +324,30 @@ function handlelike(data) {
   }
   const newMessage = new ChatMessage( `msg${counterlike.increment()}`, data.profilePictureUrl, parsedlikedata);
   newEventsContainer.addMessage(newMessage, true);
-  showAlert('info', `${data.uniqueId} likes ${data.likeCount}`, 5000);
+  showAlert('info', `${data.uniqueId} likes ${data.likeCount}`, 2000);
 }
 function handlefollow(data) {
   console.log("follow", data);
+  showAlert('info', `${data.uniqueId} te sige`, 5000);
+  const parsedfollowdata = {
+    content: {
+      1: ["text", data.uniqueId,"white"],
+      2: ["text", "te sige","gold"],
+    }
+  }
+  const newMessage = new ChatMessage( `msg${counterfollow.increment()}`, data.profilePictureUrl, parsedfollowdata);
+  newEventsContainer.addMessage(newMessage, true);
+}
+function handlemember(data) {
+  console.log("member", data);
+  const parsedmemberdata = {
+    content: {
+      1: ["text", data.uniqueId,"white"],
+      2: ["text", "ingreso al live","gold"],
+    }
+  }
+  const newMessage = new ChatMessage( `msg${countermember.increment()}`, data.profilePictureUrl, parsedmemberdata);
+  newEventsContainer.addMessage(newMessage, true);
 }
 function handlegift(data) {
   console.log("gift", data);
@@ -366,6 +394,9 @@ events.forEach(event => {
     }
   });
 });
+socketManager.on('rconconnectresponse', (data) => {
+  console.log('rconconnectresponse', data);
+})
 socketManager.on("roominfo", (data) => {
     onRoominfo(data);
   });
@@ -430,10 +461,9 @@ function evalmessagecontainsfilter(text) {
       return message.includes(word);
   });
 }
-document.addEventListener('DOMContentLoaded', async () => {
   setTimeout(async () => {
     setupDragAndDrop();
     console.log("setupDragAndDrop");
   }, 1000);
-});
+
 export { socketManager }
