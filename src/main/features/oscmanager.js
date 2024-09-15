@@ -31,6 +31,7 @@ export class OSCManager {
 
   sendMessage(text) {
     if (!text) return;
+    try {
     if (this.client) {
       this.client.send('/chatbox/input', text.toString(), true);
       console.log(`OSC Message sent: ${text}`);
@@ -40,8 +41,13 @@ export class OSCManager {
       this.createClient();
       return { success: false, error: 'OSC Client not created' };
     }
+    } catch (error) {
+      console.error('Error sending OSC message:', error);
+      return { success: false, error: 'Error sending OSC message' };
+    }
   }
   sendAction(action, value) {
+    try {
     if (this.client) {
       this.client.send(`${action}`, value, true);
 
@@ -50,6 +56,10 @@ export class OSCManager {
     } else {
       console.error('OSC Client not created');
       return { success: false, error: 'OSC Client not created' };
+    }
+    } catch (error) {
+      console.error('Error sending OSC message:', error);
+      return { success: false, error: 'Error sending OSC message' };
     }
   }
 

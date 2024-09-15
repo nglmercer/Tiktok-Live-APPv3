@@ -38,11 +38,11 @@
       </script>
         <ul class="right hide-on-med-and-down">
           <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
-          <li><a class="tab-link" data-tab="tab2">Chat y Voz</a></li>
+          <li><a class="tab-link" data-tab="tab2">Chat y Voz 🔊</a></li>
           <li><a class="tab-link" data-tab="tab3">Audio Control</a></li>
-          <li><a class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
+          <li><a class="tab-link" data-tab="tab4">Acciones y Eventos</a></li>
           <li><a class="tab-link" data-tab="tab5">Streamdeck</a></li>
-          <li><a class="tab-link" data-tab="tab6">Overlay link</a></li>
+          <li><a class="tab-link" data-tab="tab6">Settings ⚙</a></li>
           <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
           <li><a class="tab-link" data-tab="tab8">vrchat</a></li>
         </ul>
@@ -52,9 +52,9 @@
       <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
       <li><a class="tab-link" data-tab="tab2">Chat y Voz</a></li>
       <li><a class="tab-link" data-tab="tab3">Audio Control</a></li>
-      <li><a class="tab-link" data-tab="tab4">Archivos y Eventos</a></li>
+      <li><a class="tab-link" data-tab="tab4">Acciones y Eventos</a></li>
       <li><a class="tab-link" data-tab="tab5">Streamdeck</a></li>
-      <li><a class="tab-link" data-tab="tab6">Overlay link</a></li>
+      <li><a class="tab-link" data-tab="tab6">Settings ⚙</a></li>
       <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
       <li><a class="tab-link" data-tab="tab8">vrchat</a></li>
 
@@ -414,8 +414,30 @@
 </div>
 
 <div class="tabcontainer" data-tab="tab4">
-  <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y atajos</button>
+  <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y Eventos</button>
   <div id="table-container" class="table-container"></div>
+  <div class="containerbox relative">
+    <h3>Overlay Previews</h3>
+    <span id="overlay-preview-container"></span>
+    <iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
+    <span id="overlaypreviewcontainer2"></span>
+    <iframe-preview src="/overlay.html" muted="true"></iframe-preview>
+    <script>
+      const urltext = document.getElementById("overlay-preview-container");
+      urltext.innerHTML = `${getlocalhref()}overlay.html`;
+      const urltext2 = document.getElementById("overlaypreviewcontainer2");
+      urltext2.innerHTML = `${getlocalhref()}overlayfull.html`;
+      function getlocalhref() {
+        if (window.location.protocol === 'https:' || window.location.protocol === 'http:') {
+            return window.location.href
+        } else {
+          return `localhost:8088/`
+        }
+      }
+      console.log("getlocalhref",getlocalhref());
+    </script>
+  </div>
+
   <style>
     .table-container {
       width: 100% !important;
@@ -451,27 +473,394 @@
   <div id="buttonContainer"></div>
 </div>
 <div class="tabcontainer" data-tab="tab6">
-  <div class="containerbox relative">
-    <h3>Overlay Previews</h3>
-    <span id="overlay-preview-container"></span>
-    <iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
-    <span id="overlaypreviewcontainer2"></span>
-    <iframe-preview src="/overlay.html" muted="true"></iframe-preview>
-    <script>
-      const urltext = document.getElementById("overlay-preview-container");
-      urltext.innerHTML = `${getlocalhref()}overlay.html`;
-      const urltext2 = document.getElementById("overlaypreviewcontainer2");
-      urltext2.innerHTML = `${getlocalhref()}overlayfull.html`;
-      function getlocalhref() {
-        if (window.location.protocol === 'https:' || window.location.protocol === 'http:') {
-            return window.location.href
-        } else {
-          return `localhost:8088/`
-        }
+  <button id="exportButton" class="custombutton exportButton">Exportar bases de datos</button>
+  <input type="file" id="importInput" accept=".json">
+  <button id="importButton" class="custombutton">Importar archivo seleccionado</button>
+  <button id="loadFromFirebaseButton" class="custombutton">Cargar desde Firebase</button>
+  <div id="importResults"></div>
+
+  <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+      import { getFirestore, setDoc, getDoc, doc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+      const firebaseConfig = {
+          apiKey: "AIzaSyDf_0M9KgJttAJogVDqHdv7E7y8psKgZyE",
+          authDomain: "tiktokliveapp-bced3.firebaseapp.com",
+          projectId: "tiktokliveapp-bced3",
+          storageBucket: "tiktokliveapp-bced3.appspot.com",
+          messagingSenderId: "860491897747",
+          appId: "1:860491897747:web:928b1824fb8f936dade666",
+          measurementId: "G-VE9VWQWWX1"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+
+      async function getIndexedDBList() {
+          const databases = await window.indexedDB.databases();
+          return databases.map(db => db.name);
       }
-      console.log("getlocalhref",getlocalhref());
-    </script>
-  </div>
+
+      async function exportSelectedIndexedDBs(dbNames, saveToFirebase = false) {
+        for (const dbName of dbNames) {
+            const exportData = {};
+
+            const db = await new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName);
+                request.onerror = reject;
+                request.onsuccess = () => resolve(request.result);
+            });
+
+            exportData[dbName] = {};
+            const objectStoreNames = Array.from(db.objectStoreNames);
+
+            for (const storeName of objectStoreNames) {
+                const transaction = db.transaction(storeName, 'readonly');
+                const objectStore = transaction.objectStore(storeName);
+                const data = await new Promise((resolve, reject) => {
+                    const request = objectStore.getAll();
+                    request.onerror = reject;
+                    request.onsuccess = () => resolve(request.result);
+                });
+                exportData[dbName][storeName] = data;
+            }
+
+            db.close();
+
+            const jsonString = JSON.stringify(exportData);
+
+            if (saveToFirebase) {
+                await saveToFirestore(jsonString,dbName); // Asume que la función saveToFirestore existe y está configurada
+            } else {
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${dbName}_export.json`;  // Usar el nombre de la base de datos para el archivo
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+    }
+
+      async function importIndexedDBs(importData) {
+        const results = [];
+
+        for (const [dbName, stores] of Object.entries(importData)) {
+            const db = await new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, 1);
+                request.onerror = reject;
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    for (const storeName of Object.keys(stores)) {
+                        if (!db.objectStoreNames.contains(storeName)) {
+                            db.createObjectStore(storeName, { keyPath: 'id', autoIncrement: true });
+                        }
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+            });
+
+            for (const [storeName, data] of Object.entries(stores)) {
+                for (const item of data) {
+                    const transaction = db.transaction(storeName, 'readwrite');
+                    const objectStore = transaction.objectStore(storeName);
+
+                    try {
+                        await new Promise((resolve, reject) => {
+                            const request = objectStore.add(item);
+
+                            request.onsuccess = () => {
+                                results.push(`Elemento con ID ${request.result} importado correctamente en ${dbName}.${storeName}`);
+                                resolve();
+                            };
+
+                            request.onerror = async () => {
+                                if (request.error && request.error.name === 'ConstraintError') {
+                                    const action = await showReplaceDialog(dbName, storeName, item);
+
+                                    // Manejar la acción del usuario después de mostrar el diálogo
+                                    switch (action) {
+                                        case 'replace':
+                                            await performReplace(db, storeName, item, results);
+                                            break;
+                                        case 'delete':
+                                            await performDeleteAndReplace(db, storeName, item, results);
+                                            break;
+                                        default:
+                                            results.push(`Elemento con ID ${item.id} no reemplazado en ${dbName}.${storeName}`);
+                                            break;
+                                    }
+                                    resolve(); // Completa la promesa independientemente de la acción
+                                } else {
+                                    results.push(`Error al importar elemento en ${dbName}.${storeName}: ${request.error}`);
+                                    reject(request.error); // Propaga el error para manejarlo fuera del bucle
+                                }
+                            };
+                        });
+                    } catch (error) {
+                        console.error(`Error al importar elemento en ${dbName}.${storeName}:`, error);
+                    }
+                }
+            }
+
+            db.close();
+        }
+
+        return results;
+    }
+
+    // Función para realizar el reemplazo de un elemento
+    async function performReplace(db, storeName, item, results) {
+        const transaction = db.transaction(storeName, 'readwrite');
+        const objectStore = transaction.objectStore(storeName);
+        const updateRequest = objectStore.put(item);
+
+        updateRequest.onsuccess = () => {
+            results.push(`Elemento con ID ${item.id} reemplazado correctamente `);
+        };
+
+        updateRequest.onerror = () => {
+            results.push(`Error al reemplazar el elemento ${updateRequest.error}`);
+        };
+
+        await new Promise((resolve) => transaction.oncomplete = resolve);
+    }
+
+    // Función para eliminar y luego reemplazar un elemento
+    async function performDeleteAndReplace(db, storeName, item, results) {
+        const deleteTransaction = db.transaction(storeName, 'readwrite');
+        const deleteStore = deleteTransaction.objectStore(storeName);
+        const deleteRequest = deleteStore.delete(item.id);
+
+        deleteRequest.onsuccess = async () => {
+            const addTransaction = db.transaction(storeName, 'readwrite');
+            const addStore = addTransaction.objectStore(storeName);
+            const addRequest = addStore.add(item);
+
+            addRequest.onsuccess = () => {
+                results.push(`Elemento con ID ${item.id} reemplazado correctamente en ${dbName}.${storeName} después de eliminar el existente`);
+            };
+
+            addRequest.onerror = () => {
+                results.push(`Error al reemplazar el elemento en ${dbName}.${storeName}: ${addRequest.error}`);
+            };
+
+            await new Promise((resolve) => addTransaction.oncomplete = resolve);
+        };
+
+        deleteRequest.onerror = () => {
+            results.push(`Error al eliminar el elemento en ${dbName}.${storeName}: ${deleteRequest.error}`);
+        };
+
+        await new Promise((resolve) => deleteTransaction.oncomplete = resolve);
+    }
+
+      async function showExportDialog() {
+          const databases = await getIndexedDBList();
+          const dialog = document.createElement('dialog');
+          dialog.innerHTML = `
+              <h2>Selecciona las bases de datos a exportar</h2>
+              <form id="exportForm">
+                  <div id="dbCheckboxes">
+                      ${databases.map(db => `
+                          <label>
+                              <input type="checkbox" name="db" value="${db}">
+                              <span>${db}</span>
+                          </label><br>
+                      `).join('')}
+                  </div>
+                  <label>
+                      <input type="checkbox" id="selectAll">
+                      <span>Seleccionar todas las bases de datos</span>
+                  </label><br>
+                  <label>
+                      <input type="checkbox" id="saveToFirebase">
+                      <span>Guardar en Firebase</span>
+                  </label><br>
+                  <button type="submit">Exportar</button>
+                  <button type="button" id="cancelButton">Cancelar</button>
+              </form>
+          `;
+
+          document.body.appendChild(dialog);
+
+          const selectAllCheckbox = dialog.querySelector('#selectAll');
+          const dbCheckboxes = dialog.querySelectorAll('input[name="db"]');
+          const saveToFirebaseCheckbox = dialog.querySelector('#saveToFirebase');
+          const cancelButton = dialog.querySelector('#cancelButton');
+
+          selectAllCheckbox.addEventListener('change', () => {
+              dbCheckboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+          });
+
+          dialog.querySelector('#exportForm').addEventListener('submit', (e) => {
+              e.preventDefault();
+              const selectedDBs = Array.from(dbCheckboxes)
+                  .filter(cb => cb.checked)
+                  .map(cb => cb.value);
+              if (selectedDBs.length > 0) {
+                  exportSelectedIndexedDBs(selectedDBs, saveToFirebaseCheckbox.checked);
+              }
+              dialog.close();
+          });
+
+          cancelButton.addEventListener('click', () => {
+              dialog.close();
+          });
+
+          dialog.showModal();
+      }
+
+      async function showReplaceDialog(dbName, storeName, item) {
+        return new Promise((resolve) => {
+            const dialog = document.createElement('dialog');
+            dialog.innerHTML = `
+                <h3>Conflicto con el elemento</h3>
+                <p>El elemento con ID ${item.id} ya existe en ${dbName}.${storeName}. ¿Qué deseas hacer?</p>
+                <pre>${JSON.stringify(item, null, 2)}</pre>
+                <button id="replace">Reemplazar</button>
+                <button id="delete">Eliminar</button>
+                <button id="cancel">Cancelar</button>
+            `;
+            document.body.appendChild(dialog);
+
+            dialog.querySelector('#replace').addEventListener('click', () => {
+                dialog.close();
+                resolve('replace');
+            });
+
+            dialog.querySelector('#delete').addEventListener('click', () => {
+                dialog.close();
+                resolve('delete');
+            });
+
+            dialog.querySelector('#cancel').addEventListener('click', () => {
+                dialog.close();
+                resolve('cancel');
+            });
+
+            dialog.showModal();
+        });
+    }
+
+      async function handleImport() {
+          const importInput = document.getElementById('importInput');
+          const importButton = document.getElementById('importButton');
+          const file = importInput.files[0];
+          if (file) {
+              const reader = new FileReader();
+              reader.onload = async (e) => {
+                  const importData = JSON.parse(e.target.result);
+                  const results = await importIndexedDBs(importData);
+                  displayResults(results);
+                  importInput.value = '';
+                  importButton.classList.remove('file-selected');
+                  importButton.textContent = 'Importar archivo seleccionado';
+              };
+              reader.readAsText(file);
+          } else {
+              alert('Por favor, selecciona un archivo para importar.');
+          }
+      }
+
+      function displayResults(results) {
+          const resultDiv = document.getElementById('importResults');
+          resultDiv.innerHTML = results.map(result => `<p>${result}</p>`).join('');
+      }
+
+      async function saveToFirestore(data, dbNamedata = "indexeddb") {
+          const timestamp = new Date();
+          const docName = `backup_${dbNamedata}_${timestamp.toISOString().replace(/[:.]/g, '-')}`;
+          const docRef = doc(db, "backups", docName);
+
+          try {
+              await setDoc(docRef, { data, timestamp });
+              console.log("Datos guardados en Firebase correctamente.");
+              alert("Datos guardados en Firebase correctamente.");
+          } catch (e) {
+              console.error("Error al guardar en Firebase: ", e);
+              alert("Error al guardar en Firebase. Consulta la consola para más detalles.");
+          }
+      }
+
+      async function loadFromFirebase() {
+          try {
+              const backupsRef = collection(db, "backups");
+              const querySnapshot = await getDocs(backupsRef);
+              const backups = querySnapshot.docs.map(doc => ({
+                  id: doc.id,
+                  timestamp: doc.data().timestamp.toDate()
+              }));
+
+              if (backups.length === 0) {
+                  alert("No se encontraron copias de seguridad en Firebase.");
+                  return;
+              }
+
+              const dialog = document.createElement('dialog');
+              dialog.innerHTML = `
+                  <h2>Selecciona una copia de seguridad para cargar</h2>
+                  <form id="loadForm">
+                      <select id="backupSelect">
+                          ${backups.map(backup => `
+                              <option value="${backup.id}">${backup.id} (${backup.timestamp.toLocaleString()})</option>
+                          `).join('')}
+                      </select>
+                      <button type="submit">Cargar</button>
+                      <button type="button" id="cancelLoadButton">Cancelar</button>
+                  </form>
+              `;
+
+              document.body.appendChild(dialog);
+              dialog.querySelector('#loadForm').addEventListener('submit', async (e) => {
+                  e.preventDefault();
+                  const selectedBackupId = dialog.querySelector('#backupSelect').value;
+                  const docRef = doc(db, "backups", selectedBackupId);
+                  const docSnap = await getDoc(docRef);
+
+                  if (docSnap.exists()) {
+                      const { data } = docSnap.data();
+                      const importData = JSON.parse(data);
+                      const results = await importIndexedDBs(importData);
+                      displayResults(results);
+                  } else {
+                      alert("No se pudo cargar la copia de seguridad seleccionada.");
+                  }
+
+                  dialog.close();
+              });
+
+              dialog.querySelector('#cancelLoadButton').addEventListener('click', () => {
+                  dialog.close();
+              });
+
+              dialog.showModal();
+          } catch (e) {
+              console.error("Error al cargar desde Firebase: ", e);
+              alert("Error al cargar desde Firebase. Consulta la consola para más detalles.");
+          }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+          document.getElementById('exportButton').addEventListener('click', showExportDialog);
+          document.getElementById('importButton').addEventListener('click', handleImport);
+          document.getElementById('loadFromFirebaseButton').addEventListener('click', loadFromFirebase);
+
+          document.getElementById('importInput').addEventListener('change', function() {
+              const importButton = document.getElementById('importButton');
+              if (this.files.length > 0) {
+                  importButton.textContent = `Importar ${this.files[0].name}`;
+                  importButton.classList.add('file-selected');
+              } else {
+                  importButton.textContent = 'Importar archivo seleccionado';
+                  importButton.classList.remove('file-selected');
+              }
+          });
+      });
+  </script>
 
 </div>
 <div class="tabcontainer" data-tab="tab7">
@@ -735,7 +1124,7 @@
     <script type="module" src="./src/minecraft.js"> </script>´
     <script type="module" src="./tiktoksocketdata.js"></script>
     <script type="module" src="./src/utils/localstorage.js"></script>
-
+<!--
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
       import { getFirestore, setDoc, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
@@ -800,7 +1189,7 @@
       // Llamar al método para cargar el localStorage una vez al día al iniciar la página
       // loadFirestoreToLocalStorageOncePerDay();
 
-    </script>
+    </script> -->
 
       <script type="module" src="./src/voice/speech.js"></script>
   </body>

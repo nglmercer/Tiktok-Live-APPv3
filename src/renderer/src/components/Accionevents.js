@@ -387,6 +387,7 @@ async function sendMediaManager(data,userdata = {}) {
       // console.log("datafile options",mediaType,mediaTypes, options.check);
       if (options.check) {
         const file = await getfileId(options.select);
+        if (!file || file.path === null) return;
         const datafile = {
           eventType: 'play',
           data: { src: file.path, fileType: file.type, options },

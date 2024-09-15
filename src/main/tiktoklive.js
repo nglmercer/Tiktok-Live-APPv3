@@ -25,7 +25,7 @@ class TiktokLiveController {
       this.initializeEventHandlers();
       this.isConnected = true;
       if (socket && this.isConnected) {
-        socket.emit('connected', state);
+        socket.emit('connected', state, this.uniqueId);
         this.subscribe(socket);
         console.log("TiktokLiveController.connect", this.uniqueId, this.isConnected, socket.id);
       }
@@ -59,7 +59,9 @@ class TiktokLiveController {
     // Debug events
     this.tiktokLiveConnection.on('disconnected', data => {
       this.isConnected = false;
-      console.log('disconnected', data);
+      this.subscribers.forEach((_, subscriber) => {
+        subscriber.emit('disconnected', data);
+      });
       setTimeout(() => {
         console.log('reconnecting...');
         this.tiktokLiveConnection.connect();
@@ -69,7 +71,7 @@ class TiktokLiveController {
     this.tiktokLiveConnection.on('streamEnd', data => {
       console.log('streamEnd', data);
       this.subscribers.forEach((_, subscriber) => {
-        subscriber.emit('streamEnd', data);
+        subscriber.emit('streamEnd', data, this.uniqueId);
       });
       this.isConnected = false;
     });

@@ -20,11 +20,21 @@ const countershare = new Counter(0, 1000);
 const counterlike = new Counter(0, 1000);
 const counterfollow = new Counter(0, 1000);
 const countermember = new Counter(0, 1000);
-async function sendcreateserver(serverurl,data) {
-  const respone = await getdatafromserver(serverurl,data);
-  console.log("getdatafromserver", respone, serverurl, data);
+let UniqueIdname;
+function getlastuniqueid() {
+  if (UniqueIdname) {
+    return UniqueIdname;
+  } else if (localStorage.getItem("UniqueId") || localStorage.getItem("tiktok_name")) {
+    return localStorage.getItem("UniqueId") || localStorage.getItem("tiktok_name");
+  } else {
+    return null;
+  }
 }
-sendcreateserver(`${socketurl.getport()}/create-overlaywindow`, {});
+// async function sendcreateserver(serverurl,data) {
+//   const respone = await getdatafromserver(serverurl,data);
+//   console.log("getdatafromserver", respone, serverurl, data);
+// }
+// sendcreateserver(`${socketurl.getport()}/create-overlaywindow`, {});
 const textcontent = {
   content: {
     1: ["text", "Aqui esta el chat","white","QWDQWDQWDQWDCHAT"],
@@ -93,9 +103,11 @@ uniqueidform.addEventListener("submit", function(event) {
   // Recorrer todos los pares clave-valor y mostrarlos en la consola
 
   const uniqueid = formData.tiktok_name;
+  localStorage.setItem("UniqueId", uniqueid);
   if (uniqueid) {
     console.log(uniqueid);
     connect(uniqueid);
+    UniqueIdname = uniqueid;
   } else {
     alert("Por favor ingrese un nombre de tiktok");
     console.log(getformdatabyid(uniqueidform))
@@ -126,7 +138,7 @@ function handleWebsocketMessage(event) {
   let data = parsedData.data;
   handleevents(evenType, data);
 }
-async function handleevents(evenType, data) {
+async function handleevents(evenType, data, additionalData) {
     let userpoints;
     let alldatadb = [];
     if (data && data.uniqueId) {
@@ -202,12 +214,13 @@ async function handleevents(evenType, data) {
       AccionEventoOverlayEval(evenType,alldatadb,data);
       break;
     case "connected":
-        onConnected(data);
+        onConnected(data, additionalData);
         break;
     case "roominfo":
-        onRoominfo(data);
+        onRoominfo(data, additionalData);
         break;
     case "streamEnd":
+        onStreamEnded(data, additionalData);
         console.log("streamEnd");
         break;
     case "disconnected":
@@ -365,13 +378,16 @@ function handlegift(data) {
 function sendToServer(evenType, data) {
   console.log("sendToServer", evenType, data);
 }
-function onConnected(data) {
-  console.log("onConnected", data);
-  textReplacer.replaceText("#stateText", `conectado ? ${data.isConnected}`, "green");
-  showAlert('info', `${data.isConnected} to ${data.roomId}`, 10000);
-  showAlert('success', `${data.isConnected} to ${data.roomId}`, 10000);
+function onConnected(data, additionalData = getlastuniqueid()) {
+  console.log("onConnected", data, additionalData);
+  textReplacer.replaceText("#stateText", `${additionalData} 🟢`, "green");
+  showAlert('success', `${additionalData}  ${data.roomId}`, 10000);
 }
-function onRoominfo(data) {
+function onStreamEnded(data, additionalData = getlastuniqueid()) {
+  console.log("onStreamEnded", data);
+  textReplacer.replaceText("#stateText", `${additionalData}🔴`, "red");
+}
+function onRoominfo(data, additionalData = getlastuniqueid()) {
   localStorage.setItem("RoomInfo", JSON.stringify(data));
   if (data.cover) {
     imageManipulator.manipulateImage("#uniqueIdImage", data.cover.url_list[0], "src");
@@ -380,15 +396,14 @@ function onRoominfo(data) {
   }
   console.log("onRoominfo", data.nickname,data);
   showAlert('info', `${data.cover}`, 10000);
-  textReplacer.replaceText("#stateText", `conectado ? ${data.isConnected}`, "green");
-
+  textReplacer.replaceText("#stateText", `${additionalData}🟢`, "green");
 }
 
 const events = ['connected', 'chat', 'share', 'social', 'like', 'follow', 'gift', 'streamEnd', 'disconnected', 'emote', 'envelope', 'questionNew', 'subscribe', 'member', 'roomUser'];
 events.forEach(event => {
-  socketManager.on(event, (data) => {
+  socketManager.on(event, (data,additionalData) => {
     try {
-      handleevents(event, data); // Lógica para manejar el evento
+      handleevents(event, data, additionalData); // Lógica para manejar el evento
     } catch (error) {
       console.error(`Error handling event ${event}:`, error);
     }

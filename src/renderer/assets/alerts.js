@@ -5,11 +5,12 @@ function showAlert(type, message, duration = 3000) {
       alertContainer = document.createElement('div');
       alertContainer.className = 'alert-container';
       document.body.appendChild(alertContainer);
+      alertContainer.style.pointerEvents = 'none';
   }
 
   const alert = document.createElement('div');
   alert.classList.add('alert');
-
+  alert.style.pointerEvents = 'none';
   switch (type) {
       case 'success':
           alert.classList.add('alert-success');

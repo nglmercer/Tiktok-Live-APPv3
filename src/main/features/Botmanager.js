@@ -187,18 +187,29 @@ export class MinecraftRcon {
 
   // Method to send a command to the RCON server
   async sendMessage(command) {
-      try {
-          if (this.rconClient) {
-              const response = await this.rconClient.send(command);
-              console.log(response);
-              return { success: true, response };
-          } else {
-              console.log('RCON client not connected.');
-              return { success: false, error: 'RCON client not connected.' };
-          }
-      } catch (error) {
-          console.error('Error sending command to RCON:', error);
-          return { success: false, error: 'Error sending command to RCON:' };
-      }
-  }
+    try {
+        if (!this.rconClient) {
+            throw new Error('RCON client not connected.');
+        }
+
+        if (!command || command.length <= 1 || typeof command !== 'string') {
+            throw new Error('No command provided or command is not a string.');
+        }
+
+        if (command.startsWith('/')) {
+            command = command.replace('/', '');
+            console.log("sendMessage", command);
+        }
+
+        const response = await this.rconClient.send(command);
+        console.log("response",response);
+        return { success: true, response };
+
+    } catch (error) {
+      console.error('Error sending command to RCON:', error);
+      throw new Error(`Error sending command to RCON: ${error.message}`);
+   }
+
+}
+
 }

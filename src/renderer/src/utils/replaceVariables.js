@@ -1,5 +1,5 @@
 const replaceVariables = (command, data) => {
-  let playerName = localStorage.getItem('playerName');
+  let playerName = localStorage.getItem('playerName') || localStorage.getItem('playerNameInput');
 
   if (typeof command !== 'string') {
     console.warn("Error: 'command' debe ser una cadena de texto.", typeof command);
@@ -23,7 +23,7 @@ const replaceVariables = (command, data) => {
     .replace(/giftname/g, data.giftName || 'testgiftName')
     .replace(/repeatCount/g, data.repeatCount || '123')
     .replace(/repeatcount/g, data.repeatCount || '123')
-    .replace(/playername/g, playerName || '@a')
+    .replace(/playername/g, playerName || '@a') // Reemplazar el nombre del jugador
     .replace(/diamonds/g, data.diamondCount || '50testDiamonds')
     .replace(/likecount/g, data.likeCount || '50testLikes')
     .replace(/followRole/g, data.followRole || 'followRole 0')

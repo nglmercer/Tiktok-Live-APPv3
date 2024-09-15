@@ -15,6 +15,7 @@ import injectQRCode from "./server/listenserver";
 import { HttpExpressServer, HttpsExpressServer } from "./server/ExpressServe";
 import * as fileHandler from "./data/fileHandler";
 import TiktokLiveController from "./data/tiktoklive";
+import { type } from "os";
 let Port;
 let io
 const fileOpener = new FileOpener();
@@ -101,7 +102,8 @@ async function startServer() {
           res.json(result);
         } catch (err) {
           console.error(`Error handling event ${event}:`, err);
-          res.status(500).json({ success: false, error: err.message });
+          res.json({ success: false });
+          throw new Error(`Failed to handle event ${event}: ${err.message}`);
         }
       });
       server.addRoute("post", "/overlay", async (req, res) => {
@@ -312,8 +314,10 @@ function handleRconConnect(socket, data) {
   socket.emit("rconconnectresponse", data);
 }
 async function sendcommandMinecraft(socket, data) {
-  console.log(data)
+  console.log("command minecraft",data)
   const response = await minecraftRcon.sendMessage(data);
+  if (!response || typeof response !== 'object' || typeof response !== 'string') return;
+  console.log("response minecraft",response)
   socket.emit("sendcommandMinecraftresponse", response);
 }
 function handleOscManager(socket, data) {
