@@ -1,7 +1,7 @@
 # tiktokliveappv3
 
 A minimal Electron application with JavaScript
-
+[![ click para ver y encontrar la app](https://img.shields.io/badge/CLICK%20PARA%20LEER%20O%20REVISAR%20DOCUMENTACION-Click%20aquí%20para%20leer%20toda%20la%20documentación-blue?style=for-the-badge&logo=github)](https://gh-pages--tiktokliveappdocs.netlify.app/)
 ## Recommended IDE Setup
 
 - [VSCode](https://code.visualstudio.com/) + [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint) + [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
