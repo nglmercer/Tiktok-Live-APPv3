@@ -1,3 +1,14 @@
+import {
+  createInputField,
+  createSelectField,
+  createMultiSelectField,
+  createColorPickerField,
+  createCheckboxField,
+  createSliderField,
+  createRadioField,
+  createTextareaField,
+  getFormData
+} from '../formHelpers.js';
 class DynamicTable {
   constructor(containerSelector, callback, config = {},deletecallback) {
     this.container = document.querySelector(containerSelector);
@@ -44,6 +55,29 @@ class DynamicTable {
   addRow(data) {
     const row = new DynamicRow(this.table, data, this.columns, this.config, this.callback,this.deletecallback);
     row.render();
+    this.fillEmptyFields(data);
+  }
+  fillEmptyFields(data) {
+    const filledData = { ...data }; // Copia los datos recibidos sin modificarlos
+
+    this.columns.forEach((key) => {
+      const columnConfig = this.config[key];
+
+      if (columnConfig && columnConfig.type === 'object') {
+        // Si el campo es un objeto, comprobamos cada subcampo
+        filledData[key] = data[key] || {}; // Si no existe el objeto en los datos, lo inicializamos
+        Object.keys(columnConfig).forEach(subKey => {
+          if (subKey !== 'type' && !(subKey in filledData[key])) {
+            filledData[key][subKey] = ''; // Añadimos solo los subcampos que faltan
+          }
+        });
+      } else if (!(key in filledData)) {
+        // Si el campo no es un objeto y no existe en los datos, lo añadimos vacío
+        filledData[key] = '';
+      }
+    });
+
+    return filledData;
   }
 
   hideColumn(columnKey) {
@@ -110,7 +144,7 @@ class DynamicRow {
       if (typeConfig && typeConfig.type === 'object') {
         const objectContainer = document.createElement('details');
         const summary = document.createElement('summary');
-        console.log("typeConfig", typeConfig, key);
+        // console.log("typeConfig", typeConfig, key);
         summary.textContent = 'Mostrar '+ key;
 
         objectContainer.appendChild(summary);
@@ -168,9 +202,11 @@ class DynamicRow {
   }
 
   createInputElement(key, subKey, value, typeConfig) {
-    // Si el valor es undefined, no generamos ningún elemento
-    if (value === undefined) return null;
-
+    if (value === undefined && subKey === 'class' || subKey === 'label') {
+      // console.log("createInputElement return", key, subKey, value, typeConfig);
+      return null;
+    }
+    // if (value === undefined) return;
     let inputElement;
 
     // Manejar el tipo de elemento según el typeConfig.type
@@ -193,6 +229,9 @@ class DynamicRow {
         break;
       case 'select':
         inputElement = this.createSelectElement(key, subKey, value, typeConfig);
+        break;
+      case 'multiSelect':
+        inputElement = this.createMultiSelectElement(key, subKey, value, typeConfig);
         break;
       default:
         // Por defecto, crear un input type="text"
@@ -307,7 +346,7 @@ class DynamicRow {
     inputElement.value = value || '';
     inputElement.autocomplete = 'on';
     inputElement.placeholder = key + ' ' + subKey;
-    console.log("createtexareaElement", key, subKey, value);
+    // console.log("createtexareaElement", key, subKey, value);
     inputElement.rows = 50;
     inputElement.cols = 50;
     inputElement.addEventListener('input', () => {
@@ -316,23 +355,20 @@ class DynamicRow {
     });
     return inputElement;
   }
-  // createSelectElement(key, subKey, value, typeConfig) {
-  //   const selectElement = document.createElement('select');
+  createMultiSelectElement(key, subKey, value, typeConfig) {
+    const fieldConfig = {
+      label: typeConfig.label,
+      options: typeConfig.options,
+      name: key,
+    };
+    // console.log("createMultiSelectElement", fieldConfig,value);
+    const multiSelectField = createMultiSelectField1(fieldConfig, (selectedValues) => {
+      this.updateModifiedData(key, subKey, selectedValues);
+    }, value);
 
-  //   typeConfig.options.forEach(option => {
-  //     const optionElement = document.createElement('option');
-  //     optionElement.value = option.value;
-  //     optionElement.textContent = option.label;
-  //     optionElement.selected = option.value === value;
-  //     selectElement.appendChild(optionElement);
-  //   });
+    return multiSelectField;
+  }
 
-  //   selectElement.addEventListener('change', () => {
-  //     this.updateModifiedData(key, subKey, selectElement.value);
-  //   });
-
-  //   return selectElement;
-  // }
 
   updateModifiedData(key, subKey, value) {
     if (subKey) {
@@ -344,6 +380,84 @@ class DynamicRow {
       this.modifiedData[key] = value;
     }
   }
+}
+function createMultiSelectField1(field, onChangeCallback, value) {
+  const container = document.createElement('div');
+  container.classList.add('input-field', 'col', 's12', 'gap-padding-margin-10');
+
+  const label = document.createElement('label');
+  label.textContent = field.label;
+
+  // Campo de búsqueda
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = 'Buscar...';
+  searchInput.classList.add('search-input', 'center-text');
+
+  // Contenedor de las opciones
+  const gridSelect = document.createElement('div');
+  gridSelect.classList.add('grid-select');
+
+  // Función para renderizar las opciones
+  function renderOptions(options) {
+    gridSelect.innerHTML = '';  // Limpiar las opciones actuales
+    options.forEach(option => {
+      const checkbox = document.createElement('label');
+      checkbox.classList.add('grid-select__option');
+
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.name = field.name;
+      // Guardamos directamente el valor del objeto, no su versión string
+      input.value = typeof option.value === 'object' ? option.value.index : option.value;
+      input.dataset.id = option.id;
+      input.classList.add('filled-in');
+
+      // Comprobar si esta opción está seleccionada y marcarla
+      if (Array.isArray(value) && value.includes(String(input.value))) {
+        input.checked = true; // Marcar como seleccionado
+      }
+
+      const labelText = document.createElement('span');
+      labelText.textContent = option.label;
+
+      // Escuchar cambios en los checkboxes y pasar el valor actualizado al callback
+      input.addEventListener('change', () => {
+        const selectedValues = Array.from(gridSelect.querySelectorAll('input[type="checkbox"]:checked'))
+          .map(checkbox => checkbox.value); // Ahora estamos pasando los valores correctos
+        onChangeCallback(selectedValues);
+      });
+
+      checkbox.appendChild(input);
+      checkbox.appendChild(labelText);
+      gridSelect.appendChild(checkbox);
+    });
+  }
+
+  // Inicializar las opciones
+  renderOptions(field.options);
+
+  // Filtrar opciones en base al texto ingresado en el buscador
+  searchInput.addEventListener('input', function () {
+    const searchTerm = this.value.toLowerCase();
+    const options = gridSelect.querySelectorAll('.grid-select__option');
+
+    options.forEach(option => {
+      const labelText = option.querySelector('span').textContent.toLowerCase();
+      // Añadir o quitar la clase 'hidden' según el término de búsqueda
+      if (labelText.includes(searchTerm)) {
+        option.classList.remove('hidden');
+      } else {
+        option.classList.add('hidden');
+      }
+    });
+  });
+
+  container.appendChild(label);
+  container.appendChild(searchInput);  // Agregar el campo de búsqueda
+  container.appendChild(gridSelect);
+
+  return container;
 }
 
 export default DynamicTable;

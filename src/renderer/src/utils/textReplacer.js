@@ -89,7 +89,35 @@ const imageManipulator = (() => {
     manipulateImage
   };
 })();
+function toggleClasses(selector, ...classNames) {
+  const element = document.querySelector(selector);
+
+  if (element) {
+    classNames.forEach(className => {
+      element.classList.toggle(className);
+    });
+    console.log(`Clases [${classNames.join(', ')}] aplicadas o removidas del elemento con selector "${selector}".`);
+  } else {
+    console.warn(`Elemento con el selector "${selector}" no encontrado.`);
+  }
+}
+
+// Función para alternar una o varias clases en múltiples elementos
+function toggleClassesMultiple(selector, ...classNames) {
+  const elements = document.querySelectorAll(selector);
+
+  if (elements.length > 0) {
+    elements.forEach((element) => {
+      classNames.forEach(className => {
+        element.classList.toggle(className);
+      });
+    });
+    console.log(`Clases [${classNames.join(', ')}] aplicadas o removidas de los elementos con selector "${selector}".`);
+  } else {
+    console.warn(`No se encontraron elementos con el selector "${selector}".`);
+  }
+}
 
 // Exporta el módulo para su uso en otros archivos
 export default textReplacer;
-export {imageManipulator};
+export {imageManipulator, toggleClasses, toggleClassesMultiple};

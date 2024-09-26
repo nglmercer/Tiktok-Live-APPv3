@@ -86,8 +86,7 @@ export function createMultiSelectField(field) {
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
   searchInput.placeholder = 'Buscar...';
-  searchInput.classList.add('search-input');
-  searchInput.className = 'center-text';
+  searchInput.classList.add('search-input', 'center-text');
 
   // Contenedor de las opciones
   const gridSelect = document.createElement('div');
@@ -122,10 +121,17 @@ export function createMultiSelectField(field) {
   // Filtrar opciones en base al texto ingresado en el buscador
   searchInput.addEventListener('input', function () {
     const searchTerm = this.value.toLowerCase();
-    const filteredOptions = field.options.filter(option =>
-      option.label.toLowerCase().includes(searchTerm)
-    );
-    renderOptions(filteredOptions);  // Renderizar las opciones filtradas
+    const options = gridSelect.querySelectorAll('.grid-select__option');
+
+    options.forEach(option => {
+      const labelText = option.querySelector('span').textContent.toLowerCase();
+      // Añadir o quitar la clase 'hidden' según el término de búsqueda
+      if (labelText.includes(searchTerm)) {
+        option.classList.remove('hidden');
+      } else {
+        option.classList.add('hidden');
+      }
+    });
   });
 
   container.appendChild(label);
@@ -134,6 +140,7 @@ export function createMultiSelectField(field) {
 
   return container;
 }
+
 export function createColorPickerField(field) {
   const wrapper = document.createElement('div');
   wrapper.classList.add('input-field', 'color-picker-field');
@@ -358,6 +365,11 @@ function processChildren(field, formData) {
         break;
       case 'object':
         childValue = TypeofData.toStringParse(childElement ? childElement.value : null);
+        break;
+      case 'array':
+        const childElements = document.querySelectorAll(`[name="${child.name}"]:checked`);
+        childValue = Array.from(childElements).map(childElement => childElement.value);
+        console.log("childValue",childValue);
         break;
       default:
         childValue = childElement ? childElement.value : null;

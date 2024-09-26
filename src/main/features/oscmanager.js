@@ -30,7 +30,7 @@ export class OSCManager {
   }
 
   sendMessage(text) {
-    if (!text) return;
+    if (!text || typeof text !== 'string') return;
     try {
     if (this.client) {
       this.client.send('/chatbox/input', text.toString(), true);
@@ -161,6 +161,7 @@ export class OSCManagerV2 {
   }
 
   sendMessage(message) {
+    if (!message || typeof message !== 'string') return;
     try {
       this.udpPort.send({
         address: "/chatbox/input",

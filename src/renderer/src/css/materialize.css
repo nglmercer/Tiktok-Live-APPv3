@@ -3119,6 +3119,7 @@ sup {
  * Remove the border on images inside links in IE 10.
  */
 img {
+  border-radius: 5px;
   border-style: none;
 }
 
@@ -5684,7 +5685,7 @@ small {
   --btn-border-radius: 4px;
   --btn-font-size: 14px;
   height: var(--btn-height);
-  border: none;
+  /* border: none; */
   border-radius: var(--btn-border-radius);
   padding-left: var(--btn-padding);
   padding-right: var(--btn-padding);

@@ -12,8 +12,18 @@ document.getElementById('Rconform').addEventListener('submit', function(e) {
 document.getElementById('pluginform').addEventListener('submit', function(e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(e.target).entries());
+  localStorage.setItem("MinecraftPluginServer", JSON.stringify(data)); // Convertir objeto a JSON
   handlebotconnect("connect-plugin",data);
 });
+if (localStorage.getItem("MinecraftPluginServer")) {
+  const data = JSON.parse(localStorage.getItem("MinecraftPluginServer"));
+  console.log("MinecraftPluginServer", data);
+  handlebotconnect("connect-plugin",data);
+  setTimeout(function () {
+    handlebotconnect("connect-plugin",data);
+  }, 1000);
+}
+document.getElementById('pluginform')
 document.getElementById('sendcommandmc').addEventListener('submit', function(e) {
   e.preventDefault();
   const data = Object.fromEntries(new FormData(e.target).entries());
@@ -54,7 +64,7 @@ class WebSocketManager {
       };
 
       this.ws.onmessage = (event) => {
-          console.log('Message from server:', event.data);
+          // console.log('Message from server:', event.data);
           // document.getElementById('output').innerText += '\n' + event.data.replace(/\n/g, '<br>');
       };
 
@@ -104,11 +114,10 @@ function pluginconnect(data) {
     password: data.password || "change_me",
   }
   const wsurl = `ws://${defaultOptions.host}:${defaultOptions.port}/v1/ws/console`;
-  ws.connect(wsurl,defaultOptions.password);
-  ws.sendCommand(`/say conectado `);
-  setInterval(() => {
+  setTimeout(() => {
+    ws.connect(wsurl, defaultOptions.password);
     ws.sendCommand(`/say conectado `);
-  }, 36*1000);
+  }, 1000);
 }
 class Minecraftws {
   constructor() {

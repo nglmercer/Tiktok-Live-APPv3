@@ -19,6 +19,16 @@ class TypeofData {
     }
     return value;
   }
+  static returnArray(value) {
+    if (this.isArray(value)) {
+      return value;
+    } else if (this.isString(value)) {
+      return value.split(',');
+    } else if (this.isObject(value)) {
+      return Object.values(value);
+    }
+    return [];
+  }
   // Verificar si el valor es un array
   static isArray(value) {
     return Array.isArray(value);

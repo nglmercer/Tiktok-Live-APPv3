@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, globalShortcut, ipcMain } from "electron";
+import { app, shell, BrowserWindow, globalShortcut, ipcMain, protocol } from "electron";
 import path, { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import icon from "../../resources/icon.png?asset";
@@ -10,12 +10,16 @@ import AudioController from "./features/audioController";
 import keynut from "./features/keynut";
 import { BotManager,MinecraftRcon } from "./features/Botmanager";
 import { OSCManager,InputManager } from './features/oscmanager';
+import { initAutoUpdates, checkForUpdatesManually } from "./features/autoupdate";
 import SocketHandler from "./server/socketServer";
 import injectQRCode from "./server/listenserver";
 import { HttpExpressServer, HttpsExpressServer } from "./server/ExpressServe";
 import * as fileHandler from "./data/fileHandler";
 import TiktokLiveController from "./data/tiktoklive";
-import { type } from "os";
+import dotenv from 'dotenv';
+dotenv.config();
+
+// import { type } from "os";
 let Port;
 let io
 const fileOpener = new FileOpener();
@@ -28,7 +32,9 @@ const botManager = new BotManager();
 const minecraftRcon = new MinecraftRcon();
 const oscManager = new OSCManager();
 const inputManager = new InputManager(oscManager);
-
+process.on('uncaughtException', (error) => {
+  console.error('Error no capturado en el proceso principal:', error);
+});
 const UPDATE_INTERVAL = 5000;
 let tiktokController; // Variable para almacenar la instancia de TiktokLiveController
 const servers = [httpServer, httpsServer];
@@ -36,9 +42,11 @@ const sockets = [socketHandler, newsocketHandler];
 async function startServer() {
   const httpPort = 8088;
   const httpsPort = 0;
-
-  const privateKey = fs.readFileSync(path.join(__dirname, '../../credentials/key.pem'), 'utf8');
-  const certificate = fs.readFileSync(path.join(__dirname, '../../credentials/cert.pem'), 'utf8');
+  const privateKey = process.env.PRIVATE_KEY || import.meta.env.VITE_PRIVATE_KEY;
+  const certificate = process.env.CERTIFICATE || import.meta.env.VITE_CERTIFICATE;
+  console.log("privateKey", privateKey,"certificate", certificate);
+  // const privateKey = fs.readFileSync(path.join(__dirname, './credentials/key.pem'), 'utf8');
+  // const certificate = fs.readFileSync(path.join(__dirname, './credentials/cert.pem'), 'utf8');
   const credentials = { key: privateKey, cert: certificate };
 
     await httpServer.initialize(httpPort);
@@ -58,7 +66,7 @@ async function startServer() {
         const { event, id, ...params } = req.body;
         console.log(event,"event");
         try {
-          let result;
+          let result = { success: false, error: "Unknown event" };
 
           switch (event) {
             case 'add-file-path':
@@ -96,7 +104,8 @@ async function startServer() {
               break;
 
             default:
-              throw new Error(`Unknown event type: ${event}`);
+              result = { success: false, error: `Unknown event type: ${event}` };
+              break;
           }
 
           res.json(result);
@@ -176,9 +185,11 @@ function handleSocketEvents(socket, index) {
   socket.on("oscmanager", (data) => handleOscManager(socket, data));
   socket.on("oscmessage", (data) => sendOscMessage(socket, data));
   socket.on("oscHandler", (data) => handleOscHandler(socket, data));
+  socket.on("autoupdate", () => handleautoupdate(socket));
 }
 function overlaydatahandler(socket, event, data, index = 1) {
   console.log("overlay-event", event, data);
+  // if (!data || !event) return;
   sockets[index].emitToAllSockets("overlay-event",  event, data);
   console.log("sockets[index].emitToAllSockets", event, data);
 }
@@ -363,16 +374,18 @@ function createWindow() {
     ...(process.platform === "linux" ? { icon } : {iconico}),
     webPreferences: {
       // preload: join(__dirname, "../preload/index.mjs"),
-      contextIsolation: true,
+      nodeIntegration: true,
+      contextIsolation: false,
       webSecurity: false,
-      // sandbox: true,
+      enableRemoteModule: true,
+      sandbox: true,
     },
   });
 
   mainWindow.on("ready-to-show", () => {
     mainWindow.show();
     // initinjectQRCode(mainWindow, Port); // Inyecta el QR cuando la ventana esté lista
-    // injectQRCode(mainWindow, Port); // Inyecta el QR cuando la ventana esté lista
+    injectQRCode(mainWindow, Port); // Inyecta el QR cuando la ventana esté lista
     globalShortcut.register("Alt+F1", ToolDev);
     globalShortcut.register("Alt+F2", cdevTool);
     globalShortcut.register("Alt+F5", refreshPage);
@@ -402,9 +415,26 @@ function createWindow() {
     // mainWindow.loadURL(join(__dirname, "../renderer/index.html"));
     mainWindow.loadURL(`http://localhost:8088`);
   }
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Permite solo popups que coincidan con tu dominio o reglas específicas
+    if (url.startsWith('https://')) {
+      return { action: 'allow' }; // Permitir la ventana emergente
+    }
+    return { action: 'deny' }; // Denegar ventanas emergentes que no coincidan
+  });
 }
-
+function handleautoupdate(socket) {
+  const response = checkForUpdatesManually();
+  const statusclient = initAutoUpdates();
+  socket.emit("autoupdateResponse", statusclient);
+  socket.emit("autoupdateResponse", response);
+  const existUpdate = fs.existsSync(path.resolve(path.dirname(process.execPath), '..', 'update.exe'));
+  console.log("existUpdate",existUpdate);
+  socket.emit("autoupdateResponse", existUpdate);
+}
 app.whenReady().then(() => {
+
+  initAutoUpdates();
   electronApp.setAppUserModelId("com.electron");
   app.on("browser-window-created", (_, window) => {
     optimizer.watchWindowShortcuts(window);
@@ -413,6 +443,7 @@ app.whenReady().then(() => {
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
 });
 
 app.on("window-all-closed", () => {

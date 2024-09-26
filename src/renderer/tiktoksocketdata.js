@@ -1,15 +1,26 @@
 import socketManager, { Websocket, socketurl } from './src/utils/socket';
 import textReplacer, { imageManipulator } from './src/utils/textReplacer';
 import  { IndexedDBManager, databases, DBObserver } from "./src/utils/indexedDB";
-import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb } from './src/utils/getdata';
+import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb, modifyPoints } from './src/utils/getdata';
 import TypeofData from './src/utils/typeof';
 import { Counter } from './src/utils/counters';
 import showAlert from './assets/alerts'
 import { ChatContainer, ChatMessage } from './assets/items';
-import { UserPointsTable, StaticTable } from './src/utils/UserPoints';
+import { newTable } from './src/utils/UserPoints';
 import { handleleermensaje } from './src/voice/tts';
 import { loadFileList, setupDragAndDrop, handlePlayButton, getfileId, handlePasteFromClipboard} from './src/components/Fileshtml'
 import { AccionEventoOverlayEval, getalldatafromAccionEventsDBManager } from './src/components/Accionevents'
+import { addFilterItemToGroup } from './src/filters/filters'
+
+const addfilterwordcallback = (word) => {
+  console.log("addfilterwordcallback", word);
+  if (typeof word === 'string') {
+    addFilterItemToGroup('filter-words', 'containerfilter-words', 'filterWords', word.comment);
+  }
+  if (typeof word === 'object') {
+    addFilterItemToGroup('filter-words', 'containerfilter-words', 'filterWords', word.comment);
+  }
+};
 const observeruserPoints = new DBObserver();
 const newChatContainer = new ChatContainer('.chatcontainer', 500);
 const newGiftContainer = new ChatContainer('.giftcontainer', 500);
@@ -37,20 +48,31 @@ function getlastuniqueid() {
 // sendcreateserver(`${socketurl.getport()}/create-overlaywindow`, {});
 const textcontent = {
   content: {
-    1: ["text", "Aqui esta el chat","white","QWDQWDQWDQWDCHAT"],
-    2: ["text", "de tiktok","white"],
-    3: ["text", "!","gold"],
+    1: ["text", "nombre de usuario = ","white"],
+    2: ["text", "uniqueId","gold"],
+    3: ["text", "comentario = ","white"],
+    4: ["text", "comment","gold"],
     // 4: ["url", "https://example.com", "blue", "Click para ir a mi perfil"]
 
-  }
+  },
+  comment: "texto de prueba123123123",
+  // data: {
+  //   comment: "texto de prueba123123123",
+  //   number: 123,
+  //   text: "text",
+  // }
 }
 const numbercontent = {
   content: {
-    1: ["text", "UniqueId regalo","white"],
-    2: ["number", 1,"gold"],
-    3: ["text", "gift x","gold"],
-    4: ["text", "rose","white"],
-    5: ["text", "!","cyan"],
+    1: ["text", "nombre de usuario = ","white"],
+    2: ["text", "uniqueId","gold"],
+    3: ["number", 1,"white"],
+    4: ["text", "= repeatCount","gold"],
+    5: ["text", "giftname = rose","cyan"],
+  },
+  data: {
+    number: 123,
+    text: "text",
   }
 }
 const eventcontent = {
@@ -58,45 +80,63 @@ const eventcontent = {
     1: ["text", "UniqueId","white"],
     2: ["text", "te","white"],
     3: ["text", "sigue!","yellow"],
+  },
+  data: {
+    number: 123,
+    text: "text",
   }
 }
+const splitfilterwords = (data) => {
+  console.log("Callback 1 ejecutado:", data);
+  if (data.comment) {
+    const comments = data.comment.match(/.{1,10}/g) || [];
+    console.log("comments", comments);
+    comments.forEach(comment => {
+      if (comment.length < 9) return;
+      addFilterItemToGroup('filter-users', 'containerfilter-users', 'filterUsers', comment);
+    });
+  }
+};
 
-const message1 = new ChatMessage( `msg${counterchat.increment()}`, 'https://cdn-icons-png.flaticon.com/128/6422/6422200.png', textcontent);
+const optionTexts = ['split filtrar comentarios', 'filtrar comentario'];
+
+const message1 = new ChatMessage( `msg${counterchat.increment()}`, 'https://cdn-icons-png.flaticon.com/128/6422/6422200.png', textcontent, [splitfilterwords, addfilterwordcallback],optionTexts);
 const message2 = new ChatMessage( `msg${counterchat.increment()}`, 'https://cdn-icons-png.flaticon.com/128/6422/6422200.png', numbercontent);
 const message3 = new ChatMessage( `msg${counterchat.increment()}`, 'https://cdn-icons-png.flaticon.com/128/6422/6422200.png', eventcontent);
+// Crear callbacks
 newChatContainer.addMessage(message1);
 newGiftContainer.addMessage(message2);
 newEventsContainer.addMessage(message3);
 const userPointsDBManager = new IndexedDBManager(databases.userPoints,observeruserPoints);
 const initialData = await getAllDataFromDB(userPointsDBManager);
-const configinitialData = {
-  uniqueId: { type: 'string' },
-  nickname: { type: 'string' },
-  name: { type: 'string'},
-  points: { type: 'number' },
-  imageUrl: { type: 'image' },
-  userId: { type: 'number' },
-}
 console.log("initialData", initialData);
-const PointsTable = new StaticTable('#userPointsTable',configinitialData)
-initialData.forEach(item => PointsTable.clearAndAddRows(item));
+const tableColumns = [
+  { key: 'imageUrl', label: 'Perfil', type: 'image' },
+  { key: 'points', label: 'Points', type: 'number' },
+  { key: 'nickname', label: 'Nickname', type: 'string' },
+  { key: 'uniqueId', label: 'Name', type: 'string' },
+  // { key: 'joinedAt', label: 'Joined At', type: 'date' }
+];
+const userTable = new newTable('userPointsTable', tableColumns, initialData);
+// initialData.forEach(item => PointsTable.clearAndAddRows(item));
 observeruserPoints.subscribe(async (action, data) => {
  if (action === "delete") {
   const updatedata = await getAllDataFromDB(userPointsDBManager);
-  PointsTable.clearAndAddRows(updatedata);
-  } else if (action === "update") {
-    const updatedata = await getAllDataFromDB(userPointsDBManager);
-    PointsTable.clearAndAddRows(updatedata);
+  userTable.clearAndAddRows(updatedata);
   } else if (action === "save") {
     const updatedata = await getAllDataFromDB(userPointsDBManager);
-    PointsTable.clearAndAddRows(updatedata);
+    userTable.clearAndAddRows(updatedata);
   }
+  // else if (action === "update") {
+  //   const updatedata = await getAllDataFromDB(userPointsDBManager);
+  //   PointsTable.clearAndAddRows(updatedata);
+  // }
 });
 
 const getdataIndexdbInstance = new getdataIndexdb();
 
 let websocket = null;
-const uniqueidform = document.getElementById("uniqueidform");
+const uniqueidform = document.getElementById("uniqueidform")
 uniqueidform.addEventListener("submit", function(event) {
   event.preventDefault();
   const formData = getformdatabyid(uniqueidform);
@@ -138,6 +178,66 @@ function handleWebsocketMessage(event) {
   let data = parsedData.data;
   handleevents(evenType, data);
 }
+class UserManagementSystem {
+  constructor(id) {
+    this.id = id;
+    this.users = new Map();
+    this.userCount = 0;
+    this.recentUsers = [];
+  }
+
+  addUser(userId, userData) {
+    if (!this.users.has(userId)) {
+      this.users.set(userId, userData);
+      this.userCount++;
+      this.recentUsers.unshift(userId);
+      if (this.recentUsers.length > 10) {  // Mantener solo los 10 más recientes
+        this.recentUsers.pop();
+      }
+      return true;
+    }
+    return false;  // Usuario ya existe
+  }
+
+  getUser(userId) {
+    return this.users.get(userId);
+  }
+
+  removeUser(userId) {
+    if (this.users.delete(userId)) {
+      this.userCount--;
+      this.recentUsers = this.recentUsers.filter(id => id !== userId);
+      return true;
+    }
+    return false;
+  }
+
+  getUserCount() {
+    return this.userCount;
+  }
+
+  getRecentUsers(count = 5) {
+    return this.recentUsers.slice(0, count);
+  }
+  clearAllUsers() {
+    this.users.clear();
+    this.userCount = 0;
+    this.recentUsers = [];
+    return true;
+  }
+}
+
+// Uso del sistema
+const followedUsers = new UserManagementSystem('followedUsers');
+setInterval(() => {
+  // const userId = `user_${Math.floor(Math.random() * 1000)}`;
+  // const added = followedUsers.addUser(userId, { name: `User ${userId}` });
+
+  // console.log(`Intento de añadir ${userId}: ${added ? 'Éxito' : 'Ya existe'}`);
+  // console.log(`Número total de usuarios: ${followedUsers.getUserCount()}`);
+  // console.log(`Usuarios recientes: ${followedUsers.getRecentUsers().join(', ')}`);
+  followedUsers.clearAllUsers();
+}, 600 * 1000);
 async function handleevents(evenType, data, additionalData) {
     let userpoints;
     let alldatadb = [];
@@ -147,7 +247,7 @@ async function handleevents(evenType, data, additionalData) {
         nickname: data.nickname,
         uniqueId: data.uniqueId,
         name: data.uniqueId,
-        points: 0,
+        points: TypeofData.toNumber(await getdataIndexdbInstance.getdataIndexdb(data, 'points')) || 0,
         imageUrl: data.profilePictureUrl,
         userId: TypeofData.toNumber(data.userId),
         id: TypeofData.toNumber(data.userId),
@@ -167,10 +267,10 @@ async function handleevents(evenType, data, additionalData) {
           console.log("evalBadge",false, data)
           return;
         }
+
         if (evalmessagecontainsfilter(data.comment)) {
             console.log("evalmessagecontainsfilter",evalmessagecontainsfilter(data.comment), data)
-            let getpoinifexists = TypeofData.toNumber(await getdataIndexdbInstance.getdataIndexdb(data, 'points')) || 0;
-            userpoints.points = getpoinifexists -= 4;
+            userpoints.points -= 10;
             userPointsDBManager.saveOrUpdateDataByName(userpoints);
             return;
         }
@@ -196,10 +296,12 @@ async function handleevents(evenType, data, additionalData) {
     case "like":
       alldatadb = await getalldatafromAccionEventsDBManager();
       AccionEventoOverlayEval(evenType,alldatadb,data);
+      console.log("likes",evenType, data);
         handlelike(data);
         break;
     case "follow":
         handlefollow(data);
+        if (!followedUsers.addUser(data.uniqueId, { name: `${data.uniqueId}` })) return;
         alldatadb = await getalldatafromAccionEventsDBManager();
         AccionEventoOverlayEval(evenType,alldatadb,data);
         break;
@@ -240,7 +342,7 @@ async function evalsystempoints(evenType, data) {
     nickname: data.nickname,
     uniqueId: data.uniqueId,
     name: data.uniqueId,
-    points: 0,
+    points: getpoinifexists || 0,
     imageUrl: data.profilePictureUrl,
     userId: TypeofData.toNumber(data.userId),
     id: TypeofData.toNumber(data.userId),
@@ -256,11 +358,11 @@ async function evalsystempoints(evenType, data) {
     like: config.Pointsperlike.check,
   }
   const ponistvalue = {
-    follow: TypeofData.toNumber(config.Pointsperfollow.value) || 0,
-    share: TypeofData.toNumber(config.Pointspershare.value) || 0,
-    gift: TypeofData.toNumber(config.Pointspercoin.value )|| 0,
-    chat: TypeofData.toNumber(config.Pointsperchat.value )|| 0,
-    like: TypeofData.toNumber(config.Pointsperlike.value )|| 0,
+    follow: TypeofData.toNumber(config.Pointsperfollow.value) || 2,
+    share: TypeofData.toNumber(config.Pointspershare.value) || 2,
+    gift: TypeofData.toNumber(config.Pointspercoin.value )|| 2,
+    chat: TypeofData.toNumber(config.Pointsperchat.value )|| 2,
+    like: TypeofData.toNumber(config.Pointsperlike.value )|| 2,
   };
 
   if (eventPointscheck[evenType]) {
@@ -275,7 +377,7 @@ async function evalsystempoints(evenType, data) {
         break;
       case "gift":
         const numbergiftcoins = TypeofData.toNumber(data.diamondCount) || 2;
-        userpoints.points = getpoinifexists + (TypeofData.toNumber(config.Pointspercoin.value) || 2) + numbergiftcoins;
+        userpoints.points = getpoinifexists + (TypeofData.toNumber(config.Pointspercoin.value) || 2) * numbergiftcoins;
         console.log("gift", userpoints.points);
         break;
       case "follow":
@@ -304,9 +406,10 @@ function handlechat(data) {
       1: ["url", `http://tiktok.com/@${data.uniqueId}`,"blue",`${data.nickname}`],
       2: ["text", data.comment,"white"],
       // 3: ["text", "!","gold"],
-    }
+    },
+    comment: data.comment,
   }
-  const newMessage = new ChatMessage( `msg${counterchat.increment()}`, data.profilePictureUrl, parsedchatdata);
+  const newMessage = new ChatMessage( `msg${counterchat.increment()}`, data.profilePictureUrl, parsedchatdata,[splitfilterwords, addfilterwordcallback],optionTexts);
   newChatContainer.addMessage(newMessage);
   console.log("chat", data);
   showAlert('info', `${data.uniqueId}: ${data.comment}`, 5000);
@@ -326,19 +429,73 @@ function handleshare(data) {
 function handlesocial(data) {
   console.log("social", data);
 }
+class LikeTracker {
+  constructor(resetInterval = 30000) { // Intervalo de reinicio por defecto: 30 segundos
+    this.likeCounters = {}; // Almacena los contadores de likes por uniqueId
+    this.resetInterval = resetInterval; // Intervalo en milisegundos para reiniciar los contadores
+
+    // Iniciar el temporizador para restablecer los contadores
+    this.startResetTimer();
+  }
+
+  // Método para manejar likes entrantes y retornar el total acumulado
+  addLike(data) {
+    const { uniqueId, likeCount } = data;
+
+    if (!this.likeCounters[uniqueId]) {
+      // Inicializar el contador en 0 si no existe
+      this.likeCounters[uniqueId] = 0;
+    }
+
+    // Sumar los nuevos likes al contador existente
+    this.likeCounters[uniqueId] += likeCount;
+
+    // Retornar el total acumulado de likes para este usuario
+    return this.likeCounters[uniqueId];
+  }
+
+  // Método para restablecer los contadores de likes
+  resetLikeCounters() {
+    Object.keys(this.likeCounters).forEach(uniqueId => {
+      this.likeCounters[uniqueId] = 0; // Reinicia el contador para cada usuario
+    });
+  }
+
+  // Iniciar el temporizador que restablece los contadores periódicamente
+  startResetTimer() {
+    setInterval(() => {
+      this.resetLikeCounters();
+      console.log("Los contadores de likes han sido restablecidos.");
+    }, this.resetInterval);
+  }
+}
+
+// Crear una instancia de LikeTracker con un intervalo de reinicio de 30 segundos
+const likeTracker = new LikeTracker(10000);
+
 function handlelike(data) {
   console.log("like", data);
+
+  // Obtener el total acumulado de likes
+  const totalLikes = likeTracker.addLike(data);
+
   const parsedlikedata = {
     content: {
-      1: ["url", `http://tiktok.com/@${data.uniqueId}`,"blue",`${data.nickname}`],
-      2: ["text", "likes","gold"],
-      3: ["number", data.likeCount,"gold"],
+      1: ["url", `http://tiktok.com/@${data.uniqueId}`, "blue", `${data.nickname}`],
+      2: ["text", "likes", "gold"],
+      3: ["number", totalLikes, "gold"],
     }
-  }
-  const newMessage = new ChatMessage( `msg${counterlike.increment()}`, data.profilePictureUrl, parsedlikedata);
+  };
+
+  // Crear y añadir el mensaje
+  const newMessage = new ChatMessage(`msg${counterlike.increment()}`, data.profilePictureUrl, parsedlikedata);
   newEventsContainer.addMessage(newMessage, true);
-  showAlert('info', `${data.uniqueId} likes ${data.likeCount}`, 2000);
+
+  // Mostrar una alerta con la suma acumulada de likes
+  showAlert('info', `${data.uniqueId} likes ${totalLikes}`, 2000);
 }
+
+
 function handlefollow(data) {
   console.log("follow", data);
   showAlert('info', `${data.uniqueId} te sige`, 5000);
@@ -369,6 +526,8 @@ function handlegift(data) {
       1: ["text", data.uniqueId,"white"],
       2: ["text", "gifted","white"],
       3: ["number", data.diamondCount,"gold"],
+      4: ["text", data.giftName,"gold"],
+      5: ["image", data.giftPictureUrl],
     }
   }
   const newMessage = new ChatMessage( `msg${countergift.increment()}`, data.profilePictureUrl, parsedgiftdata);

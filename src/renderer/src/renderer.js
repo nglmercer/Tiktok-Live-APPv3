@@ -37,3 +37,24 @@ function setupSliders(element) {
   });
 }
 initializecomponents();
+const AutoUpdate = document.getElementById("AutoUpdate");
+AutoUpdate.addEventListener("click", () => {
+  console.log("AutoUpdate clicked");
+  AutoUpdate.innerHTML = "Actualizando...";
+  AutoUpdate.disabled = true;
+  socketManager.emitMessage("autoupdate");
+});
+socketManager.onMessage("autoupdateResponse", (data) => {
+  const updateResult = document.getElementById("updateResult");
+  console.log("autoupdateResponse", data);
+  if (data) {
+    updateResult.style.display = "none";
+    AutoUpdate.innerHTML = "Actualizado";
+    AutoUpdate.disabled = false;
+  } else {
+    updateResult.style.display = "block";
+    AutoUpdate.innerHTML = "Error al actualizar";
+    AutoUpdate.disabled = false;
+    updateResult.innerHTML = data;
+  }
+});

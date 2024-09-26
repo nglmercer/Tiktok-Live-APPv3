@@ -122,9 +122,9 @@ function aplicarEstado() {
 }
 
 export { guardarEstado, aplicarEstado };
-  document.addEventListener('input', function(event) {
-      if (event.target.matches('input[type="checkbox"], input[type="radio"], input[type="range"], input[type="text"],input[type="number"],select')) {
-          guardarEstado();
-      }
-  });
-  aplicarEstado();
+document.addEventListener('input', function(event) {
+    if (event.target.matches('input[type="checkbox"], input[type="radio"], input[type="range"], input[type="text"],input[type="number"],select')) {
+        guardarEstado();
+    }
+});
+aplicarEstado();

@@ -1,5 +1,6 @@
 import { socketurl } from './socket';
 import  { IndexedDBManager, databases, DBObserver } from './indexedDB';
+import TypeofData from './typeof';
 const observeruserPoints = new DBObserver();
 
 const userPointsDBManager = new IndexedDBManager(databases.userPoints,observeruserPoints);
@@ -85,6 +86,51 @@ class getdataIndexdb {
     }
   }
 }
+const getdataIndexdbsystempoints = new getdataIndexdb();
+async function modifyPoints(id, pointsDelta, data) {
+  try {
+    // Obtener el registro actual por su ID
+    const userData = await userPointsDBManager.getDataById(id);
+
+    if (userData && userData.points) {
+      // Actualizar el campo 'points' sumando o restando el valor
+      userData.points = (userData.points || 0) + pointsDelta;
+
+      // Guardar el registro actualizado en la base de datos
+      await userPointsDBManager.updateData(userData);
+
+      console.log(`Los puntos han sido actualizados correctamente. Nuevo valor: ${userData.points}`);
+      return true;
+    } else {
+      if (data) {
+      createdaUserpoints(data, pointsDelta)
+      }
+      return null;
+    }
+  } catch (error) {
+    console.error("Error al modificar los puntos:", error);
+  }
+}
+async function createdaUserpoints(data, points) {
+  let userpoints;
+  if (data && data.uniqueId) {
+      userpoints = {
+        uniqueId: data.uniqueId,
+        nickname: data.nickname,
+        uniqueId: data.uniqueId,
+        name: data.uniqueId,
+        points: TypeofData.toNumber(await getdataIndexdbsystempoints.getdataIndexdb(data, 'points')) + points || 0,
+        imageUrl: data.profilePictureUrl,
+        userId: TypeofData.toNumber(data.userId),
+        id: TypeofData.toNumber(data.userId),
+    }
+    userPointsDBManager.saveOrUpdateDataByName(userpoints);
+  }
+}
+// setInterval(async () => {
+//   const numberdatatest = "6554659423998263000"
+//   modifyPoints(Number(numberdatatest), +100);
+// }, 1000);
 async function getAllDataFromDB(dbManager) {
   try {
       const dbManagerdata = await dbManager.getAllData();
@@ -94,16 +140,16 @@ async function getAllDataFromDB(dbManager) {
       console.error("Error getting documents: ", e);
   }
 }
-observeruserPoints.subscribe(async (action, data) => {
-  if (action === "save") {
-  const dataupdate = await getAllDataFromDB(userPointsDBManager);
-  table.updateRows(dataupdate);
-  } else if (action === "delete") {
-  const dataupdate = await getAllDataFromDB(userPointsDBManager);
-  table.updateRows(dataupdate);
-  } else if (action === "update") {
-  const dataupdate = await getAllDataFromDB(userPointsDBManager);
-  table.updateRows(dataupdate);
-  }
-});
-export { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb };
+// observeruserPoints.subscribe(async (action, data) => {
+//   if (action === "save") {
+//   const dataupdate = await getAllDataFromDB(userPointsDBManager);
+//   table.updateRows(dataupdate);
+//   } else if (action === "delete") {
+//   const dataupdate = await getAllDataFromDB(userPointsDBManager);
+//   table.updateRows(dataupdate);
+//   } else if (action === "update") {
+//   const dataupdate = await getAllDataFromDB(userPointsDBManager);
+//   table.updateRows(dataupdate);
+//   }
+// });
+export { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb, modifyPoints };

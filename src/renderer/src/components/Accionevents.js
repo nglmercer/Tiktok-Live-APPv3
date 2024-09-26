@@ -2,12 +2,13 @@ import FormModal from './FormModal'
 import DynamicTable from './datatable';
 import { getfileId } from './Fileshtml'
 import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
-import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb } from '../utils/getdata';
+import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb, modifyPoints } from '../utils/getdata';
 import { replaceVariables } from '../utils/replaceVariables';
 import { socketManager } from '../../tiktoksocketdata';
 import { ws, sendcommandmc } from '../minecraft';
 import { giftManager, getdatagiftparsed } from '../utils/Giftdata';
 import datajson from '../../json/keyboard.json';
+import  showAlert  from '../assets/alerts'
 const optionskeyboard = Object.entries(datajson).map(([value, label]) => ({
   value,
   label,
@@ -44,8 +45,10 @@ function filemapType(fileType) {
     case 'image/jpeg':
     case 'image/png':
     case 'image/webp':
+    case 'image/gif':
       return 'Imagen';
     case 'video/mp4':
+    case 'video/webm':
       return 'Video';
     case 'audio/mpeg':
     case 'audio/mp3':
@@ -101,7 +104,6 @@ console.log("Archivos categorizados: audioOptions , imageOptions, videoOptions",
 const formConfig = [
 { type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
 { type: 'input', name: 'id', label: 'ID', inputType: 'Number', returnType: 'Number', hidden: true },
-
   {
     type: 'checkbox',
     name: 'profile_check',
@@ -163,20 +165,32 @@ const formConfig = [
       { type: 'select', name: 'vrchat_input', label: 'control', options: oscOptions, returnType: 'object' },
     ],
   },
-  // {
-  //   type: 'checkbox', name: 'keyboard_check', label: 'Keyboard control', inputType: 'checkbox', returnType: 'boolean',
-  //   children: [
-  //     { type: 'multiSelect', name: 'keyvalue', label: 'Keyvalue', options: optionskeyboard, returnType: 'array'},
-  //   ]
-  // },
+  {
+    type: 'checkbox', name: 'Api_check', label: 'Api', inputType: 'checkbox', returnType: 'boolean',
+    children: [
+      { type: 'input', name: 'Api_url', label: 'url', inputType: 'text', returnType: 'string' },
+      { type: 'input', name: 'Api_data', label: 'data', inputType: 'text', returnType: 'string' },
+    ],
+  },
+  {
+    type: 'checkbox', name: 'Keyboard_check', label: 'Keyboard control', inputType: 'checkbox', returnType: 'boolean',
+    children: [
+      { type: 'multiSelect', name: 'Keyboard_keys', label: 'Keyboard keys', options: optionskeyboard, returnType: 'array'},
+    ]
+  },
+  { type: 'checkbox', name: 'systempoints_check', label: 'cambiar puntos', inputType: 'checkbox', returnType: 'boolean',
+    children: [
+      { type: 'input', name: 'systempoints_points', label: 'puntos', inputType: 'number', returnType: 'number' },
+    ],
+  },
   { type: 'radio', name: 'Evento_eventType', label: 'Seleccione el Evento', options:
   [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },
-  { value: 'likes', label: 'likes'},{value: 'share', label: 'compartir'},
+  { value: 'like', label: 'like'},{value: 'share', label: 'compartir'},
   { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' },{ value: 'member', label: 'Ingreso al live' }],
   returnType: 'string', hidden: false
 },
 { type: 'input', name: 'Evento_chat', label: 'Chat', inputType: 'text', returnType: 'string', hidden:false,valuedata:'default', dataAssociated: 'chat'},////    //////
-{ type: 'input', name: 'Evento_likes', label: 'likes', inputType: 'number', returnType: 'number', hidden:false,valuedata: 15, dataAssociated: 'likes'}, //////
+{ type: 'input', name: 'Evento_like', label: 'like', inputType: 'number', returnType: 'number', hidden:false,valuedata: 15, dataAssociated: 'like'}, //////
 { type: 'select', name: 'Evento_gift', label: 'gift', options: getmapselectgift(), returnType: 'number', hidden:false, dataAssociated: 'gift'},///   //////
 { type: 'input', name: 'Evento_share', label: 'share', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'share'},// //////
 { type: 'input', name: 'Evento_follow', label: 'follow', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'follow'},//////
@@ -261,17 +275,26 @@ const formConfig = [
         }
     }
 
-    compareNumbers(actualValue, expectedValue, compare = '===') {
-        switch (compare) {
-            case '===':
-                return expectedValue === actualValue;
-            case '>=':
-                return expectedValue >= actualValue;
-            case '<=':
-                return expectedValue <= actualValue;
-            default:
-                return false;
-        }
+    compareNumbers(actualValue, expectedValue, compare = '===', tolerancePercentage = 100) {
+      const maxDifference = expectedValue * (tolerancePercentage / 100);
+
+      // Define los límites inferior y superior permitidos
+      const lowerBound = expectedValue - maxDifference;
+      const upperBound = expectedValue + maxDifference;
+
+      switch (compare) {
+          case '===':
+              // Verifica si el valor actual está dentro del rango permitido
+              return actualValue >= lowerBound && actualValue <= upperBound;
+          case '>=':
+              // Verifica si el valor actual es mayor o igual al límite inferior permitido
+              return actualValue >= lowerBound;
+          case '<=':
+              // Verifica si el valor actual es menor o igual al límite superior permitido
+              return actualValue <= upperBound;
+          default:
+              return false;
+      }
     }
 
     compareStrings(actualValue, expectedValue, compare = '===') {
@@ -297,6 +320,7 @@ const formConfig = [
           const item = this.configevaldata[index];
 
           this.findAndEvaluate(item.keyname, item.keytype, item.verifykey, dataeval);
+          // console.log("findAndEvaluate Eventtype", item.keyname, item.keytype, item.verifykey, dataeval);
           const matchedValue = this.matchedValues.get(item.keyname);
           if (Array.isArray(item.verifykey)) {
             const forceTrueKey = item.verifykey.find(key => key.forceTrue === true);
@@ -305,7 +329,7 @@ const formConfig = [
                       const defaultvalue = this.finddefaultMatch(item.keyname, dataeval);
                       // console.log("defaultvalue",defaultvalue,"dataeval",dataeval,"matchedValue",matchedValue);
                       if (dataeval.Evento.chat && this.eventType === defaultvalue.eventType) {
-                        console.log("Eventype",defaultvalue[this.eventType], defaultvalue, this.eventType);
+                        // console.log("Eventype",defaultvalue[this.eventType], defaultvalue, this.eventType);
                         if(defaultvalue[this.eventType]=== "default"){
                           if (item.callback) {
                               item.callback(dataeval);
@@ -414,7 +438,47 @@ async function sendMediaManager(data,userdata = {}) {
       socketManager.emitMessage("overlaydata", datafileprofile);
   }
 }
+class LikeTracker {
+  constructor(resetInterval = 30000) { // Intervalo de reinicio por defecto: 30 segundos
+    this.likeCounters = {}; // Almacena los contadores de likes por uniqueId
+    this.resetInterval = resetInterval; // Intervalo en milisegundos para reiniciar los contadores
 
+    // Iniciar el temporizador para restablecer los contadores
+    this.startResetTimer();
+  }
+
+  // Método para manejar likes entrantes y retornar el total acumulado
+  addLike(data) {
+    const { uniqueId, likeCount } = data;
+
+    if (!this.likeCounters[uniqueId]) {
+      // Inicializar el contador en 0 si no existe
+      this.likeCounters[uniqueId] = 0;
+    }
+
+    // Sumar los nuevos likes al contador existente
+    this.likeCounters[uniqueId] += likeCount;
+
+    // Retornar el total acumulado de likes para este usuario
+    return this.likeCounters[uniqueId];
+  }
+
+  // Método para restablecer los contadores de likes
+  resetLikeCounters() {
+    Object.keys(this.likeCounters).forEach(uniqueId => {
+      this.likeCounters[uniqueId] = 0; // Reinicia el contador para cada usuario
+    });
+  }
+
+  // Iniciar el temporizador que restablece los contadores periódicamente
+  startResetTimer() {
+    setInterval(() => {
+      this.resetLikeCounters();
+      console.log("Los contadores de likes han sido restablecidos.");
+    }, this.resetInterval);
+  }
+}
+const EvaluerLikes = new LikeTracker(10000);
 // Ejemplo de uso
 export async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, userdata = {}) {
   let customoptions = [];
@@ -432,7 +496,9 @@ export async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, u
       customoptions = [{key: "eventType", value: eventType, type:"string"}]
       break;
     case "like":
-      customoptions = [{key: "eventType", value: eventType, type:"string"}, {key: "likeCount", value: userdata.likeCount, type:"number", compare: ">="}]
+      const likesvalue = EvaluerLikes.addLike(userdata);
+      console.log("like",userdata.likeCount, likesvalue);
+      customoptions = [{key: "eventType", value: eventType, type:"string"}, {key: "like", value: likesvalue, type:"number", compare: ">="}]
       break;
     default:
       customoptions = [{key: "eventType", value: eventType, type:"string"}]
@@ -446,6 +512,9 @@ export async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, u
       { keytype: 'any', keyfind: "object", keyname: "profile", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => sendMediaManager(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "minecraft", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleMinecraft(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "vrchat", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleOsc(data, userdata), isBlocking: false },
+      { keytype: 'any', keyfind: "object", keyname: "Api", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleApi(data, userdata), isBlocking: false },
+      { keytype: 'any', keyfind: "object", keyname: "Keyboard", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleKeyboard(data, userdata), isBlocking: false },
+      { keytype: 'any', keyfind: "object", keyname: "systempoints", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleSystempoints(data, userdata), isBlocking: false },
     ];
 
   for (const data of indexdbdata) {
@@ -454,9 +523,65 @@ export async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, u
           if (success) {
               console.log("Todos los callbacks han sido ejecutados");
           } else {
-              console.log("El proceso fue interrumpido debido a una condición bloqueante.");
+              // console.log("El proceso fue interrumpido debido a una condición bloqueante.");
           }
       });
+  }
+}
+function handleSystempoints(data, userdata) {
+  console.log("handleSystempoints", data, userdata);
+  if (data.systempoints.check === false) return;
+  modifyPoints(userdata.userId, data.systempoints.points, userdata);
+}
+function handleKeyboard(data, userdata) {
+    console.log("handleKeyboard", data, userdata);
+    if (data.Keyboard.check === false) return;
+    // const keystosend = data.Keyboard.keys;
+    const keycontrolpress = Object.keys(data.Keyboard.keys).map(key => data.Keyboard.keys[key]);
+    console.log("keycontrolpress", keycontrolpress);
+    socketManager.emitMessage("presskey", keycontrolpress);
+}
+function handleApi(data, userdata) {
+  console.log("handleApi", data, userdata);
+  const resultmessage = `${replaceVariables(data.Api.url, userdata, true)}`;
+  const datajson = replaceVariables(data.Api.data, userdata);
+
+  Apifetch(resultmessage, datajson).then(response => {
+    console.log("response", response);
+  }).catch(error => {
+    console.error("Error al enviar la petición a la API:", error);
+  });
+}
+async function Apifetch(url, data) {
+  let fetchOptions = {
+    method: 'POST',
+  };
+  if (data.length > 0 || typeof data === 'object') {
+    fetchOptions.body = typeof data === 'string' ? data : JSON.stringify(data)
+    fetchOptions.headers = {
+      'Content-Type': 'application/json',
+    };
+  }
+
+  try {
+    let response;
+    if (url && data.length < 1) {
+      // Si se proporciona una URL, se usa fetch absoluto
+      response = await fetch(url);
+    } else if (url && data.length > 1) {
+      // Si se proporciona una URL y datos, se usa fetch relativo
+      response = await fetch(url, fetchOptions);
+    } else {
+      // Si no se proporciona URL, se usa fetch relativo
+      response = await fetch('.', fetchOptions);
+    }
+
+    console.log("response", response);
+
+    return await response.json();
+  } catch (error) {
+    console.error('Hubo un problema con la operación fetch:', error);
+    throw error;
   }
 }
 function handleOsc(data, userdata) {
@@ -496,35 +621,36 @@ function handleOsc(data, userdata) {
   }
 }
 function handleMinecraft(data, userdata) {
-  console.log("handleMinecraft", data, userdata);
+  // console.log("handleMinecraft", data, userdata);
   // console.log("handleMinecraft", data.minecraft.command);
   const splitcommand = data.minecraft.command.split('\n');
   if (splitcommand.length >= 1) {
     splitcommand.forEach(command => {
       const resultcommand = replaceVariables(command, userdata);
       sendcommandmc(resultcommand);
-      console.log("resultcommand",userdata, resultcommand);
+      // console.log("resultcommand",userdata, resultcommand);
     });
   }
   // ws.sendCommand("/say mensaje de prueba")
 }
 
-// setInterval(async () => {
+// setTimeout(async () => {
 //   const userdata = {
 //     uniqueId: "testUser",
 //     nickname: "testUser",
 //     name: "testUser",
-//     comment: "texto nodefault 123124124",
+//     comment: "test123",
 //     points: 0,
 //     likeCount: 50,
 //     diamondCost: 50,
 //     giftId: 6064,
-//     ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg"
+//     ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg",
+//     userId: 11111111
 //   };
 //   const alldatadb = await getalldatafromAccionEventsDBManager();
 //   AccionEventoOverlayEval("chat",alldatadb,userdata);
 //   // console.log("setInterval");
-// }, 6666);
+// }, 1500);
 
 openModaltest.addEventListener('click', () => {
   openModaltest.addEventListener('click', () => {
@@ -566,7 +692,7 @@ const config = {
       class: 'select-default',
       type: 'select',
       returnType: 'string',
-      options: [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },{ value: 'likes', label: 'likes'},
+      options: [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },{ value: 'like', label: 'like'},
      {value: 'share', label: 'compartir'}, { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' }],
     },
     chat: {
@@ -576,8 +702,8 @@ const config = {
       returnType: 'string',
       hidden: true,
     },
-    likes: {
-      label: 'likes',
+    like: {
+      label: 'like',
       class: 'input-default',
       type: 'number',
       returnType: 'number',
@@ -629,6 +755,64 @@ const config = {
       type: 'select',
       returnType: 'string',
       options: oscOptions,
+    },
+  },
+  Api:{
+    class: 'input-default',
+    label: 'Api url',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    url: {
+      class: 'input-default',
+      label: '',
+      type: 'text',
+      returnType: 'string',
+    },
+    data: {
+      class: 'input-default',
+      label: '',
+      type: 'text',
+      returnType: 'string',
+    },
+  },
+  Keyboard: {
+    class: 'input-default',
+    label: 'Keyboard',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    keys: {
+      class: 'input-default',
+      label: '',
+      type: 'multiSelect',
+      returnType: 'array',
+      options: optionskeyboard,
+    },
+  },
+  systempoints: {
+    class: 'input-default',
+    label: 'System points',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    points: {
+      class: 'input-default',
+      label: '',
+      type: 'number',
+      returnType: 'number',
     },
   },
   profile: {
@@ -743,15 +927,15 @@ const config = {
   }
 };
 const table = new DynamicTable('#table-container',editcallback, config,deletecallback);
-alldata.forEach((data) => {
-  console.log("alldata", data);
-  table.addRow(data);
-});
-console.log("table", table);
-document.addEventListener('DOMContentLoaded', () => {
-  // Ocultar la columna 'mediaVideo_file'
-  table.hideColumn('id');
-});
+
+  setTimeout(() => {
+    alldata.forEach((data) => {
+      // console.log("alldata", data);
+      table.addRow(data);
+    });
+    // table.hideColumn('id');
+  }, 1000);
+
 ObserverEvents.subscribe(async (action, data) => {
   if (action === "save") {
     table.clearRows();
@@ -765,12 +949,14 @@ ObserverEvents.subscribe(async (action, data) => {
     dataupdate.forEach((data) => {
       table.addRow(data);
     });
-  } else if (action === "update") {
-    table.clearRows();
-    const dataupdate = await AccionEventsDBManager.getAllData();
-    dataupdate.forEach((data) => {
-      table.addRow(data);
-    });
+  }
+  else if (action === "update") {
+    // table.clearRows();
+    // const dataupdate = await AccionEventsDBManager.getAllData();
+    // dataupdate.forEach((data) => {
+    //   table.addRow(data);
+    // });
+    showAlert ('info', "Actualizado", "1000");
   }
 });
 

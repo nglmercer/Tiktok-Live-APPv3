@@ -321,6 +321,12 @@ input[type="range"]::-ms-fill-upper {
 .bg-blue:hover {
   background-color: #115ccc !important;
 }
+.bg-blue-light {
+  background-color: #94c9f5 !important;
+}
+.bg-blue-light:hover {
+  background-color: #5d9cfa !important;
+}
 .bg-red {
   background-color: #F44336 !important;
 }
@@ -339,8 +345,13 @@ input[type="range"]::-ms-fill-upper {
 .bg-yellow:hover {
   background-color: #F9A825 !important;
 }
-.bg-transparent {
+.bg-transparent-important {
   background-color: transparent !important;
+  background: transparent !important;
+}
+.bg-transparent {
+  background: transparent;
+  background-color: transparent;
 }
 .opacity-50 {
   opacity: 0.5 !important;
@@ -442,7 +453,7 @@ input[type="file"] {
   background-color: #ffffff11;
   border: 1px solid #dddddd36;
   border-radius: 4px;
-  max-height: 200px;
+  height: 200px;
   overflow-y: auto;
 }
 #importResults p {
@@ -458,4 +469,63 @@ input[type="file"] {
 }
 .exportButton:hover {
   background-color: #3752c9ad;
+}
+/* Variante 1: Azul a Celeste */
+.blue-button {
+  color: #4285F4;
+  border-color: #4285F4;
+}
+.blue-button:hover {
+  color: white;
+  background-color: #4285F4;
+}
+
+/* Variante 2: Rojo a Rosa */
+.red-button {
+  color: #d9534f;
+  border-color: #d9534f;
+}
+.red-button:hover {
+  color: white;
+  background-color: #d9534f;
+}
+
+/* Variante 3: Verde a Lima */
+.green-button {
+  color: #28a745;
+  border-color: #28a745;
+}
+.green-button:hover {
+  color: white;
+  background-color: #28a745;
+}
+
+/* Variante 4: Naranja a Amarillo */
+.orange-button {
+  color: #fd7e14;
+  border-color: #fd7e14;
+}
+.orange-button:hover {
+  color: white;
+  background-color: #fd7e14;
+}
+
+/* Variante 5: Púrpura a Lavanda */
+.purple-button {
+  color: #6f42c1;
+  border-color: #6f42c1;
+}
+.purple-button:hover {
+  color: white;
+  background-color: #6f42c1;
+}
+
+/* Variante 6: Gris a Negro */
+.gray-button {
+  color: #6c757d;
+  border-color: #6c757d;
+}
+.gray-button:hover {
+  color: white;
+  background-color: #6c757d;
 }
