@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer</title>
+  </head>
+  <style>
+    body, html {
+      background-color: transparent;
+      background:  transparent;
+    }
+    :root {
+      --bg-color: transparent;
+      --text-color: black;
+    }
+
+    [data-theme="dark"] {
+      --bg-color: black;
+      --text-color: white;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+    .countdown {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: Roboto;
+      letter-spacing: 0.15em;
+      font-size: 3em;
+      text-align: center;
+      color: white;
+    }
+
+  </style>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+  <body>
+    <div id="countdown" class="countdown">00:00:00</div>
+    <!-- <form id="countdownform">
+      <h4>Create a new countdown</h4>
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name">
+      <label for="socketUrl">Socket URL:</label>
+      <input type="text" id="socketUrl" name="socketUrl">
+      <button type="submit">Connect</button>
+  </form> -->
+  </body>
+  <script>
+const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+// Función para activar el tema dark o light según la preferencia
+function updateTheme(event) {
+  if (event.matches) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+}
+
+// Detectar el cambio de preferencia automáticamente
+darkModeMediaQuery.addEventListener('change', updateTheme);
+const roomId = window.location.search.split('?')[1] || localStorage.getItem('tiktok_name') || 'CountdownRoom';
+
+// Verificar la preferencia inicial
+updateTheme(darkModeMediaQuery);
+const backendUrltimer = "https://cute-rook-14.deno.dev";
+const localurl = "http://localhost:8088";
+const localsocket = io(localurl);
+const socket = io(backendUrltimer);
+socket.on("connect", () => {
+  console.log("Connected to backend");
+});
+socket.on("disconnect", () => {
+  console.log("Disconnected from backend");
+});
+socket.on("allCounters", (data) => {
+  console.log("allCounters", data);
+  if (data) {
+    data.forEach(element => {
+      console.log("counterCreated", roomId);
+      if (element.id === roomId) {
+        console.log("counterCreated", element);
+        updateTime(element.remainingTime);
+        if (element.timerState) {
+          CountdownStop();
+        } else {
+          CountdownStart();
+        }
+      }
+    });
+  }
+});
+//socket.emit("createCounter", { id: roomId, totalTime: 60, maxTime: 60 });
+socket.on("counterCreated", (data) => {
+  console.log("counterCreated", data);
+});
+localsocket.on("connect", () => {
+  console.log("Connected to local socket");
+});
+localsocket.on("disconnect", () => {
+  console.log("Disconnected from local socket");
+});
+localsocket.on("countdowtime", (data) => {
+  console.log("countdowtime", data);
+  switch (data.action) {
+    case 'start':
+      CountdownStart();
+      break;
+    case 'stop':
+      CountdownStop();
+      break;
+    case 'reset':
+      CountdownReset(data.time);
+      break;
+    case 'update':
+      updateTime(data.time);
+      break;
+    case 'add':
+    AddOrSubtractTime(data.action, data.time);
+      break;
+    case 'subtract':
+    AddOrSubtractTime(data.action, data.time);
+      break;
+    default:
+      break;
+  }
+});
+// Escuchar cuando el socket se conecta al backend
+
+console.log("roomId", roomId);
+function BackendCreateCounter() {
+  socket.emit("joinRoom", { id: roomId });
+
+  // Crear un contador para esta sala
+  const totalTime = 120; // Tiempo total en segundos
+  const maxTime = 300;   // Tiempo máximo en segundos
+
+  socket.emit("createCounter", { id: roomId, totalTime: totalTime, maxTime: maxTime });
+  setTimeout(() => {
+    socket.emit("getCounter", { id: roomId });
+  }, 3333);
+}
+const pathname = window.location.pathname;
+const queryString = window.location.search;
+
+if (queryString) {
+  console.log('Query string exists:', queryString);// Mostrar la cadena de consulta
+} else {
+  console.log('No query string in the URL');
+}
+
+// Mostrar la ruta después del '/'
+console.log('Pathname:', pathname);
+// Obtener la cadena de consulta (parte de la URL después de '?')
+
+
+class Countdown {
+  constructor(initialTime = 1) {
+      this.initialTime = initialTime;
+      this.remainingTime = initialTime;
+      this.countdownInterval = null;
+      this.isRunning = false;
+      this.onUpdate = null;
+      this.onComplete = null;
+  }
+  setInitialTime(initialTime) {
+    this.initialTime = initialTime;
+    this.remainingTime = initialTime;
+  }
+  start() {
+      if (!this.isRunning) {
+          this.isRunning = true;
+          this.countdownInterval = setInterval(() => {
+              this.remainingTime = Math.max(0, this.remainingTime - 1); // Restar 1 segundo
+              if (this.onUpdate) this.onUpdate(this.getTimeString());
+              if (this.remainingTime <= 0) {
+                  this.stop();
+                  if (this.onComplete) this.onComplete();
+              }
+          }, 1000); // Intervalo de 1 segundo
+      }
+  }
+
+  pause() {
+      if (this.isRunning) {
+          clearInterval(this.countdownInterval);
+          this.isRunning = false;
+      }
+  }
+
+  resume() {
+      if (!this.isRunning) {
+          this.start();
+      }
+  }
+
+  stop() {
+      clearInterval(this.countdownInterval);
+      this.isRunning = false;
+  }
+
+  reset(time) {
+      this.stop();
+      this.remainingTime = time || this.initialTime;
+      if (this.onUpdate) this.onUpdate(this.getTimeString());
+  }
+
+  updateTime(newTime) {
+      if (!isNaN(newTime) && newTime >= 0) {
+          this.remainingTime = newTime;
+          if (this.onUpdate) this.onUpdate(this.getTimeString());
+      }
+  }
+
+  getTimeString() {
+    const days = Math.floor(this.remainingTime / 86400);
+    const hours = Math.floor((this.remainingTime % 86400) / 3600);
+    const minutes = Math.floor((this.remainingTime % 3600) / 60);
+    const seconds = Math.floor(this.remainingTime % 60);
+
+    let timeString = '';
+
+    if (days > 0) {
+        timeString += `${days}d `;
+    }
+    if (days > 0 || hours > 0) {
+        timeString += `${hours}h `;
+    }
+    if (days > 0 || hours > 0 || minutes > 0) {
+        timeString += `${minutes}m `;
+    }
+    timeString += `${seconds}s`;
+
+    return timeString.trim();
+  }
+  getTimeString2() {
+    const days = Math.floor(this.remainingTime / 86400);
+    const hours = Math.floor((this.remainingTime % 86400) / 3600);
+    const minutes = Math.floor((this.remainingTime % 3600) / 60);
+    const seconds = Math.floor(this.remainingTime % 60);
+
+    let timeString = '';
+
+    if (days > 0) {
+        timeString += `${days}: `;
+    }
+    if (days > 0 || hours > 0) {
+        timeString += `${hours}: `;
+    }
+    if (days > 0 || hours > 0 || minutes > 0) {
+        timeString += `${minutes}: `;
+    }
+    timeString += `${seconds}s`;
+
+    return timeString.trim();
+  }
+
+  getTime() {
+      return this.remainingTime;
+  }
+}
+const countdown = new Countdown();
+countdown.onUpdate = (timeString) => {
+  document.getElementById('countdown').innerText = timeString;
+};
+countdown.onComplete = () => {
+  document.getElementById('countdown').innerText = "TIEMPO TERMINADO!";
+  socket.emit('deleteCounter', { id: roomId });
+};
+// Función para actualizar el tiempo desde la interfaz de usuario
+function updateTime(timertime = 60) {
+ // const newTime = parseInt(document.getElementById('newTime').value, 10);
+  countdown.updateTime(timertime);
+}
+function AddTime(time) {
+  console.log("AddTime", time,countdown.getTime());
+  countdown.updateTime(countdown.getTime() + time);
+}
+function CountdownStart() {
+  countdown.start();
+}
+function CountdownStop() {
+  countdown.stop();
+}
+function CountdownReset(time) {
+  countdown.reset(time);
+}
+function SusbtractTime(time) {
+  countdown.updateTime(countdown.getTime() - time);
+}
+function AddOrSubtractTime(action, time) {
+  if (action === 'add') {
+    countdown.updateTime(countdown.getTime() + time);
+  } else if (action === 'subtract') {
+    countdown.updateTime(countdown.getTime() - time);
+  }
+}
+  </script>
+  </html>

@@ -2,7 +2,7 @@ import  { IndexedDBManager, databases, DBObserver } from "./utils/indexedDB";
 import { postToFileHandler } from "./utils/getdata";
 import { ButtonGrid } from "./components/gridelements";
 import FormModal from "./components/FormModal";
-import { socketManager } from "../tiktoksocketdata";
+import { socketManager } from "./tiktoksocketdata";
 import datajson from '../json/keyboard.json';
 const gridbuttonscontent = new ButtonGrid('buttonContainer', 100, 50, 5, 5, onDeleteButton, callbackonedit);
 const observer = new DBObserver();

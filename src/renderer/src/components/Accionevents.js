@@ -4,10 +4,11 @@ import { getfileId } from './Fileshtml'
 import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
 import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb, modifyPoints } from '../utils/getdata';
 import { replaceVariables } from '../utils/replaceVariables';
-import { socketManager } from '../../tiktoksocketdata';
 import { ws, sendcommandmc } from '../minecraft';
 import { giftManager, getdatagiftparsed } from '../utils/Giftdata';
 import datajson from '../../json/keyboard.json';
+import { socketManager } from '../tiktoksocketdata';
+import { handleleermensaje } from '../voice/tts';
 import  showAlert  from '../assets/alerts'
 const optionskeyboard = Object.entries(datajson).map(([value, label]) => ({
   value,
@@ -102,8 +103,8 @@ const videoOptions = mapFilesToSelectOptions(categorizedFiles.Video);
 console.log("Archivos categorizados: audioOptions , imageOptions, videoOptions", audioOptions , imageOptions, videoOptions);
 // console.log("Archivos categorizados:", categorizedFiles.Audio);
 const formConfig = [
-{ type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
-{ type: 'input', name: 'id', label: 'ID', inputType: 'Number', returnType: 'Number', hidden: true },
+  { type: 'input', name: 'nombre', label: 'Nombre', inputType: 'text', returnType: 'string' },
+  { type: 'input', name: 'id', label: 'ID', inputType: 'Number', returnType: 'Number', hidden: true },
   {
     type: 'checkbox',
     name: 'profile_check',
@@ -178,23 +179,30 @@ const formConfig = [
       { type: 'multiSelect', name: 'Keyboard_keys', label: 'Keyboard keys', options: optionskeyboard, returnType: 'array'},
     ]
   },
-  { type: 'checkbox', name: 'systempoints_check', label: 'cambiar puntos', inputType: 'checkbox', returnType: 'boolean',
+  {
+  type: 'checkbox', name: 'systempoints_check', label: 'cambiar puntos', inputType: 'checkbox', returnType: 'boolean',
     children: [
       { type: 'input', name: 'systempoints_points', label: 'puntos', inputType: 'number', returnType: 'number' },
     ],
   },
+  {
+  type: 'checkbox', name: 'tts_check', label: 'TTS voice', inputType: 'checkbox', returnType: 'boolean',
+  children: [
+    { type: 'input', name: 'tts_text', label: 'texto a leer', inputType: 'text', returnType: 'string' },
+  ],
+},
   { type: 'radio', name: 'Evento_eventType', label: 'Seleccione el Evento', options:
   [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },
   { value: 'like', label: 'like'},{value: 'share', label: 'compartir'},
   { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' },{ value: 'member', label: 'Ingreso al live' }],
   returnType: 'string', hidden: false
-},
-{ type: 'input', name: 'Evento_chat', label: 'Chat', inputType: 'text', returnType: 'string', hidden:false,valuedata:'default', dataAssociated: 'chat'},////    //////
-{ type: 'input', name: 'Evento_like', label: 'like', inputType: 'number', returnType: 'number', hidden:false,valuedata: 15, dataAssociated: 'like'}, //////
-{ type: 'select', name: 'Evento_gift', label: 'gift', options: getmapselectgift(), returnType: 'number', hidden:false, dataAssociated: 'gift'},///   //////
-{ type: 'input', name: 'Evento_share', label: 'share', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'share'},// //////
-{ type: 'input', name: 'Evento_follow', label: 'follow', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'follow'},//////
-{ type: 'input', name: 'Evento_suscripcion', label: 'suscripcion', inputType: 'text', returnType: 'number', hidden:true,valuedata:'default', dataAssociated: 'suscripcion'},//////
+  },
+  { type: 'input', name: 'Evento_chat', label: 'Chat', inputType: 'text', returnType: 'string', hidden:false,valuedata:'default', dataAssociated: 'chat'},////    //////
+  { type: 'input', name: 'Evento_like', label: 'like', inputType: 'number', returnType: 'number', hidden:false,valuedata: 15, dataAssociated: 'like'}, //////
+  { type: 'select', name: 'Evento_gift', label: 'gift', options: getmapselectgift(), returnType: 'number', hidden:false, dataAssociated: 'gift'},///   //////
+  { type: 'input', name: 'Evento_share', label: 'share', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'share'},// //////
+  { type: 'input', name: 'Evento_follow', label: 'follow', inputType: 'text', returnType: 'number', hidden:false,valuedata:'default', dataAssociated: 'follow'},//////
+  { type: 'input', name: 'Evento_suscripcion', label: 'suscripcion', inputType: 'text', returnType: 'number', hidden:true,valuedata:'default', dataAssociated: 'suscripcion'},//////
 
   // { type: 'checkbox', name: 'activetesteeeeeeeeeeeeeee', label: 'active', inputType: 'checkbox', returnType: 'boolean' },
   // { type: 'multiSelect', name: 'keyvalue', label: 'Keyvalue', options: options, returnType: 'array', hidden: true },
@@ -284,8 +292,8 @@ const formConfig = [
 
       switch (compare) {
           case '===':
-              // Verifica si el valor actual está dentro del rango permitido
-              return actualValue >= lowerBound && actualValue <= upperBound;
+              // Verifica si el valor actual está dentro del rango permitido  actualValue >= lowerBound && actualValue <= upperBound; // not equals
+              return actualValue === expectedValue;
           case '>=':
               // Verifica si el valor actual es mayor o igual al límite inferior permitido
               return actualValue >= lowerBound;
@@ -474,7 +482,7 @@ class LikeTracker {
   startResetTimer() {
     setInterval(() => {
       this.resetLikeCounters();
-      console.log("Los contadores de likes han sido restablecidos.");
+      // console.log("Los contadores de likes han sido restablecidos.");
     }, this.resetInterval);
   }
 }
@@ -515,6 +523,7 @@ export async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, u
       { keytype: 'any', keyfind: "object", keyname: "Api", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleApi(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "Keyboard", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleKeyboard(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "systempoints", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleSystempoints(data, userdata), isBlocking: false },
+      { keytype: 'any', keyfind: "object", keyname: "tts", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handletts(data, userdata), isBlocking: false },
     ];
 
   for (const data of indexdbdata) {
@@ -527,6 +536,11 @@ export async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, u
           }
       });
   }
+}
+function handletts(data, userdata) {
+  console.log("handletts", data, userdata);
+  if (data.tts.check === false) return;
+  handleleermensaje(data.tts.text);
 }
 function handleSystempoints(data, userdata) {
   console.log("handleSystempoints", data, userdata);
@@ -733,9 +747,9 @@ const config = {
       returnType: 'string',
     },
   },
-  vrchat: {
+  tts: {
     class: 'input-default',
-    label: 'vrchat',
+    label: 'TTS',
     type: 'object',
     check: {
       class: 'filled-in',
@@ -743,76 +757,11 @@ const config = {
       type: 'checkbox',
       returnType: 'boolean',
     },
-    chatbox: {
+    text: {
       class: 'input-default',
-      label: '',
-      type: 'textarea',
-      returnType: 'string',
-    },
-    input: {
-      class: 'input-default',
-      label: '',
-      type: 'select',
-      returnType: 'string',
-      options: oscOptions,
-    },
-  },
-  Api:{
-    class: 'input-default',
-    label: 'Api url',
-    type: 'object',
-    check: {
-      class: 'filled-in',
-      label: 'check',
-      type: 'checkbox',
-      returnType: 'boolean',
-    },
-    url: {
-      class: 'input-default',
-      label: '',
+      label: 'texto a leer',
       type: 'text',
       returnType: 'string',
-    },
-    data: {
-      class: 'input-default',
-      label: '',
-      type: 'text',
-      returnType: 'string',
-    },
-  },
-  Keyboard: {
-    class: 'input-default',
-    label: 'Keyboard',
-    type: 'object',
-    check: {
-      class: 'filled-in',
-      label: 'check',
-      type: 'checkbox',
-      returnType: 'boolean',
-    },
-    keys: {
-      class: 'input-default',
-      label: '',
-      type: 'multiSelect',
-      returnType: 'array',
-      options: optionskeyboard,
-    },
-  },
-  systempoints: {
-    class: 'input-default',
-    label: 'System points',
-    type: 'object',
-    check: {
-      class: 'filled-in',
-      label: 'check',
-      type: 'checkbox',
-      returnType: 'boolean',
-    },
-    points: {
-      class: 'input-default',
-      label: '',
-      type: 'number',
-      returnType: 'number',
     },
   },
   profile: {
@@ -919,6 +868,88 @@ const config = {
       options: imageOptions
     },
 
+  },
+  vrchat: {
+    class: 'input-default',
+    label: 'vrchat',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    chatbox: {
+      class: 'input-default',
+      label: '',
+      type: 'textarea',
+      returnType: 'string',
+    },
+    input: {
+      class: 'input-default',
+      label: '',
+      type: 'select',
+      returnType: 'string',
+      options: oscOptions,
+    },
+  },
+  Api:{
+    class: 'input-default',
+    label: 'Api url',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    url: {
+      class: 'input-default',
+      label: '',
+      type: 'text',
+      returnType: 'string',
+    },
+    data: {
+      class: 'input-default',
+      label: '',
+      type: 'text',
+      returnType: 'string',
+    },
+  },
+  Keyboard: {
+    class: 'input-default',
+    label: 'Keyboard',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    keys: {
+      class: 'input-default',
+      label: '',
+      type: 'multiSelect',
+      returnType: 'array',
+      options: optionskeyboard,
+    },
+  },
+  systempoints: {
+    class: 'input-default',
+    label: 'System points',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    points: {
+      class: 'input-default',
+      label: '',
+      type: 'number',
+      returnType: 'number',
+    },
   },
   id: {
     type: 'number',

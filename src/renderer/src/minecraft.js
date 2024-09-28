@@ -1,4 +1,4 @@
-import {socketManager} from "../tiktoksocketdata";
+import {socketManager} from "./tiktoksocketdata";
 // document.getElementById('botform').addEventListener('submit', function(e) {
 //   e.preventDefault();
 //   const data = Object.fromEntries(new FormData(e.target).entries());

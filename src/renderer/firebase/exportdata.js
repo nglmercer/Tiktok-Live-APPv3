@@ -367,6 +367,7 @@ const dbConfig = {
   'eventsDB': { text: 'Acciones Y Eventos' },
   'firebase-heartbeat-database': { hidden: true },
   'firebaseLocalStorageDb': { hidden: true },
+  'firebaseLocalStoragedb': { hidden: true },
   'streamcontrols': { text: 'Controles Streamdeck' },
   'userPoints': { text: 'Puntos de Usuario' },
   'validate-browser-context-for-indexeddb-analytics-module': { hidden: true }

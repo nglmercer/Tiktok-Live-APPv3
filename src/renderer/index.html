@@ -19,18 +19,21 @@
     <script src="https://cdn.jsdelivr.net/npm/@materializecss/materialize@2.1.0/dist/js/materialize.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
     <script src="./htmlcomponents/iframePreview.js" type="module"></script>
+    <script src="./htmlcomponents/IframeWithCopy.js" type="module"></script>
+    <script src="./htmlcomponents/SvgIcon.js" type="module"></script>
+    <script src="./htmlcomponents/TooltipMessages.js" type="module"></script>
     <script src="./src/utils/Giftdata.js" type="module"></script>
+    <script src="./src/components/timerupdate.js" type="module"></script>
   </head>
   <body>
     <nav>
       <div class="nav-wrapper light-blue">
-        <a data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">menu📚</i></a>
+        <a data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">
+          <svg-icon name="menu" class="border-blue custombutton2 centerbutton" tooltip="menu" tooltip-position="bottom"></svg-icon>
+        </i></a>
+        <button class="bg-transparent border-blue custombutton2 centerbutton" onclick="refreshPage()">          <svg-icon name="refresh" tooltip="refresh" tooltip-position="bottom"></svg-icon></button>
+        <a><span id="stateText" class="stateText">offline🔴</span></a>
 
-        <a><span id="stateText" class="stateText">Offline</span></a>
-        <button class="blue-button bg-transparent custombutton centerbutton" onclick="refreshPage()">
-
-            🔁
-      </button>
       <script>
         function refreshPage() {
           window.location.reload();
@@ -87,40 +90,8 @@
                 <button id="websocketConnect" class="btn waves-effect waves-light blue-button bg-transparent">Tikfinityapi connect</button>
               </div>
             </div>
-        </div>
 
-        <!-- <div class="sub-containerbox bordercontent-purple">
-          <div class="stats-card">
-            <h2>Social Stats</h2>
-            <input type="checkbox" name="checkbox" id="checkbox1" class="filled-in" checked="checked" />
-            <p>Followers</p>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
         </div>
-        </div> -->
       </div>
       <div class="containerbox grid-autofit-28rem">
 
@@ -144,6 +115,43 @@
         </div>
     </div>
       </div>
+      <div class="containerbox grid-autofit-28rem">
+        <!-- <url-iframe url="http://localhost:5173/timer.html?counter123"></url-iframe> -->
+        <div id="countdownIframe"></div>
+        <div class="control-panel">
+          <h2>Control</h2>
+          <div id="countdown" class="countdown">00:00:00</div>
+          <div class="button-group">
+              <button id="control-panel-start">▶ Start</button>
+              <button id="control-panel-pause">⏸ Pause</button>
+              <button id="control-panel-reset">↺ Reset</button>
+          </div>
+          <div class="time-control">
+            <input type="number" name="time-control-initialTime" id="time-control-initialTime" class="inpit-default">
+            <select name="time-control-initialTimeUnit" id="time-control-initialTimeUnit">
+                <option>Seconds</option>
+                <option>Minutes</option>
+                <option>Hours</option>
+                <option>Days</option>
+            </select>
+            <span>Tiempo Inicial</span>
+
+          </div>
+          <div class="time-control">
+            <input type="number" name="time-control-input" id="time-control-input" value="0" class="input-default">
+              <select name="time-control-unit" id="time-control-unit">
+                  <option>Seconds</option>
+                  <option>Minutes</option>
+                  <option>Hours</option>
+                  <option>Days</option>
+              </select>
+              <div class="time-buttons">
+                  <button class="time-button" id="time-button-plus">+</button>
+                  <button class="time-button" id="time-button-minus">-</button>
+              </div>
+          </div>
+      </div>
+      </div>
       <div class="containerbox">
         <div class="sub-containerbox bordercontent-purple">
           <div class="justify-content-center">
@@ -153,6 +161,7 @@
             </label>
           </div>
           <form id="pointsForm" action="PointsSystem" class="grid-1fr-1fr">
+
             <span>name of Points</span>
             <div class="input-field outlined">
                 <input id="Pointsname" type="text" placeholder=" " maxlength="20">
@@ -444,6 +453,7 @@
     <iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
     <span id="overlaypreviewcontainer2"></span>
     <iframe-preview src="/overlay.html" muted="true"></iframe-preview>
+    <iframe-preview src="/timer.html?" muted="true"></iframe-preview>
     <script>
       const urltext = document.getElementById("overlay-preview-container");
       urltext.innerHTML = `${getlocalhref()}overlay.html`;
@@ -468,11 +478,13 @@
   </style>
   <div id="modal1" class="modal">
     <div class="modal-content">
-      <form id="dynamicForm2" class="gridform">
 
+      <form id="dynamicForm2" class="gridform">
       </form>
       <a id="submitFormBtn2" class="modal-close btn filled waves-effect waves-light m-10">Añadir acciones </a>
-
+      <!-- <tooltip-messages messages='["UniqueId = nombre de usuario", "Verifica tu red"]' class="tooltip-error">
+        sugerencias
+      </tooltip-messages> -->
     </div>
   </div>
     <div class="file-container" id="drop-area" style="position: relative;">
@@ -777,7 +789,7 @@
     <script type="module" src="./src/renderer.js"></script>
     <script type="module" src="./src/datamodalboard.js"></script>
     <script type="module" src="./src/minecraft.js"> </script>
-    <script type="module" src="./tiktoksocketdata.js"></script>
+    <script type="module" src="./src/tiktoksocketdata.js"></script>
     <script type="module" src="./src/utils/localstorage.js"></script>
 <!--
     <script type="module">

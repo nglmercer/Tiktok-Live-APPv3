@@ -34,7 +34,7 @@ class LikeTracker {
   startResetTimer() {
     setInterval(() => {
       this.resetLikeCounters();
-      console.log("Los contadores de likes han sido restablecidos.");
+      // console.log("Los contadores de likes han sido restablecidos.");
     }, this.resetInterval);
   }
 }

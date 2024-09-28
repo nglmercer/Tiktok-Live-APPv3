@@ -159,3 +159,64 @@
     color: #666;
     margin-bottom: 10px;
 }
+.control-panel {
+  background-color: #2a2a2a;
+  border: 1px solid #ff69b4;
+  border-radius: 8px;
+  padding: 20px;
+  width: 400px;
+  h2 {
+    color: #3a9bdc;
+    margin-top: 0;
+}
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+button {
+    background-color: #3a3a3a;
+    border: none;
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-grow: 1;
+}
+button:hover {
+    background-color: #4a4a4a;
+}
+.time-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+select {
+    background-color: #3a3a3a;
+    border: none;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    flex-grow: 1;
+}
+.time-buttons {
+    display: flex;
+    gap: 5px;
+}
+.time-button {
+    background-color: #3a3a3a;
+    border: none;
+    color: #ffffff;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    cursor: pointer;
+}
+.time-button:hover {
+    background-color: #4a4a4a;
+}
+}

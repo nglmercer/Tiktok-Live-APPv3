@@ -4877,6 +4877,7 @@ nav i.material-symbols-rounded, nav i.material-symbols-sharp {
 nav .nav-wrapper {
   position: relative;
   height: 100%;
+  z-index: 11;
 }
 @media only screen and (min-width : 993px) {
   nav a.sidenav-trigger {
@@ -6544,7 +6545,7 @@ textarea.materialize-textarea {
 .input-field input, .input-field textarea {
   -webkit-box-sizing: border-box;
           box-sizing: border-box; /* https://stackoverflow.com/questions/1377719/padding-within-inputs-breaks-width-100*/
-  padding: 0 16px;
+  padding: 8px 16px;
   padding-top: 20px;
   background-color: var(--md-sys-color-surface);
   border: none;
@@ -6624,14 +6625,14 @@ textarea.materialize-textarea {
 .input-field .supporting-text {
   color: var(--md-sys-color-on-surface-variant);
   font-size: 12px;
-  padding: 0 16px;
+  padding: 8px 16px;
   margin-top: 4px;
 }
 .input-field .character-counter {
   color: var(--md-sys-color-on-surface-variant);
   font-size: 12px;
   float: right;
-  padding: 0 16px;
+  padding: 8px 16px;
   margin-top: 4px;
 }
 .input-field .prefix {

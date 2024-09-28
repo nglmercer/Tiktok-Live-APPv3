@@ -186,12 +186,17 @@ function handleSocketEvents(socket, index) {
   socket.on("oscmessage", (data) => sendOscMessage(socket, data));
   socket.on("oscHandler", (data) => handleOscHandler(socket, data));
   socket.on("autoupdate", () => handleautoupdate(socket));
+  socket.on("countdowtime", (data) => handlecountdowtime(socket, data, index));
 }
 function overlaydatahandler(socket, event, data, index = 1) {
   console.log("overlay-event", event, data);
   // if (!data || !event) return;
   sockets[index].emitToAllSockets("overlay-event",  event, data);
   console.log("sockets[index].emitToAllSockets", event, data);
+}
+function handlecountdowtime(socket, data, index = 1) {
+  console.log("handlecountdowtime", data);
+  sockets[index].emitToAllSockets("countdowtime", data);
 }
 async function handleAddFilePath({ fileToAdd, fileName, filePath, isWebFile, isClipboardFile }) {
   if (isWebFile || isClipboardFile) {

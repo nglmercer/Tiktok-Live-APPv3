@@ -163,6 +163,21 @@ a#submitFormBtn2 {
     grid-row: 1; /* Asegura que esté en la primera fila */
   }
 }
+.custombutton1 {
+  border-radius: 0.5rem;
+  margin: 1px;
+  padding: 1px;
+}
+.custombutton2 {
+  border-radius: 0.5rem;
+  margin: 2px;
+  padding-inline: 2px;
+}
+.custombutton4 {
+  border-radius: 0.5rem;
+  margin: 4px;
+  padding: 4px;
+}
 .custombutton {
   border-radius: 0.5rem;
   margin: 10px;
@@ -229,4 +244,9 @@ a#submitFormBtn2 {
 .menu-options button:hover {
   background-color: #555; /* Color de fondo al hacer hover */
   border-radius: 5px;
+}
+.countdown {
+  font-family: Roboto;
+  letter-spacing: 0.15em;
+  font-size: 3em;
 }
