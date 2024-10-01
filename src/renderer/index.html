@@ -252,8 +252,16 @@
                     <label class="flex" for="selectvoice1"><input type="radio" name="selectvoice" id="selectvoice1" class="radio checked:bg-blue-300 float-start" checked><span>Voz1</span></label>
 
                     <div id="voiceSelectContainer" class="relative m-3 content-center">
-                        <select id="voiceSelect1" class="select select-info browser-default" style="width: 100%;" aria-label="Select Voice">select voice</select>
-                        <label for="voiceSelect1">select voice</label>
+                      <label for="voiceSelect1">
+                        <span>select voice</span>
+                          <select id="voiceSelect1" class="select select-info browser-default" style="width: 100%;" aria-label="Select Voice">select voice</select>
+                          </label>
+                          <label for="audiolist">
+                        <audio id="audio"></audio>
+                        <input type="checkbox" id="audiolist" class="filled-in" checked>
+                        <span>Cola de audio</span>
+                        </label>
+
                     </div>
 
 
@@ -388,32 +396,6 @@
       </div>
       <div class="card">
           <div class="card-header">
-              <h2 class="card-title">More Settings</h2>
-
-          </div>
-          <div class="card-content space-y-4">
-              <label class="cyberpunk-checkbox-label">
-                  leer follower prefijo:
-                  <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                  <input type="text" id="prefixuserfollow" value="te sige">
-              </label>
-              <label class="cyberpunk-checkbox-label">
-                  leer regalos prefijo:
-                  <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
-                  <input type="text" id="prefixGiftEvent" value="regalo">
-              </label>
-              <label class="cyberpunk-checkbox-label">
-                  leer usuario y mensaje prefijo:
-                  <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                  <input type="text" id="prefixusermessage" value="dice">
-              </label>
-              <label class="cyberpunk-checkbox-label">solo mensajes =>3
-                  <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
-                  </label>
-          </div>
-      </div>
-      <div class="card">
-          <div class="card-header">
               <h2 class="card-title">BlackList: Input de palabras que no aparecerán en el chat </h2>
           </div>
           <div class="card-content space-y-4">
@@ -424,7 +406,7 @@
           </div>
 
       </div>
-      <div class="card">
+      <div class="card hidden">
           <h2 class="card-title">WhiteList: Input de usuarios que aparecerán en el chat++</h2>
           <div class="card-content space-y-4">
               <input type="text" id="filter-users" class="border p-2 mr-2">
@@ -432,7 +414,6 @@
               <div id="containerfilter-users" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
           </div>
       </div>
-      <div id="audio"></div>
   </div>
 
   </div>
@@ -446,19 +427,20 @@
 
 <div class="tabcontainer" data-tab="tab4">
   <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y Eventos</button>
-  <div id="table-container" class="table-container"></div>
+  <toggle-content title="Acciones y Eventos Tabla" class="m-10">
+    <div id="table-container" class="table-container"></div>
+  </toggle-content>
   <div class="containerbox relative">
     <h3>Overlay Previews</h3>
     <span id="overlay-preview-container"></span>
     <iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
     <span id="overlaypreviewcontainer2"></span>
     <iframe-preview src="/overlay.html" muted="true"></iframe-preview>
-    <iframe-preview src="/timer.html?" muted="true"></iframe-preview>
     <script>
       const urltext = document.getElementById("overlay-preview-container");
-      urltext.innerHTML = `${getlocalhref()}overlay.html`;
+      urltext.innerHTML = `<copy-message>${getlocalhref()}overlay.html </copy-message>`;
       const urltext2 = document.getElementById("overlaypreviewcontainer2");
-      urltext2.innerHTML = `${getlocalhref()}overlayfull.html`;
+      urltext2.innerHTML = `<copy-message>${getlocalhref()}overlayfull.html</copy-message>`;
       function getlocalhref() {
         if (window.location.protocol === 'https:' || window.location.protocol === 'http:') {
             return window.location.href

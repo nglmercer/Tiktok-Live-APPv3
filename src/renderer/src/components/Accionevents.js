@@ -5,6 +5,7 @@ import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
 import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb, modifyPoints } from '../utils/getdata';
 import { replaceVariables } from '../utils/replaceVariables';
 import { ws, sendcommandmc } from '../minecraft';
+import CounterActions from './timerupdate';
 import { giftManager, getdatagiftparsed } from '../utils/Giftdata';
 import datajson from '../../json/keyboard.json';
 import { socketManager } from '../tiktoksocketdata';
@@ -32,7 +33,10 @@ const oscOptions = Object.entries(movementButtons).map(([label, value]) => ({
   value,
   label,
 }));
-
+// setTimeout(() => {
+//   CounterActions.add('add', 60);
+//   CounterActions.subtract('subtract', 10);
+// }, 1000);
 // const filescontent = await postToFileHandler("get-files-in-folder", {});
 const ObserverEvents = new DBObserver();
 const AccionEventsDBManager = new IndexedDBManager(databases.eventsDB,ObserverEvents);
@@ -189,8 +193,15 @@ const formConfig = [
   type: 'checkbox', name: 'tts_check', label: 'TTS voice', inputType: 'checkbox', returnType: 'boolean',
   children: [
     { type: 'input', name: 'tts_text', label: 'texto a leer', inputType: 'text', returnType: 'string' },
-  ],
-},
+    ],
+  },
+  { type: 'checkbox', name: 'timer_check', label: 'Temporizador', inputType: 'checkbox', returnType: 'boolean',
+    children: [
+      { type: 'input', name: 'timer_time', label: 'tiempo', inputType: 'number', returnType: 'number' },
+      { type: 'select', name: 'timer_action', label: 'accion', options: [{ value: 'start', label: 'iniciar'}, { value: 'stop', label: 'detener'}, { value: 'add', label: 'sumar tiempo'}, { value: 'subtract', label: 'restar tiempo'}], returnType: 'string' },
+    ],
+
+  },
   { type: 'radio', name: 'Evento_eventType', label: 'Seleccione el Evento', options:
   [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },
   { value: 'like', label: 'like'},{value: 'share', label: 'compartir'},
@@ -282,8 +293,8 @@ const formConfig = [
                 return false;
         }
     }
-
-    compareNumbers(actualValue, expectedValue, compare = '===', tolerancePercentage = 100) {
+    // actualvalue 100, expectedvalue 100, lowerBound 75, upperBound 125
+    compareNumbers(actualValue, expectedValue, compare = '===', tolerancePercentage = 50) {
       const maxDifference = expectedValue * (tolerancePercentage / 100);
 
       // Define los límites inferior y superior permitidos
@@ -296,10 +307,10 @@ const formConfig = [
               return actualValue === expectedValue;
           case '>=':
               // Verifica si el valor actual es mayor o igual al límite inferior permitido
-              return actualValue >= lowerBound;
+              return actualValue >= expectedValue && actualValue <= upperBound;
           case '<=':
               // Verifica si el valor actual es menor o igual al límite superior permitido
-              return actualValue <= upperBound;
+              return actualValue <= expectedValue && actualValue >= lowerBound;
           default:
               return false;
       }
@@ -524,6 +535,7 @@ export async function AccionEventoOverlayEval(eventType = "chat", indexdbdata, u
       { keytype: 'any', keyfind: "object", keyname: "Keyboard", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleKeyboard(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "systempoints", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleSystempoints(data, userdata), isBlocking: false },
       { keytype: 'any', keyfind: "object", keyname: "tts", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handletts(data, userdata), isBlocking: false },
+      { keytype: 'any', keyfind: "object", keyname: "timer", verifykey: [{ key: "check", value: true, type: "boolean" }], callback: (data) => handleTimer(data, userdata), isBlocking: false },
     ];
 
   for (const data of indexdbdata) {
@@ -541,6 +553,27 @@ function handletts(data, userdata) {
   console.log("handletts", data, userdata);
   if (data.tts.check === false) return;
   handleleermensaje(data.tts.text);
+}
+function handleTimer(data, userdata) {
+  console.log("handleTimer", data, userdata);
+  if (data.timer.check === false) return;
+  switch (data.timer.action) {
+    case 'start':
+      CounterActions.start();
+      break;
+    case 'stop':
+      CounterActions.stop();
+      break;
+    case 'add':
+      CounterActions.add('add', data.timer.time);
+      break;
+    case 'subtract':
+      CounterActions.subtract('subtract', data.timer.time);
+      break;
+    default:
+      console.log("timer default", data.timer);
+      break;
+  }
 }
 function handleSystempoints(data, userdata) {
   console.log("handleSystempoints", data, userdata);
@@ -648,23 +681,23 @@ function handleMinecraft(data, userdata) {
   // ws.sendCommand("/say mensaje de prueba")
 }
 
-// setTimeout(async () => {
-//   const userdata = {
-//     uniqueId: "testUser",
-//     nickname: "testUser",
-//     name: "testUser",
-//     comment: "test123",
-//     points: 0,
-//     likeCount: 50,
-//     diamondCost: 50,
-//     giftId: 6064,
-//     ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg",
-//     userId: 11111111
-//   };
-//   const alldatadb = await getalldatafromAccionEventsDBManager();
-//   AccionEventoOverlayEval("chat",alldatadb,userdata);
-//   // console.log("setInterval");
-// }, 1500);
+setTimeout(async () => {
+  const userdata = {
+    uniqueId: "testUser",
+    nickname: "testUser",
+    name: "testUser",
+    comment: "test123",
+    points: 0,
+    likeCount: 50,
+    diamondCost: 50,
+    giftId: 6064,
+    ProfilepictureUrl: "https://m.media-amazon.com/images/I/51y8GUVKJoL._AC_SY450_.jpg",
+    userId: 11111111
+  };
+  const alldatadb = await getalldatafromAccionEventsDBManager();
+  AccionEventoOverlayEval("chat",alldatadb,userdata);
+  // console.log("setInterval");
+}, 1500);
 
 openModaltest.addEventListener('click', () => {
   openModaltest.addEventListener('click', () => {
@@ -762,6 +795,30 @@ const config = {
       label: 'texto a leer',
       type: 'text',
       returnType: 'string',
+    },
+  },
+  timer: {
+    class: 'input-default',
+    label: 'Temporizador',
+    type: 'object',
+    check: {
+      class: 'filled-in',
+      label: 'check',
+      type: 'checkbox',
+      returnType: 'boolean',
+    },
+    time: {
+      class: 'input-default',
+      label: 'tiempo',
+      type: 'number',
+      returnType: 'number',
+    },
+    action: {
+      class: 'input-default',
+      label: 'accion',
+      type: 'select',
+      returnType: 'string',
+      options: [{ value: 'start', label: 'iniciar'}, { value: 'stop', label: 'detener'}, { value: 'add', label: 'sumar tiempo'}, { value: 'subtract', label: 'restar tiempo'}],
     },
   },
   profile: {

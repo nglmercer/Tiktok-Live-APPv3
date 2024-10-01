@@ -83,3 +83,80 @@ class TooltipMessages extends HTMLElement {
 
 // Definir el nuevo componente personalizado
 customElements.define('tooltip-messages', TooltipMessages);
+class ToggleContent extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    const title = this.getAttribute('title') || 'Título';
+    const customClass = this.getAttribute('class') || '';
+
+    this.render(title, customClass);
+  }
+
+  toggleVisibility() {
+    const content = this.shadowRoot.querySelector('.content');
+    const isVisible = content.style.display !== 'none';
+    content.style.display = isVisible ? 'none' : 'block';
+    this.shadowRoot.querySelector('.toggle-button').textContent = isVisible ? 'Mostrar' : 'Ocultar';
+  }
+
+  render(title, customClass) {
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          width: 100%;
+          box-sizing: border-box;
+          font-family: Arial, sans-serif;
+        }
+
+        .container {
+          width: 100%;
+          box-sizing: border-box;
+          border-radius: 4px;
+          overflow: hidden;
+        }
+
+        .header {
+          background-color: #444;
+          color: #f1f1f1;
+          padding: 10px;
+          cursor: pointer;
+          font-size: 18px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .toggle-button {
+          background-color: transparent;
+          color: #f1f1f1;
+          border: none;
+          cursor: pointer;
+          font-size: 16px;
+          margin-left: 10px;
+        }
+
+        .content {
+          display: block;
+        }
+      </style>
+      <div class="container ${customClass}">
+        <div class="header">
+          <span class="title">${title}</span>
+          <button class="toggle-button">Ocultar</button>
+        </div>
+        <div class="content">
+          <slot></slot>
+        </div>
+      </div>
+    `;
+
+    this.shadowRoot.querySelector('.header').addEventListener('click', () => this.toggleVisibility());
+  }
+}
+
+customElements.define('toggle-content', ToggleContent);

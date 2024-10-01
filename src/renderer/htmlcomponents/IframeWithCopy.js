@@ -117,3 +117,72 @@ class UrlIframe extends HTMLElement {
 }
 
 customElements.define('url-iframe', UrlIframe);
+class CopyMessage extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    this.render();
+  }
+
+  copyToClipboard() {
+    const message = this.shadowRoot.querySelector('.message').textContent;
+    navigator.clipboard.writeText(message)
+      .then(() => alert('Mensaje copiado al portapapeles'))
+      .catch(err => console.error('Error al copiar el mensaje', err));
+  }
+
+  render() {
+    this.shadowRoot.innerHTML = `
+      <style>
+        :host {
+          display: block;
+          width: auto;
+          box-sizing: border-box;
+          font-family: Arial, sans-serif;
+        }
+
+        .container {
+          display: flex;
+          align-items: center;
+          padding: 10px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          width: fit-content;
+        }
+
+        .message {
+          flex: 1;
+          font-size: 16px;
+          word-break: break-word;
+        }
+
+        .copy-button {
+          margin-left: 10px;
+          padding: 6px 12px;
+          font-size: 14px;
+          cursor: pointer;
+          background-color: #444;
+          color: #f1f1f1;
+          border: none;
+          border-radius: 4px;
+          transition: background-color 0.3s ease;
+        }
+
+        .copy-button:hover {
+          background-color: #666;
+        }
+      </style>
+      <div class="container">
+        <div class="message"><slot></slot></div>
+        <button class="copy-button">Copiar</button>
+      </div>
+    `;
+
+    this.shadowRoot.querySelector('.copy-button').addEventListener('click', () => this.copyToClipboard());
+  }
+}
+
+customElements.define('copy-message', CopyMessage);

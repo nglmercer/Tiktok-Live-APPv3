@@ -152,6 +152,9 @@ class Countdown {
   getTime() {
       return this.remainingTime;
   }
+  isRunningtime() {
+    return this.isRunning;
+  }
 }
 
 const countdown = new Countdown();
@@ -205,6 +208,11 @@ function getInitialTimeFromInput() {
 function updateTime(timertime = 60) {
   countdown.updateTime(timertime);
   socketManager.emitMessage('countdowtime', { action: 'update', time: timertime });
+  if (countdown.isRunningtime()) {
+    socket.emit('pauseCounter', { id: roomId });
+  } else {
+    socket.emit('resumeCounter', { id: roomId });
+  }
 }
 function CountdownStart() {
   if (countdown.getTime() <= 1) {
@@ -244,3 +252,15 @@ function AddOrSubtractTime(action, time) {
   }
   socketManager.emitMessage('countdowtime', { action: action, time: time });
 }
+const CounterActions = {
+  start: CountdownStart,
+  stop: CountdownStop,
+  reset: CountdownReset,
+  add: AddOrSubtractTime,
+  subtract: AddOrSubtractTime,
+};
+// setInterval(() => {
+//   CounterActions.add('add', 10);
+//   CounterActions.subtract('subtract', 10);
+// }, 1000);
+export default CounterActions;

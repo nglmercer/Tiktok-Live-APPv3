@@ -23,7 +23,7 @@ class IframePreview extends HTMLElement {
           border: 0;
         }
       </style>
-      <div id="control-panel">
+      <div id="control-panel" style="padding: 10px; display: flex; gap: 10px; align-items: center; ">
         <input type="checkbox" id="toggleCheckbox">
         <label for="toggleCheckbox">Mostrar/Ocultar</label>
       </div>

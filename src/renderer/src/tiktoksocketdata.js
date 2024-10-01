@@ -93,7 +93,7 @@ const splitfilterwords = (data) => {
     console.log("comments", comments);
     comments.forEach(comment => {
       if (comment.length < 9) return;
-      addFilterItemToGroup('filter-users', 'containerfilter-users', 'filterUsers', comment);
+      addFilterItemToGroup('filter-words', 'containerfilter-words', 'filterWords', comment);
     });
   }
 };

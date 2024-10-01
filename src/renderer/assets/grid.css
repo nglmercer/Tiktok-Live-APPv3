@@ -23,4 +23,14 @@
 }
 .dynamic-table {
   width: 100% !important;
+  table {
+    width: 100% !important;
+    overflow-y: auto;
+    height: 100px !important;
+  }
+  thead {
+    overflow-y: auto;
+    height: 100px !important;
+    background-color: rgb(46, 46, 46);
+  }
 }
