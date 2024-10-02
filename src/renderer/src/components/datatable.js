@@ -176,6 +176,7 @@ class DynamicRow {
         cell.appendChild(objectContainer);
       } else {
         const inputElement = this.createInputElement(key, null, value, typeConfig);
+        console.log("inputElement", inputElement);
         if (inputElement) {
           cell.appendChild(inputElement);
         } else {
@@ -459,5 +460,8 @@ function createMultiSelectField1(field, onChangeCallback, value) {
 
   return container;
 }
-
 export default DynamicTable;
+
+// const sugerenceDiv = document.createElement('div');
+// sugerenceDiv.innerHTML = `        <suggestions-component position="fixed" button-text=" " checkbox-text="parametros" include-checkbox="true"></suggestions-component>
+// `;

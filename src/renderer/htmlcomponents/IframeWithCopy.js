@@ -128,13 +128,18 @@ class CopyMessage extends HTMLElement {
   }
 
   copyToClipboard() {
-    const message = this.shadowRoot.querySelector('.message').textContent;
-    navigator.clipboard.writeText(message)
-      .then(() => alert('Mensaje copiado al portapapeles'))
-      .catch(err => console.error('Error al copiar el mensaje', err));
+    const message = this.getAttribute('message'); // Obtiene el mensaje del atributo
+    if (message) {
+      navigator.clipboard.writeText(message)
+        .then(() => alert('Mensaje copiado al portapapeles'))
+        .catch(err => console.error('Error al copiar el mensaje', err));
+    } else {
+      alert('No se encontró ningún mensaje para copiar');
+    }
   }
 
   render() {
+    const message = this.getAttribute('message'); // Obtiene el mensaje del atributo
     this.shadowRoot.innerHTML = `
       <style>
         :host {
@@ -144,15 +149,21 @@ class CopyMessage extends HTMLElement {
           font-family: Arial, sans-serif;
         }
 
-        .container {
+        .containermessage {
+          padding: 10px;
           display: flex;
           align-items: center;
-          padding: 10px;
-          border: 1px solid #ddd;
-          border-radius: 4px;
-          width: fit-content;
+          background: #222222;
         }
-
+        .divcontainer {
+          border: 1px solid #ddd;
+          width: fit-content;
+          background: #0F0F0F;
+          border-radius: 12px;
+          * {
+            border-radius: 12px;
+          }
+        }
         .message {
           flex: 1;
           font-size: 16px;
@@ -175,10 +186,15 @@ class CopyMessage extends HTMLElement {
           background-color: #666;
         }
       </style>
-      <div class="container">
-        <div class="message"><slot></slot></div>
+      <div class="divcontainer">
+        <div class="containermessage">
+        <div class="message">
+        ${message ? `${message}` : ''}
+        </div>
         <button class="copy-button">Copiar</button>
-      </div>
+        </div>
+        <slot></slot>
+        </div>
     `;
 
     this.shadowRoot.querySelector('.copy-button').addEventListener('click', () => this.copyToClipboard());
