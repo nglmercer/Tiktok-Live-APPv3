@@ -1,5 +1,5 @@
 import FormModal from './FormModal'
-import DynamicTable from './datatable';
+import DynamicTable, { EditModal } from './datatable';
 import { getfileId } from './Fileshtml'
 import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
 import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb, modifyPoints } from '../utils/getdata';
@@ -732,7 +732,6 @@ const config = {
     returnType: 'string',
   }, // Especifica el orden de las columnas
   Evento: {
-    class: 'input-default',
     // label: 'Evento',
     type: 'object',
     eventType: {
@@ -773,7 +772,6 @@ const config = {
     },
   },
   minecraft:{
-    class: 'input-default',
     type: 'object',
     check: {
       class: 'filled-in',
@@ -789,7 +787,6 @@ const config = {
     },
   },
   tts: {
-    class: 'input-default',
     label: 'TTS',
     type: 'object',
     check: {
@@ -806,7 +803,6 @@ const config = {
     },
   },
   timer: {
-    class: 'input-default',
     label: 'Temporizador',
     type: 'object',
     check: {
@@ -935,7 +931,6 @@ const config = {
 
   },
   vrchat: {
-    class: 'input-default',
     label: 'vrchat',
     type: 'object',
     check: {
@@ -959,7 +954,6 @@ const config = {
     },
   },
   Api:{
-    class: 'input-default',
     label: 'Api url',
     type: 'object',
     check: {
@@ -982,7 +976,6 @@ const config = {
     },
   },
   Keyboard: {
-    class: 'input-default',
     label: 'Keyboard',
     type: 'object',
     check: {
@@ -1000,7 +993,6 @@ const config = {
     },
   },
   systempoints: {
-    class: 'input-default',
     label: 'System points',
     type: 'object',
     check: {
@@ -1023,12 +1015,13 @@ const config = {
   }
 };
 const table = new DynamicTable('#table-container',editcallback, config,deletecallback);
-
+const editModal = new EditModal('#form-container', editcallback, config,deletecallback);
   setTimeout(() => {
     alldata.forEach((data) => {
       // console.log("alldata", data);
       table.addRow(data);
     });
+    // editModal.render(alldata[0]);
     // table.hideColumn('id');
   }, 1000);
 
