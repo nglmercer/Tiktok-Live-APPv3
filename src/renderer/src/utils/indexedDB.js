@@ -149,6 +149,54 @@ export class IndexedDBManager {
           this.idbObserver.notify(eventype, data);
       }
   }
+    // 1. Método para obtener un registro por ID
+    async getDataById(id) {
+      return this.performTransaction('readonly', (objectStore, resolve, reject) => {
+        const request = objectStore.get(Number(id));
+        request.onsuccess = (event) => resolve(event.target.result);
+        request.onerror = (event) => reject(event.target.error);
+      });
+    }
+
+    // 2. Método para modificar un campo específico de un registro por su ID
+    async updateFieldById(id, fieldName, newValue) {
+      try {
+        const existingData = await this.getDataById(id);
+        if (existingData) {
+          // Actualizamos el campo específico
+          existingData[fieldName] = newValue;
+          return this.updateData(existingData);  // Guardamos el registro actualizado
+        } else {
+          throw new Error(`No se encontró un registro con el ID ${id}`);
+        }
+      } catch (error) {
+        console.error("Error al actualizar el campo:", error);
+      }
+    }
+
+    // 3. Método que combina obtener el valor, modificarlo y guardarlo
+    async modifyFieldAndSave(id, fieldName, modifyFn) {
+      try {
+        const existingData = await this.getDataById(id);
+        if (existingData) {
+          // Modificamos el valor utilizando la función proporcionada
+          existingData[fieldName] = modifyFn(existingData[fieldName]);
+          return this.updateData(existingData);  // Guardamos el registro actualizado
+        } else {
+          throw new Error(`No se encontró un registro con el ID ${id}`);
+        }
+      } catch (error) {
+        console.error("Error al modificar y guardar el campo:", error);
+      }
+    }
+}
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+  };
 }
 
 export class DBObserver {
@@ -169,14 +217,6 @@ export class DBObserver {
   }
 }
 
-function debounce(func, wait) {
-  let timeout;
-  return function(...args) {
-      const context = this;
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(context, args), wait);
-  };
-}
 
 // Usage example
 // IndexedDBManager.updateData({ name: 'User 1', points: 100 }, 'name');

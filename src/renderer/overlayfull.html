@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay</title>
+    <style>
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .overlay {
+            position: absolute;
+        }
+        .overlay-image {
+            box-sizing: content-box;
+            height: auto;
+            position: absolute;
+            top: 0;
+            left: 30%;
+            width: 100%;
+            max-width: 200px;
+            max-height: 200px;
+        }
+        .overlay-video, .overlay-canvas {
+            box-sizing: content-box;
+            height: auto;
+            width: 100%;
+            max-width: 200px;
+            max-height: 200px;
+        }
+        video, img {
+          display: flex;
+          position: absolute;
+          width: 100vw;
+          height: 100vh;
+          object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <div id="container"></div>
+    <script>
+      class OverlayManager {
+        constructor() {
+            this.container = document.getElementById('container');
+            this.setupSocket();
+            this.setupFullscreen();
+            this.setupFooter();
+            this.setupAutoRefresh();
+        }
+
+        setupSocket() {
+            this.socket = io("http://localhost:8088");
+            this.socket.on('connect', () => {
+                console.log('connected');
+                this.resetAutoRefresh();
+            });
+            this.socket.on('disconnect', () => console.log('disconnected'));
+            this.socket.on("overlay-event", (data) => {
+                this.handleMessage(data);
+                this.resetAutoRefresh();
+            });
+        }
+
+        handleMessage(event) {
+            const { eventType, data, options } = event;
+            console.log('Received message:', event);
+
+            if (eventType === 'play') {
+                if (data.fileType.startsWith('video/')) {
+                    new VideoOverlay(this, data,  data.options);
+                } else if (data.fileType.startsWith('image/')) {
+                    if (options) {
+                        new UserPictureOverlay(this, data, data.options);
+                    } else {
+                        new ImageOverlay(this, data, data.options);
+                        console.log("ImageOverlay", data);
+                    }
+                } else if (data.fileType.startsWith('audio/')) {
+                    new AudioOverlay(this, data, data.options);
+                } else {
+                    console.log("Unsupported file type");
+                    //new UnsupportedOverlay(this, data);
+                }
+            }
+        }
+
+        setupFullscreen() {
+            this.container.style.position = 'fixed';
+            this.container.style.top = 0;
+            this.container.style.left = 0;
+            this.container.style.width = '100%';
+            this.container.style.height = '100%';
+        }
+
+        setupFooter() {
+            this.footer = document.createElement('div');
+            this.footer.id = 'overlay-footer';
+            this.footer.className = 'overlay-footer';
+            this.footer.textContent = 'a';
+            this.footer.style.position = 'absolute';
+            this.footer.style.bottom = '0';
+            this.footer.style.width = '100%';
+            this.footer.style.textAlign = 'center';
+            this.footer.style.color = 'white';
+            this.footer.style.fontSize = '3rem';
+            this.footer.style.padding = '10px 0';
+            this.container.appendChild(this.footer);
+            setTimeout(() => this.footer.style.display = 'none', 9999);
+        }
+
+        setupAutoRefresh() {
+            this.autoRefreshTimer = setTimeout(() => {
+                console.log('No connection or events received in 3 seconds. Refreshing page...');
+                window.location.reload();
+            }, 99999);
+        }
+
+        resetAutoRefresh() {
+            clearTimeout(this.autoRefreshTimer);
+            this.setupAutoRefresh();
+        }
+    }
+
+
+    class BaseOverlay {
+        constructor(manager, data, options) {
+            this.manager = manager;
+            this.data = data;
+            this.options = options;
+            this.element = null;
+            this.duration = (options.duracion || 3) * 1000;
+            this.create();
+        }
+
+        create() {
+            throw new Error("Method 'create()' must be implemented.");
+        }
+
+        remove() {
+            if (this.element) {
+                this.manager.container.removeChild(this.element);
+            }
+        }
+    }
+
+    class VideoOverlay extends BaseOverlay {
+      create() {
+          if (this.options.check === false) return;
+
+          this.video = document.createElement('video');
+          this.video.autoplay = true;
+          this.video.src = this.data.src;
+          this.video.volume = this.options.rango / 100;
+
+          this.manager.container.appendChild(this.video);
+
+          this.video.addEventListener('ended', () => this.remove());
+          setTimeout(() => this.remove(), this.duration);
+      }
+
+      remove() {
+          super.remove();
+          if (this.video) this.manager.container.removeChild(this.video);
+      }
+  }
+
+  class ImageOverlay extends BaseOverlay {
+      create() {
+          this.element = document.createElement('img');
+          this.element.src = this.data.src;
+          this.manager.container.appendChild(this.element);
+
+          setTimeout(() => this.remove(), this.duration);
+      }
+  }
+
+  class AudioOverlay extends BaseOverlay {
+      create() {
+          this.element = document.createElement('audio');
+          this.element.src = this.data.src;
+          this.element.autoplay = true;
+          this.element.volume = this.options.rango / 100;
+
+          this.manager.container.appendChild(this.element);
+
+          // Crear un elemento visual para el audio
+          this.visualElement = document.createElement('div');
+          this.visualElement.textContent = '🔊 Reproduciendo Audio';
+          this.visualElement.style.color = 'white';
+          this.visualElement.style.fontSize = '2rem';
+          this.manager.container.appendChild(this.visualElement);
+
+          setTimeout(() => this.remove(), this.duration);
+      }
+
+      remove() {
+          super.remove();
+          if (this.visualElement) this.manager.container.removeChild(this.visualElement);
+      }
+  }
+
+  class UserPictureOverlay extends BaseOverlay {
+    create() {
+        if (this.options.check === false) return;
+
+        if (this.options.texto && this.options.texto !== '') {
+            this.createTextOverlay();
+        }
+
+        this.element = document.createElement('img');
+        this.element.src = this.data.src;
+        this.element.style.position = 'absolute';
+        this.element.style.zIndex = '10';
+        this.element.classList.add('overlay', 'overlay-image');
+
+        this.manager.container.appendChild(this.element);
+
+        setTimeout(() => this.remove(), this.duration);
+    }
+
+    createTextOverlay() {
+        this.textElement = document.createElement('div');
+        this.textElement.textContent = this.options.texto;
+        this.textElement.style.color = 'white';
+        this.textElement.style.fontSize = '1.5rem';
+        this.textElement.style.zIndex = '11';
+        this.textElement.classList.add('overlay');
+
+        this.manager.container.appendChild(this.textElement);
+
+        setTimeout(() => {
+            if (this.textElement) this.manager.container.removeChild(this.textElement);
+        }, this.duration);
+    }
+}
+
+class UnsupportedOverlay extends BaseOverlay {
+    create() {
+        this.element = document.createElement('div');
+        this.element.textContent = 'Unsupported file type';
+        this.element.classList.add('overlay');
+
+        this.manager.setPosition(this.element, this.position);
+        this.manager.container.appendChild(this.element);
+
+        setTimeout(() => this.remove(), 5000);
+    }
+}
+
+
+const overlayManager = new OverlayManager();
+    </script>
+</body>
+</html>

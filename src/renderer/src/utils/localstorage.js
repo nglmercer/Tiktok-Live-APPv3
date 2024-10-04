@@ -1,7 +1,10 @@
 function guardarEstadoCheckboxes() {
   const checkboxes = document.querySelectorAll('input[type="checkbox"]');
   checkboxes.forEach(checkbox => {
+    // Ignorar los checkboxes que tienen el atributo 'data-ignore-save'
+    if (!checkbox.hasAttribute('data-ignore-save')) {
       localStorage.setItem(checkbox.id, checkbox.checked);
+    }
   });
 }
 
@@ -34,10 +37,13 @@ function guardarEstadoSelect() {
 function aplicarEstadoCheckboxes() {
   const checkboxes = document.querySelectorAll('input[type="checkbox"]');
   checkboxes.forEach(checkbox => {
+    // Ignorar los checkboxes que tienen el atributo 'data-ignore-save'
+    if (!checkbox.hasAttribute('data-ignore-save')) {
       const estadoGuardado = localStorage.getItem(checkbox.id);
       if (estadoGuardado !== null) {
-          checkbox.checked = estadoGuardado === 'true';
+        checkbox.checked = estadoGuardado === 'true';
       }
+    }
   });
 }
 function aplicarEstadoSelect() {
@@ -115,12 +121,10 @@ function aplicarEstado() {
   aplicarEstadoNumber();
 }
 
-
-document.addEventListener('DOMContentLoaded', () => {
-  document.addEventListener('input', function(event) {
-      if (event.target.matches('input[type="checkbox"], input[type="radio"], input[type="range"], input[type="text"],input[type="number"],select')) {
-          guardarEstado();
-      }
-  });
-  aplicarEstado();
+export { guardarEstado, aplicarEstado };
+document.addEventListener('input', function(event) {
+    if (event.target.matches('input[type="checkbox"], input[type="radio"], input[type="range"], input[type="text"],input[type="number"],select')) {
+        guardarEstado();
+    }
 });
+aplicarEstado();

@@ -92,9 +92,11 @@ async function loadFileList() {
 
 function setupDragAndDrop() {
     const dropArea = document.getElementById('drop-area');
+    console.log("dropArea setupDragAndDrop", dropArea);
 
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         dropArea.addEventListener(eventName, preventDefaults, false);
+        dropArea.classList.add('highlight');
     });
 
     function preventDefaults(e) {
@@ -198,12 +200,6 @@ async function handlePlayButton(button) {
     };
     // getdatafromserver(`${socketurl.getport()}/overlay`, datafile);
     socketManager.emitMessage("overlaydata", datafile);
-    // try {
-    //     await window.api.createOverlayWindow();
-    //     await window.api.sendOverlayData('play', { src: file.path, fileType: file.type, options });
-    // } catch (error) {
-    //     console.error('Error sending overlay event:', error);
-    // }
 }
 // setInterval(() => {
 //   const datafile = {
@@ -213,9 +209,9 @@ async function handlePlayButton(button) {
 // console.log("datafile", datafile);
 //   socketManager.emitMessage("overlaydata", datafile);
 // }, 5000);
-socketManager.onMessage("overlay-event", (data) => {
-  console.log("overlay-event", data);
-});
+// socketManager.onMessage("overlay-event", (data) => {
+//   console.log("overlay-event", data);
+// });
 async function getfileId(id) {
     if (id === undefined || id === null || id === false) {
         return null;

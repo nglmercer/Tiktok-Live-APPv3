@@ -1,9 +1,34 @@
 class TypeofData {
   // Verificar si el valor es un objeto
   static isObject(value) {
-    return value !== null && typeof value === 'object' && !Array.isArray(value);
+    return value !== null && typeof value === 'object';
   }
-
+  static ObjectStringify(value) {
+    if (typeof value === 'string') {
+      try {
+        // Intenta analizar la cadena como JSON
+        JSON.parse(value);
+        // Si no hay error, asumimos que ya es una cadena JSON válida
+      } catch (e) {
+        // Si no es JSON válido, lo convertimos a JSON
+        value = JSON.stringify(value);
+      }
+    } else if (typeof value === 'object') {
+      // Si es un objeto, lo convertimos a JSON
+      value = JSON.stringify(value);
+    }
+    return value;
+  }
+  static returnArray(value) {
+    if (this.isArray(value)) {
+      return value;
+    } else if (this.isString(value)) {
+      return value.split(',');
+    } else if (this.isObject(value)) {
+      return Object.values(value);
+    }
+    return [];
+  }
   // Verificar si el valor es un array
   static isArray(value) {
     return Array.isArray(value);
@@ -54,9 +79,26 @@ class TypeofData {
     if (this.isNumber(value)) {
       return String(value);
     }
+    if (this.isBoolean(value)) {
+      return String(value);
+    }
+    if (this.isObject(value)) {
+      return JSON.stringify(value);
+    }
     return '';
   }
-
+  static toStringParse(value) {
+    if (!value) return value; // Devuelve el valor original si no es una cadena
+    if (this.isString(value)) {
+      try {
+        return JSON.parse(value);
+      } catch (error) {
+        console.warn("Failed to parse JSON string:", value);
+        return value; // Devuelve el valor original si no se puede analizar
+      }
+    }
+    return value; // Devuelve el valor original si no es una cadena
+  }
   // Verificar si un string puede ser convertido a número
   static canBeNumber(value) {
     return this.isString(value) && !isNaN(value);

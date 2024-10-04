@@ -1,7 +1,7 @@
 import SliderCreator from "./components/slider";
-import {socketManager} from "../userdatas";
+import {socketManager} from "./tiktoksocketdata";
 import keyboardMap  from '../json/keyboard.json';
-import { initializeFilterComponent, addFilterItemToGroup } from './filters/filters'
+import { initializeFilterComponent,initializecomponents ,addFilterItemToGroup } from './filters/filters'
 const sliderCreator = new SliderCreator('sliders-container');
 
 socketManager.onMessage("audioData", (data) => {
@@ -36,7 +36,25 @@ function setupSliders(element) {
     }
   });
 }
-document.addEventListener('DOMContentLoaded', function () {
-  initializeFilterComponent('filter-words', 'addfilter-words', 'containerfilter-words', 'filterWords', 'load-known-filters');
-  initializeFilterComponent('filter-users', 'addfilter-users', 'containerfilter-users', 'filterUsers');
+initializecomponents();
+const AutoUpdate = document.getElementById("AutoUpdate");
+AutoUpdate.addEventListener("click", () => {
+  console.log("AutoUpdate clicked");
+  AutoUpdate.innerHTML = "Actualizando...";
+  AutoUpdate.disabled = true;
+  socketManager.emitMessage("autoupdate");
+});
+socketManager.onMessage("autoupdateResponse", (data) => {
+  const updateResult = document.getElementById("updateResult");
+  console.log("autoupdateResponse", data);
+  if (data) {
+    updateResult.style.display = "none";
+    AutoUpdate.innerHTML = "Actualizado";
+    AutoUpdate.disabled = false;
+  } else {
+    updateResult.style.display = "block";
+    AutoUpdate.innerHTML = "Error al actualizar";
+    AutoUpdate.disabled = false;
+    updateResult.innerHTML = data;
+  }
 });

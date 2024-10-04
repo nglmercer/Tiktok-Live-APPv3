@@ -3119,6 +3119,7 @@ sup {
  * Remove the border on images inside links in IE 10.
  */
 img {
+  border-radius: 5px;
   border-style: none;
 }
 
@@ -3322,6 +3323,7 @@ optgroup,
 select,
 textarea {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+  field-sizing: content;
 }
 
 a {
@@ -3695,10 +3697,10 @@ table, th, td {
 }
 
 table {
-  width: 100%;
+  width: 100% !important;
   display: table;
   border-collapse: collapse;
-  border-spacing: 0;
+  box-sizing: border-box;
 }
 table.striped tr {
   border-bottom: none;
@@ -4454,7 +4456,7 @@ span.badge {
 }
 span.badge.new {
   font-weight: 300;
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   color: var(--md-sys-color-on-primary);
   background-color: var(--md-sys-color-primary);
   border-radius: 2px;
@@ -4875,6 +4877,7 @@ nav i.material-symbols-rounded, nav i.material-symbols-sharp {
 nav .nav-wrapper {
   position: relative;
   height: 100%;
+  z-index: 11;
 }
 @media only screen and (min-width : 993px) {
   nav a.sidenav-trigger {
@@ -4995,6 +4998,8 @@ nav .input-field input[type=search]:focus, nav .input-field input[type=search][t
   border: none;
   -webkit-box-shadow: none;
           box-shadow: none;
+          box-sizing: border-box;
+          resize: vertical
 }
 nav .input-field label {
   top: 0;
@@ -5681,7 +5686,7 @@ small {
   --btn-border-radius: 4px;
   --btn-font-size: 14px;
   height: var(--btn-height);
-  border: none;
+  /* border: none; */
   border-radius: var(--btn-border-radius);
   padding-left: var(--btn-padding);
   padding-right: var(--btn-padding);
@@ -6417,7 +6422,7 @@ body.keyboard-focused .dropdown-content li:focus {
 }
 
 .chips:empty ~ label {
-  font-size: 0.8rem;
+  font-size: 1.2rem;
   -webkit-transform: translateY(-140%);
           transform: translateY(-140%);
 }
@@ -6476,7 +6481,7 @@ button:focus {
 }
 */
 label {
-  font-size: 0.8rem;
+  font-size: 1rem;
   color: var(--md-sys-color-on-surface-variant);
 }
 
@@ -6517,6 +6522,8 @@ textarea.materialize-textarea {
   width: auto;
   font-size: 16px;
   height: 42px;
+  box-sizing: border-box;
+  resize: vertical
 }
 
 /* Validation Sass Placeholders */
@@ -6538,7 +6545,7 @@ textarea.materialize-textarea {
 .input-field input, .input-field textarea {
   -webkit-box-sizing: border-box;
           box-sizing: border-box; /* https://stackoverflow.com/questions/1377719/padding-within-inputs-breaks-width-100*/
-  padding: 0 16px;
+  padding: 8px 16px;
   padding-top: 20px;
   background-color: var(--md-sys-color-surface);
   border: none;
@@ -6603,7 +6610,7 @@ textarea.materialize-textarea {
      -moz-user-select: none;
       -ms-user-select: none;
           user-select: none;
-  font-size: 16px;
+  font-size: 0.7rem;
   position: absolute;
   left: 16px;
   top: 16px;
@@ -6618,14 +6625,14 @@ textarea.materialize-textarea {
 .input-field .supporting-text {
   color: var(--md-sys-color-on-surface-variant);
   font-size: 12px;
-  padding: 0 16px;
+  padding: 8px 16px;
   margin-top: 4px;
 }
 .input-field .character-counter {
   color: var(--md-sys-color-on-surface-variant);
   font-size: 12px;
   float: right;
-  padding: 0 16px;
+  padding: 8px 16px;
   margin-top: 4px;
 }
 .input-field .prefix {
@@ -6801,7 +6808,10 @@ textarea.materialize-textarea {
   top: 0;
   z-index: -1;
 }
-
+.hidden {
+  visibility: hidden;
+  display: none;
+}
 /* Autocomplete Items */
 .autocomplete-content li .highlight {
   color: var(--md-sys-color-on-background);
@@ -6812,11 +6822,19 @@ textarea.materialize-textarea {
   margin: 5px 15px;
 }
 
-[type=radio]:not(:checked),
-[type=radio]:checked {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+label {
+  [type=radio]:not(:checked),
+  [type=radio]:checked {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  [type=checkbox]:not(:checked),
+  [type=checkbox]:checked {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
 }
 
 [type=radio]:not(:checked) + span,
@@ -7228,7 +7246,7 @@ select.browser-default {
 }
 
 select {
-  opacity: 0;
+  opacity: 0.5;
   background-color: var(--md-sys-color-surface);
   width: 100%;
   padding: 5px;

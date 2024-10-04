@@ -1,18 +1,25 @@
-import { app, shell, BrowserWindow, globalShortcut, ipcMain } from "electron";
+import { app, shell, BrowserWindow, globalShortcut, ipcMain, protocol } from "electron";
 import path, { join } from "path";
 import { electronApp, optimizer, is } from "@electron-toolkit/utils";
 import icon from "../../resources/icon.png?asset";
+import iconico from "../../resources/icon.ico?asset";
 import fs from "fs";
 import fileIndexer from "./FindFiles";
 import FileOpener from "./FileOpener";
 import AudioController from "./features/audioController";
 import keynut from "./features/keynut";
-import { createOverlayWindow, sendoverlaydata } from "./overlayhandler";
+import { BotManager,MinecraftRcon } from "./features/Botmanager";
+import { OSCManager,InputManager } from './features/oscmanager';
+import { initAutoUpdates, checkForUpdatesManually } from "./features/autoupdate";
 import SocketHandler from "./server/socketServer";
 import injectQRCode from "./server/listenserver";
 import { HttpExpressServer, HttpsExpressServer } from "./server/ExpressServe";
 import * as fileHandler from "./data/fileHandler";
 import TiktokLiveController from "./data/tiktoklive";
+import dotenv from 'dotenv';
+dotenv.config();
+
+// import { type } from "os";
 let Port;
 let io
 const fileOpener = new FileOpener();
@@ -21,6 +28,13 @@ const newsocketHandler = new SocketHandler();
 const httpServer = new HttpExpressServer();
 const httpsServer = new HttpsExpressServer();
 const audioController = new AudioController();
+const botManager = new BotManager();
+const minecraftRcon = new MinecraftRcon();
+const oscManager = new OSCManager();
+const inputManager = new InputManager(oscManager);
+process.on('uncaughtException', (error) => {
+  console.error('Error no capturado en el proceso principal:', error);
+});
 const UPDATE_INTERVAL = 5000;
 let tiktokController; // Variable para almacenar la instancia de TiktokLiveController
 const servers = [httpServer, httpsServer];
@@ -28,9 +42,11 @@ const sockets = [socketHandler, newsocketHandler];
 async function startServer() {
   const httpPort = 8088;
   const httpsPort = 0;
-
-  const privateKey = fs.readFileSync(path.join(__dirname, '../../credentials/key.pem'), 'utf8');
-  const certificate = fs.readFileSync(path.join(__dirname, '../../credentials/cert.pem'), 'utf8');
+  const privateKey = process.env.PRIVATE_KEY || import.meta.env.VITE_PRIVATE_KEY;
+  const certificate = process.env.CERTIFICATE || import.meta.env.VITE_CERTIFICATE;
+  console.log("privateKey", privateKey,"certificate", certificate);
+  // const privateKey = fs.readFileSync(path.join(__dirname, './credentials/key.pem'), 'utf8');
+  // const certificate = fs.readFileSync(path.join(__dirname, './credentials/cert.pem'), 'utf8');
   const credentials = { key: privateKey, cert: certificate };
 
     await httpServer.initialize(httpPort);
@@ -47,10 +63,10 @@ async function startServer() {
       });
       server.addRoute('post', '/file-handler', async (req, res) => {
         console.log("req.body", req.body);
-        const { event, ...params } = req.body;
-
+        const { event, id, ...params } = req.body;
+        console.log(event,"event");
         try {
-          let result;
+          let result = { success: false, error: "Unknown event" };
 
           switch (event) {
             case 'add-file-path':
@@ -62,7 +78,7 @@ async function startServer() {
               break;
 
             case 'get-file-by-id':
-              result = await fileHandler.getFileById(params.fileId);
+              result = await fileHandler.getFileById(id ||params.fileId);
               break;
 
             case 'get-file-by-name':
@@ -88,26 +104,26 @@ async function startServer() {
               break;
 
             default:
-              throw new Error(`Unknown event type: ${event}`);
+              result = { success: false, error: `Unknown event type: ${event}` };
+              break;
           }
 
           res.json(result);
         } catch (err) {
           console.error(`Error handling event ${event}:`, err);
-          res.status(500).json({ success: false, error: err.message });
+          res.json({ success: false });
+          throw new Error(`Failed to handle event ${event}: ${err.message}`);
         }
       });
       server.addRoute("post", "/overlay", async (req, res) => {
         const { event, ...params } = req.body;
         console.log("req.body", req.body);
-        const result = await sendoverlaydata({ eventType: event, data: params });
         res.json({ result: result, success: true });
       });
-      server.addRoute("post", "/create-overlay-window", async (req, res) => {
+      server.addRoute("post", "/create-overlaywindow", async (req, res) => {
         const { event, ...params } = req.body;
         console.log("req.body", req.body);
-        const result = await createOverlayWindow();
-        res.json({ result: result, success: true });
+        res.json({ result: "createoverlaywindow", success: true });
       });
       sockets[index].initialize(server.server);
 
@@ -163,11 +179,24 @@ function handleSocketEvents(socket, index) {
   socket.on("openapp", (data) => handleAppOpen(socket, data));
   socket.on("uniqueid", (data) => handleUniqueId(socket, data));
   socket.on("disconnect_tiktok", () => handleDisconnectTiktok(socket));
+  socket.on("botmanager", (data) => handleBotManager(socket, data));
+  socket.on("connect-rcon",(data) => handleRconConnect(socket, data));
+  socket.on("sendcommandMinecraft", (data) => sendcommandMinecraft(socket, data));
+  socket.on("oscmanager", (data) => handleOscManager(socket, data));
+  socket.on("oscmessage", (data) => sendOscMessage(socket, data));
+  socket.on("oscHandler", (data) => handleOscHandler(socket, data));
+  socket.on("autoupdate", () => handleautoupdate(socket));
+  socket.on("countdowtime", (data) => handlecountdowtime(socket, data, index));
 }
 function overlaydatahandler(socket, event, data, index = 1) {
   console.log("overlay-event", event, data);
+  // if (!data || !event) return;
   sockets[index].emitToAllSockets("overlay-event",  event, data);
   console.log("sockets[index].emitToAllSockets", event, data);
+}
+function handlecountdowtime(socket, data, index = 1) {
+  console.log("handlecountdowtime", data);
+  sockets[index].emitToAllSockets("countdowtime", data);
 }
 async function handleAddFilePath({ fileToAdd, fileName, filePath, isWebFile, isClipboardFile }) {
   if (isWebFile || isClipboardFile) {
@@ -291,7 +320,44 @@ function handleAppOpen(socket, data) {
   fileOpener.openDefault(data.path);
   socket.emit("openapp", data);
 }
+function handleBotManager(socket, data) {
+  console.log("handleBotManager", data);
+  socket.emit("botmanagerresponse", data);
+}
+function handleRconConnect(socket, data) {
+  console.log("handleRconConnect", data);
+  minecraftRcon.connectRcon(data);
+  socket.emit("rconconnectresponse", data);
+}
+async function sendcommandMinecraft(socket, data) {
+  console.log("command minecraft",data)
+  const response = await minecraftRcon.sendMessage(data);
+  if (!response || typeof response !== 'object' || typeof response !== 'string') return;
+  console.log("response minecraft",response)
+  socket.emit("sendcommandMinecraftresponse", response);
+}
+function handleOscManager(socket, data) {
+  console.log("handleOscManager", data);
+  if (data.clientipport && data.serveripport) {
+    const clientIP = data.clientipport.split(":")[0];
+    const serverIP = data.serveripport.split(":")[0];
+    const clientPort = data.clientipport.split(":")[1];
+    const serverPort = data.serveripport.split(":")[1];
+    oscManager.createServer(Number(serverPort), serverIP);
+    oscManager.createClient(clientIP, Number(clientPort));
+  }
 
+  // oscManager.createServer(Number(port), host);
+  // oscManager.createClient(host, Number(port));
+}
+function sendOscMessage(socket, data) {
+  console.log("sendOscMessage", data);
+  oscManager.sendMessage(data);
+}
+function handleOscHandler(socket, data) {
+  console.log("handleOscHandler", data);
+  inputManager.sendInput(data.action, data.value);
+}
 function getInstalledApplications() {
   return fileIndexer.searchFiles(".lnk");
 }
@@ -310,19 +376,21 @@ function createWindow() {
     height: 670,
     show: false,
     autoHideMenuBar: true,
-    ...(process.platform === "linux" ? { icon } : {}),
+    ...(process.platform === "linux" ? { icon } : {iconico}),
     webPreferences: {
       // preload: join(__dirname, "../preload/index.mjs"),
-      contextIsolation: true,
+      nodeIntegration: true,
+      contextIsolation: false,
       webSecurity: false,
-      // sandbox: true,
+      enableRemoteModule: true,
+      sandbox: true,
     },
   });
 
   mainWindow.on("ready-to-show", () => {
     mainWindow.show();
     // initinjectQRCode(mainWindow, Port); // Inyecta el QR cuando la ventana esté lista
-    // injectQRCode(mainWindow, Port); // Inyecta el QR cuando la ventana esté lista
+    injectQRCode(mainWindow, Port); // Inyecta el QR cuando la ventana esté lista
     globalShortcut.register("Alt+F1", ToolDev);
     globalShortcut.register("Alt+F2", cdevTool);
     globalShortcut.register("Alt+F5", refreshPage);
@@ -349,11 +417,29 @@ function createWindow() {
     // console.log(process.env["ELECTRON_RENDERER_URL"]);
     // console.log(join(__dirname, "../renderer/index.html"));
   } else {
-    mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
+    // mainWindow.loadURL(join(__dirname, "../renderer/index.html"));
+    mainWindow.loadURL(`http://localhost:8088`);
   }
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    // Permite solo popups que coincidan con tu dominio o reglas específicas
+    if (url.startsWith('https://')) {
+      return { action: 'allow' }; // Permitir la ventana emergente
+    }
+    return { action: 'deny' }; // Denegar ventanas emergentes que no coincidan
+  });
 }
-
+function handleautoupdate(socket) {
+  const response = checkForUpdatesManually();
+  const statusclient = initAutoUpdates();
+  socket.emit("autoupdateResponse", statusclient);
+  socket.emit("autoupdateResponse", response);
+  const existUpdate = fs.existsSync(path.resolve(path.dirname(process.execPath), '..', 'update.exe'));
+  console.log("existUpdate",existUpdate);
+  socket.emit("autoupdateResponse", existUpdate);
+}
 app.whenReady().then(() => {
+
+  initAutoUpdates();
   electronApp.setAppUserModelId("com.electron");
   app.on("browser-window-created", (_, window) => {
     optimizer.watchWindowShortcuts(window);
@@ -362,6 +448,7 @@ app.whenReady().then(() => {
   app.on("activate", function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
+
 });
 
 app.on("window-all-closed", () => {
@@ -369,9 +456,4 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
-});
-
-ipcMain.handle('create-overlay-window', () => {
-  console.log("create-overlay-window");
-  return createOverlayWindow();
 });

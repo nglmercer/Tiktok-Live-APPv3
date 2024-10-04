@@ -1,6 +1,8 @@
 // qrModal.js
 
 export function showQRModal(qrCode, urlToQR) {
+  localStorage.setItem("qrCode", qrCode);
+  localStorage.setItem("urlToQR", urlToQR);
   // Crear un contenedor modal
   const modalOverlay = document.createElement("div");
   modalOverlay.style.position = "fixed";
@@ -52,4 +54,8 @@ export function showQRModal(qrCode, urlToQR) {
       document.body.removeChild(modalOverlay);
     }
   });
+}
+export function QRModalsave(qrCode, urlToQR) {
+  localStorage.setItem("qrCode", qrCode);
+  localStorage.setItem("urlToQR", urlToQR);
 }

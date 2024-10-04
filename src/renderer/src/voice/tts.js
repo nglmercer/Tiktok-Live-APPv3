@@ -7,7 +7,7 @@ const audioPlayer = new AudioPlayer('audio',
 () => controlmedia.nextaudio()
 );
 const controlmedia = new Controlmedia(audioPlayer);
-audioPlayer.setAudioInfo('ttsplayer');
+audioPlayer.setAudioInfo('voz1 player');
 
 let audioQueue = new Queue();
 let lastReadText = null;
@@ -77,8 +77,12 @@ function leerMensajes(text) {
     console.log('leerMensajes', text);
     if (text) {
         fetchAudio(text).then(audioUrl => {
-          const newaudio = new Audio(audioUrl);
-          newaudio.play();
+          if (document.getElementById('audiolist').checked) {
+            controlmedia.addSong(audioUrl);
+          } else {
+            const newaudio = new Audio(audioUrl);
+            newaudio.play();
+          }
         });
     }
 }

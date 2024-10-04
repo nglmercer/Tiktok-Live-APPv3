@@ -14,11 +14,39 @@ export function createInputField(field) {
   const label = document.createElement('label');
   label.htmlFor = field.name;
   label.innerText = field.label;
-
+  if (field.valuedata) {
+    input.value = field.valuedata;
+  }
   div.appendChild(input);
   div.appendChild(label);
   return div;
 }
+export function createTextareaField(field) {
+  const div = document.createElement('div');
+  div.className = 'input-field';
+
+  if (field.hidden) {
+    div.style.display = 'none'; // Oculta el campo si `hidden` es true
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.name = field.name;
+  textarea.id = field.name;
+
+  if (field.valuedata) {
+    textarea.value = field.valuedata;
+  }
+
+  const label = document.createElement('label');
+  label.htmlFor = field.name;
+  label.innerText = field.label;
+
+  div.appendChild(label);
+  div.appendChild(textarea);
+
+  return div;
+}
+
 export function createSelectField(field) {
   const div = document.createElement('div');
   div.className = 'input-field';
@@ -29,13 +57,14 @@ export function createSelectField(field) {
   const select = document.createElement('select');
   select.name = field.name;
   select.id = field.name;
-
-  field.options.forEach(option => {
-    const opt = document.createElement('option');
-    opt.value = option.value;
-    opt.innerText = option.label || option.value;
-    select.appendChild(opt);
-  });
+  if (!field.option ||field.options.length <= 0) {
+    field.options.forEach(option => {
+      const opt = document.createElement('option');
+      opt.value = option.value.index || TypeofData.ObjectStringify(option.value);
+      opt.innerText = option.label || option.value;
+      select.appendChild(opt);
+    });
+  };
 
   const label = document.createElement('label');
   label.htmlFor = field.name;
@@ -57,8 +86,7 @@ export function createMultiSelectField(field) {
   const searchInput = document.createElement('input');
   searchInput.type = 'text';
   searchInput.placeholder = 'Buscar...';
-  searchInput.classList.add('search-input');
-  searchInput.className = 'center-text';
+  searchInput.classList.add('search-input', 'center-text');
 
   // Contenedor de las opciones
   const gridSelect = document.createElement('div');
@@ -74,7 +102,7 @@ export function createMultiSelectField(field) {
       const input = document.createElement('input');
       input.type = 'checkbox';
       input.name = field.name;
-      input.value = option.value;
+      input.value = typeof option.value === 'object' ? JSON.stringify(option.value) : option.value;
       input.dataset.id = option.id;
       input.classList.add('filled-in');
 
@@ -93,10 +121,17 @@ export function createMultiSelectField(field) {
   // Filtrar opciones en base al texto ingresado en el buscador
   searchInput.addEventListener('input', function () {
     const searchTerm = this.value.toLowerCase();
-    const filteredOptions = field.options.filter(option =>
-      option.label.toLowerCase().includes(searchTerm)
-    );
-    renderOptions(filteredOptions);  // Renderizar las opciones filtradas
+    const options = gridSelect.querySelectorAll('.grid-select__option');
+
+    options.forEach(option => {
+      const labelText = option.querySelector('span').textContent.toLowerCase();
+      // Añadir o quitar la clase 'hidden' según el término de búsqueda
+      if (labelText.includes(searchTerm)) {
+        option.classList.remove('hidden');
+      } else {
+        option.classList.add('hidden');
+      }
+    });
   });
 
   container.appendChild(label);
@@ -105,6 +140,7 @@ export function createMultiSelectField(field) {
 
   return container;
 }
+
 export function createColorPickerField(field) {
   const wrapper = document.createElement('div');
   wrapper.classList.add('input-field', 'color-picker-field');
@@ -155,6 +191,7 @@ export function createCheckboxField(field) {
   checkbox.name = `${field.name}_check`;
   checkbox.id = `${field.name}_check`;
   checkbox.className = 'filled-in';
+  checkbox.setAttribute('data-ignore-save', '');
 
   // Asigna un valor por defecto si está presente en los datos iniciales del formulario
   if (field.value) {
@@ -171,8 +208,6 @@ export function createCheckboxField(field) {
 
   return checkboxWrapper;
 }
-
-
 // Método para crear un campo de tipo slider
 export function createSliderField(field) {
   const sliderWrapper = document.createElement('div');
@@ -202,53 +237,230 @@ export function createSliderField(field) {
   return sliderWrapper;
 }
 
+export function createRadioField(field) {
+  const radioWrapper = document.createElement('div');
+  radioWrapper.className = 'radio-field';
+
+  const label = document.createElement('label');
+  label.textContent = field.label;
+
+  radioWrapper.appendChild(label);
+
+  field.options.forEach(option => {
+    const optionWrapper = document.createElement('div');
+    optionWrapper.className = 'radio-option';
+
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = field.name;
+    radio.id = `${field.name}_${option.value}`;
+    radio.value = option.value;
+    radio.className = 'with-gap';
+
+    const optionLabel = document.createElement('label');
+    optionLabel.setAttribute('for', `${field.name}_${option.value}`);
+    optionLabel.textContent = option.label;
+
+    // Asigna un valor por defecto si coincide con la opción
+    if (field.value && field.value === option.value) {
+      radio.checked = true;
+    }
+
+    optionWrapper.appendChild(radio);
+    optionWrapper.appendChild(optionLabel);
+    radioWrapper.appendChild(optionWrapper);
+  });
+
+  // Si el campo está oculto, se establece display: none
+  if (field.hidden) {
+    radioWrapper.style.display = 'none';
+  }
+
+  return radioWrapper;
+}
+
 export function getFormData(config) {
   const formData = {};
 
   config.forEach(field => {
     let value;
-
-    if (field.type === 'checkbox') {
-      const element = document.querySelector(`[name="${field.name}_check"]`);
-      value = element ? element.checked : false;  // Asegura obtener el valor del checkbox con sufijo '_check'
-      if (field.children) {
-        field.children.forEach(child => {
-          console.log("getFormDatachild", child);
-          const childElement = document.querySelector(`[name="${child.name}"]`);
-          if (child.returnType === 'number') {
-            formData[child.name] = TypeofData.toNumber(childElement ? childElement.value : null);
-          } else {
-            formData[child.name] = childElement ? childElement.value : null;
-          }
-        });
-      }
-    } else if (field.type === 'multiSelect') {
-      const checkboxes = document.querySelectorAll(`[name="${field.name}"]:checked`);
-      value = Array.from(checkboxes).map(checkbox => checkbox.value);
-    } else
-    {
-      const element = document.querySelector(`[name="${field.name}"]`);
-      value = element ? element.value : null;
-    }
-    console.log("getFormData", field, field.returnType);
-    switch (field.returnType) {
-      case 'boolean':
-        formData[field.name] = value === true || value === 'true';
+    switch (field.type) {
+      case 'checkbox':
+        value = getCheckboxValue(field);
+        if (field.children) {
+          processChildren(field, formData);
+        }
         break;
-      case 'number':
-        console.log("getFormDatanumber", field, value);
-        formData[field.name] = TypeofData.toNumber(value);
+      case 'multiSelect':
+        value = getMultiSelectValue(field);
         break;
-      case 'array':
-        formData[field.name] = Array.isArray(value) ? value : [value];
-        break;
-      case 'object':
-        formData[field.name] = { value };
+      case 'radio':
+        value = getRadioValue(field);
         break;
       default:
-        formData[field.name] = value;
+        value = getFieldValue(field);
+    }
+
+    // Group properties with underscores
+    const parts = field.name.split('_');
+    if (parts.length > 1) {
+      const group = parts[0];
+      const key = parts.slice(1).join('_');
+      if (!formData[group]) {
+        formData[group] = {};
+      }
+      formData[group][key] = processReturnType(field.returnType, value);
+
+      // Remove the individual property
+      delete formData[field.name];
+    } else {
+      formData[field.name] = processReturnType(field.returnType, value);
+    }
+  });
+
+  // Second pass to ensure all properties are grouped correctly
+  Object.keys(formData).forEach(key => {
+    const parts = key.split('_');
+    if (parts.length > 1) {
+      const group = parts[0];
+      const subKey = parts.slice(1).join('_');
+      if (!formData[group] || typeof formData[group] !== 'object') {
+        formData[group] = {};
+      }
+      formData[group][subKey] = formData[key];
+      delete formData[key];
     }
   });
 
   return formData;
+}
+
+function getCheckboxValue(field) {
+  const element = document.querySelector(`[name="${field.name}_check"]`);
+  return element ? element.checked : false;
+}
+
+function getMultiSelectValue(field) {
+  const checkboxes = document.querySelectorAll(`[name="${field.name}"]:checked`);
+  return Array.from(checkboxes).map(checkbox => checkbox.value);
+}
+
+function getFieldValue(field) {
+  const element = document.querySelector(`[name="${field.name}"]`);
+  return element ? element.value : null;
+}
+function getRadioValue(field) {
+  const selectedOption = document.querySelector(`[name="${field.name}"]:checked`);
+  return selectedOption ? selectedOption.value : null;
+}
+
+function processChildren(field, formData) {
+  field.children.forEach(child => {
+    const childElement = document.querySelector(`[name="${child.name}"]`);
+    let childValue;
+
+    switch (child.returnType) {
+      case 'number':
+        childValue = TypeofData.toNumber(childElement ? childElement.value : null);
+        break;
+      case 'object':
+        childValue = TypeofData.toStringParse(childElement ? childElement.value : null);
+        break;
+      case 'array':
+        const childElements = document.querySelectorAll(`[name="${child.name}"]:checked`);
+        childValue = Array.from(childElements).map(childElement => childElement.value);
+        console.log("childValue",childValue);
+        break;
+      default:
+        childValue = childElement ? childElement.value : null;
+    }
+
+    formData[child.name] = childValue;
+  });
+}
+
+function processReturnType(returnType, value) {
+  switch (returnType) {
+    case 'boolean':
+      return value === true || value === 'true';
+    case 'number':
+      return TypeofData.toNumber(value);
+    case 'array':
+      return Array.isArray(value) ? value : [value];
+    case 'object':
+      return value;
+    case 'string':
+    default:
+      return value;
+  }
+}
+export function fillFormData(formData, config) {
+  config.forEach(field => {
+    const parts = field.name.split('_');
+    let value;
+
+    if (parts.length > 1) {
+      const group = parts[0];
+      const key = parts.slice(1).join('_');
+      value = formData[group] && formData[group][key];
+    } else {
+      value = formData[field.name];
+    }
+
+    if (value !== undefined) {
+      switch (field.type) {
+        case 'checkbox':
+          setCheckboxValue(field, value);
+          if (field.children) {
+            fillChildren(field.children, formData);
+          }
+          break;
+        case 'multiSelect':
+          setMultiSelectValue(field, value);
+          break;
+        case 'radio':
+          setRadioValue(field, value);
+          break;
+        default:
+          setFieldValue(field, value);
+      }
+    }
+  });
+}
+
+function setCheckboxValue(field, value) {
+  const element = document.querySelector(`[name="${field.name}_check"]`);
+  if (element) {
+    element.checked = value === true || value === 'true';
+  }
+}
+
+function setMultiSelectValue(field, value) {
+  const checkboxes = document.querySelectorAll(`[name="${field.name}"]`);
+  checkboxes.forEach(checkbox => {
+    checkbox.checked = Array.isArray(value) ? value.includes(checkbox.value) : false;
+  });
+}
+
+function setFieldValue(field, value) {
+  const element = document.querySelector(`[name="${field.name}"]`);
+  if (element) {
+    element.value = value;
+  }
+}
+
+function setRadioValue(field, value) {
+  const radioButtons = document.querySelectorAll(`[name="${field.name}"]`);
+  radioButtons.forEach(radio => {
+    radio.checked = radio.value === value;
+  });
+}
+
+function fillChildren(children, formData) {
+  children.forEach(child => {
+    const childElement = document.querySelector(`[name="${child.name}"]`);
+    if (childElement && formData[child.name] !== undefined) {
+      childElement.value = formData[child.name];
+    }
+  });
 }

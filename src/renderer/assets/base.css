@@ -6,6 +6,26 @@
   margin: 0;
   font-weight: normal;
 }
+dialog {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  transition: transform 1s ease;
+  max-height: 800px;
+  pre {
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  #editForm {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+}
+dialog[open] {
+  transform: translate(-50%, -50%) scale(1);
+}
 
 /* Tema oscuro */
 body.dark-theme {
@@ -43,18 +63,39 @@ body.dark-theme .tab-link {
     color: rgb(255, 255, 255) !important;
   }
 }
+form {
+  font-size: x-large;
+}
 .grid-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 10px;
 }
+th.sort-asc::after {
+  content: ' ▲';
+}
 
+th.sort-desc::after {
+  content: ' ▼';
+}
 .grid-select {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
   gap: 10px;
+  position: absolute;
+  top: 60px;
+  overflow-y: scroll;
+  height: 100%;
+  min-height: 200px;
 }
-
+.stateText {
+  color: red;
+}
+.input-field {
+  label {
+    font-size: 0.8rem !important;
+  }
+}
 .grid-select option {
   display: block;
   padding: 10px;
@@ -99,9 +140,14 @@ body.dark-theme .tab-link {
   overflow-y: auto;
   overflow-x: hidden;
 }
+a#submitFormBtn2 {
+  position: absolute;
+  top: 1%;
+  right: 1%;
+}
 .gridform {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, auto));
+  grid-template-columns: repeat(auto-fit, minmax(280px, auto));
   gap: 5px;
   input[type="checkbox"] {
     width: 20px;
@@ -109,7 +155,98 @@ body.dark-theme .tab-link {
   }
   /* margin: 5px; */
   .input-group {
-    border: #ccc 1px solid;
+    border: #ffffff2c 1px solid;
     border-radius: 4px;
   }
+  & > *:first-child {
+    grid-column: 1 / -1; /* Hace que el primer elemento ocupe todo el ancho */
+    grid-row: 1; /* Asegura que esté en la primera fila */
+  }
+}
+.custombutton1 {
+  border-radius: 0.5rem;
+  margin: 1px;
+  padding: 1px;
+}
+.custombutton2 {
+  border-radius: 0.5rem;
+  margin: 2px;
+  padding-inline: 2px;
+}
+.custombutton4 {
+  border-radius: 0.5rem;
+  margin: 4px;
+  padding: 4px;
+}
+.custombutton {
+  border-radius: 0.5rem;
+  margin: 10px;
+  padding: 10px;
+}
+.savebutton {
+  background-color: #4caf50;
+}
+.savebutton:hover {
+  background-color: #43a047;
+}
+.deletebutton {
+  background-color: #f44336;
+}
+.delete-button:hover {
+  background-color: #f44336;
+}
+/* Estilo para el contenedor del menú */
+.menu-container {
+  position: absolute;
+  right: 0;
+}
+
+/* Estilo del botón de tres puntos */
+.menu-button {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 10px;
+}
+
+/* Estilo para las opciones del menú, ocultas por defecto */
+.menu-options {
+  display: none; /* Ocultar opciones del menú por defecto */
+  position: absolute;
+  top: 0; /* Ajusta según el tamaño del botón */
+  right: +20px;
+  background-color: #333; /* Fondo del menú */
+  border-radius: 5px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Sombra para darle efecto de profundidad */
+  z-index: 1;
+  flex-direction: column;
+}
+
+/* Mostrar el menú al hacer hover sobre el botón */
+.menu-container:hover .menu-options {
+  display: flex;
+}
+
+/* Estilo para cada opción del menú */
+.menu-options button {
+  background-color: transparent;
+  color: white;
+  border: none;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+  font-size: 14px;
+}
+
+/* Cambiar el fondo del botón al hacer hover */
+.menu-options button:hover {
+  background-color: #555; /* Color de fondo al hacer hover */
+  border-radius: 5px;
+}
+.countdown {
+  font-family: Roboto;
+  letter-spacing: 0.15em;
+  font-size: 3em;
 }

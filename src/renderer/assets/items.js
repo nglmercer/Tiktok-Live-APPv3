@@ -1,27 +1,34 @@
 class ChatMessage {
-  constructor(id, profileImgUrl, messageContent, callback = null) {
+  constructor(id, profileImgUrl, messageContent, callbackList = [], optionTexts = []) {
     this.id = id;
     this.profileImgUrl = profileImgUrl;
     this.messageContent = messageContent;
-    this.callback = callback;
+    this.callbacks = callbackList; // Lista de callbacks
+    this.optionTexts = optionTexts;
   }
 
+  // Método para manejar los diferentes tipos de contenido
   handleType() {
     const types = new Set(Object.values(this.messageContent.content).map(item => item[0]));
-    return Array.from(types).map(type => {
-      switch (type) {
-        case 'text':
-          return `Texto: ${this.getContentByType('text')}`;
-        case 'number':
-          return `Número: ${this.getContentByType('number')}`;
-        case 'image':
-          return `Imagen: ${this.getContentByType('image')}`;
-        default:
-          return `Tipo desconocido: ${this.getContentByType(type)}`;
-      }
-    }).join(', ');
+    return Array.from(types)
+      .map(type => {
+        switch (type) {
+          case 'text':
+            return `Texto: ${this.getContentByType('text')}`;
+          case 'number':
+            return `Número: ${this.getContentByType('number')}`;
+          case 'image':
+            return `Imagen: ${this.getContentByType('image')}`;
+          case 'url':
+            return `URL: ${this.getContentByType('url')}`;
+          default:
+            return `Tipo desconocido: ${this.getContentByType(type)}`;
+        }
+      })
+      .join(', ');
   }
 
+  // Obtener el contenido según el tipo
   getContentByType(type) {
     return Object.values(this.messageContent.content)
       .filter(item => item[0] === type)
@@ -29,6 +36,7 @@ class ChatMessage {
       .join(' ');
   }
 
+  // Crear el elemento del mensaje con callbacks
   createMessageElement() {
     const messageDiv = document.createElement('div');
     messageDiv.classList.add('message-grid');
@@ -41,65 +49,133 @@ class ChatMessage {
       profileImg.alt = 'Profile Image';
       profileImg.classList.add('profile-img');
       messageDiv.appendChild(profileImg);
-  }
+    }
 
     // Contenido del mensaje
-    const textElement = document.createElement('p');
-    textElement.classList.add('message-text');
+    const contentContainer = document.createElement('div');
+    contentContainer.classList.add('content-container');
 
     Object.keys(this.messageContent.content).forEach((key, index) => {
-      const [type, text, color] = this.messageContent.content[key];
-      const span = document.createElement('span');
-      span.textContent = text;
-      span.style.color = color;
+      const [type, content, color, tooltip] = this.messageContent.content[key];
 
-      if (index > 0) {
-          textElement.appendChild(document.createTextNode(' ')); // Añadir un espacio entre los textos
-      }
+      if (type === 'image') {
+        const imgElement = document.createElement('img');
+        imgElement.src = content;
+        imgElement.alt = tooltip || 'Image';
+        imgElement.classList.add('message-image');
+        contentContainer.appendChild(imgElement);
+      } else {
+        const span = document.createElement('span');
 
-      textElement.appendChild(span);
+        if (type === 'url') {
+          const link = document.createElement('a');
+          link.href = content;
+          link.textContent = tooltip;
+          link.style.color = color;
+          if (tooltip) {
+            link.title = content;
+          }
+          span.appendChild(link);
+        } else {
+          span.textContent = content;
+          span.style.color = color;
+          if (tooltip) {
+            span.title = tooltip;
+          }
+        }
 
-      // Si hay un callback, adjuntar el evento
-      if (this.callback) {
-          span.addEventListener('click', () => {
-              console.log('Callback ejecutado con:', type);
-              this.callback(type);
+        if (index > 0) {
+          contentContainer.appendChild(document.createTextNode(' ')); // Añadir un espacio entre los textos
+        }
+
+        contentContainer.appendChild(span);
+
+        // Si hay callbacks, adjuntar eventos para cada uno
+        if (this.callbacks.length > 0) {
+          this.callbacks.forEach((callback, callbackIndex) => {
+            span.addEventListener('click', () => {
+              console.log(`Callback ${callbackIndex + 1} ejecutado con:`, type);
+              callback(this.messageContent.data); // Ejecuta el callback pasando los datos del mensaje
+            });
           });
+        }
       }
-  });
+    });
 
-  messageDiv.appendChild(textElement);
+    messageDiv.appendChild(contentContainer);
 
-  return messageDiv;
+    // Añadir menú de opciones si hay más de un callback
+    if (this.callbacks.length > 1) {
+      const optionsMenu = this.createOptionsMenu();
+      messageDiv.appendChild(optionsMenu);
+    }
+
+    return messageDiv;
+  }
+
+
+  createOptionsMenu() {
+    const menuContainer = document.createElement('div');
+    menuContainer.classList.add('menu-container');
+
+    const menuButton = document.createElement('button');
+    menuButton.textContent = '⋮'; // Tres puntos
+    menuButton.classList.add('menu-button');
+    menuButton.addEventListener('click', () => {
+      menuOptions.classList.toggle('visible');
+    });
+
+    const menuOptions = document.createElement('div');
+    menuOptions.classList.add('menu-options');
+
+    // Añadir cada callback como opción en el menú
+    this.callbacks.forEach((callback, index) => {
+      const optionText = this.optionTexts[index] || `Opción ${index + 1}`; // Usar texto personalizado
+      const option = document.createElement('button');
+      option.textContent = optionText;
+      option.addEventListener('click', () => {
+        callback(this.messageContent); // Ejecutar callback correspondiente con el texto
+        menuOptions.classList.remove('visible'); // Ocultar menú después de seleccionar
+      });
+      menuOptions.appendChild(option);
+    });
+
+    menuContainer.appendChild(menuButton);
+    menuContainer.appendChild(menuOptions);
+
+    return menuContainer;
   }
 }
 
+// Clase para manejar el contenedor de mensajes
 class ChatContainer {
   constructor(containerId, maxHeight = 400) {
     this.container = document.querySelector(containerId);
     this.container.style.overflowY = 'auto';
-    this.container.style.maxHeight = `${maxHeight}px`
+    this.container.style.maxHeight = `${maxHeight}px`;
+    this.container.style.position = 'relative';
     this.messages = [];
   }
 
+  // Añadir mensaje al contenedor con límite de mensajes
   addMessage(chatMessage, limit = false) {
-    // Si el límite está activado, eliminar mensajes antiguos para mantener solo los últimos 10
     if (limit && this.messages.length >= 10) {
-        const oldMessages = this.messages.splice(0, this.messages.length - 9);
-        oldMessages.forEach(message => {
-            const messageElement = document.getElementById(message.id);
-            if (messageElement) {
-                this.container.removeChild(messageElement);
-            }
-        });
+      const oldMessages = this.messages.splice(0, this.messages.length - 9);
+      oldMessages.forEach(message => {
+        const messageElement = document.getElementById(message.id);
+        if (messageElement && this.container.contains(messageElement)) {
+          this.container.removeChild(messageElement);
+        }
+      });
     }
 
     const messageElement = chatMessage.createMessageElement();
     this.messages.push(chatMessage);
     this.container.appendChild(messageElement);
     this.container.scrollTop = this.container.scrollHeight; // Scroll automático hacia el último mensaje
-}
+  }
 
+  // Buscar mensajes que contengan una palabra clave
   searchMessages(keyword) {
     const lowerKeyword = keyword.toLowerCase();
     this.messages.forEach(message => {
@@ -116,4 +192,5 @@ class ChatContainer {
   }
 }
 
+// Exportar las clases
 export { ChatContainer, ChatMessage };

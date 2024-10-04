@@ -99,15 +99,15 @@
                 if (eventType === 'play') {
                     let position = this.getPosition(data.position);
 
-                    if (data.src.endsWith('.mp4') || data.fileType.startsWith('video/')) {
+                    if (data.fileType.startsWith('video/')) {
                         new VideoOverlay(this, data, position, data.options);
-                    } else if (data.src.endsWith('.png') || data.fileType.startsWith('image/')) {
+                    } else if (data.fileType.startsWith('image/')) {
                         if (options) {
                             new UserPictureOverlay(this, data, this.predictNextPosition(), data.options);
                         } else {
                             new ImageOverlay(this, data, position, data.options);
                         }
-                    } else if (data.src.endsWith('.mp3') || data.fileType.startsWith('audio/')) {
+                    } else if (data.fileType.startsWith('audio/')) {
                         new AudioOverlay(this, data, position, data.options);
                     } else {
                         new UnsupportedOverlay(this, position);
@@ -235,10 +235,10 @@
             create() {
                 if (this.options.check === false) return;
 
-                if (this.options.texto && this.options.texto.trim() !== '') {
+                if (this.options.texto && this.options.texto !== '') {
                     this.createTextOverlay();
                 }
-
+                console.log("UserPictureOverlay", this.options, this.data);
                 this.element = document.createElement('img');
                 this.element.src = this.data.src;
                 this.element.style.maxWidth = '10%';

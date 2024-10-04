@@ -2,11 +2,26 @@
   --blue-box-900: #091455;
   --blue-box-200: #63baec;
 }
+.grid-autofit-40rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(40rem, 1fr));
+}
 .grid-autofit-28rem {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(28rem, 1fr));
 }
-
+.grid-autofit-24rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+}
+.grid-autofit-18rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+.grid-autofit-10rem {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
 .containerbox {
   box-sizing: content-box;
   padding: 0.5rem;
@@ -51,22 +66,7 @@
     color: var(--blue-box-200);
   }
 }
-.card-content {
-  [type=checkbox]:not(:checked),
-  [type=checkbox]:checked {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-}
-.grid-select__option {
-  [type=checkbox]:not(:checked),
-  [type=checkbox]:checked {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-}
+
 .flexbox {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 20rem));
@@ -122,3 +122,101 @@
   .chat1 { grid-area: 1 / 1 / 5 / 4;  }
   .gift2 { grid-area: 1 / 4 / 5 / 7; }
   .events3 { grid-area: 5 / 1 / 7 / 7; }
+.user-profile {
+  display: flex;
+  flex-direction: row;
+    background-color: rgb(39, 39, 39);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin: 0 auto 20px;
+}
+.button-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Espacio entre los botones */
+  margin-left: 20px; /* Separación lateral del contenedor de botones */
+}
+.profile-content {
+    display: flex;
+    align-items: center;
+}
+.user-avatar {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-right: 20px;
+}
+.user-info {
+    flex-grow: 1;
+}
+.user-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.user-email {
+    color: #666;
+    margin-bottom: 10px;
+}
+.control-panel {
+  background-color: #2a2a2a;
+  border: 1px solid #ff69b4;
+  border-radius: 8px;
+  padding: 20px;
+  width: 400px;
+  h2 {
+    color: #3a9bdc;
+    margin-top: 0;
+}
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+button {
+    background-color: #3a3a3a;
+    border: none;
+    color: #ffffff;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    flex-grow: 1;
+}
+button:hover {
+    background-color: #4a4a4a;
+}
+.time-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+select {
+    background-color: #3a3a3a;
+    border: none;
+    color: #ffffff;
+    padding: 10px;
+    border-radius: 5px;
+    flex-grow: 1;
+}
+.time-buttons {
+    display: flex;
+    gap: 5px;
+}
+.time-button {
+    background-color: #3a3a3a;
+    border: none;
+    color: #ffffff;
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 20px;
+    cursor: pointer;
+}
+.time-button:hover {
+    background-color: #4a4a4a;
+}
+}

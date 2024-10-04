@@ -6,7 +6,7 @@ const textReplacer = (() => {
    * @param {string} selector - El ID o className de los elementos (incluyendo # para ID y . para className)
    * @param {string} newText - El nuevo texto que reemplazará al texto existente
    */
-  function replaceText(selector, newText) {
+  function replaceText(selector, newText, color) {
     // Selecciona todos los elementos que coinciden con el selector
     const elements = document.querySelectorAll(selector);
 
@@ -15,14 +15,16 @@ const textReplacer = (() => {
       elements.forEach(element => {
         // Verifica si el elemento tiene nodos de texto o un span interno
         if (element.tagName.toLowerCase() === 'button' || element.querySelector('span')) {
-          const span = element.querySelector('span');
-          if (span) {
-            span.textContent = newText; // Reemplaza el texto dentro del span
-          } else {
-            element.textContent = newText; // Reemplaza el texto directamente
+          const span = element.querySelector('span') || element;
+          span.textContent = newText; // Reemplaza el texto
+          if (color) {
+            span.style.color = color; // Cambia el color si se proporciona
           }
         } else {
           element.textContent = newText; // Reemplaza el texto directamente
+          if (color) {
+            element.style.color = color; // Cambia el color si se proporciona
+          }
         }
       });
     } else {
@@ -87,7 +89,35 @@ const imageManipulator = (() => {
     manipulateImage
   };
 })();
+function toggleClasses(selector, ...classNames) {
+  const element = document.querySelector(selector);
+
+  if (element) {
+    classNames.forEach(className => {
+      element.classList.toggle(className);
+    });
+    console.log(`Clases [${classNames.join(', ')}] aplicadas o removidas del elemento con selector "${selector}".`);
+  } else {
+    console.warn(`Elemento con el selector "${selector}" no encontrado.`);
+  }
+}
+
+// Función para alternar una o varias clases en múltiples elementos
+function toggleClassesMultiple(selector, ...classNames) {
+  const elements = document.querySelectorAll(selector);
+
+  if (elements.length > 0) {
+    elements.forEach((element) => {
+      classNames.forEach(className => {
+        element.classList.toggle(className);
+      });
+    });
+    console.log(`Clases [${classNames.join(', ')}] aplicadas o removidas de los elementos con selector "${selector}".`);
+  } else {
+    console.warn(`No se encontraron elementos con el selector "${selector}".`);
+  }
+}
 
 // Exporta el módulo para su uso en otros archivos
 export default textReplacer;
-export {imageManipulator};
+export {imageManipulator, toggleClasses, toggleClassesMultiple};

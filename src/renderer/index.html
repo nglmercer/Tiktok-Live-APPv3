@@ -1,8 +1,8 @@
 <!doctype html>
 <html>
   <head>
-    <meta charset="UTF-8" />
-    <title>Electron</title>
+    <meta charset="UTF-16" />
+    <title>Tiktokliveappv3</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
     <!-- <meta
       http-equiv="Content-Security-Policy"
@@ -18,48 +18,58 @@
         </script> -->
     <script src="https://cdn.jsdelivr.net/npm/@materializecss/materialize@2.1.0/dist/js/materialize.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <script src="./htmlcomponents/iframePreview.js" type="module"></script>
+    <script src="./htmlcomponents/IframeWithCopy.js" type="module"></script>
+    <script src="./htmlcomponents/SvgIcon.js" type="module"></script>
+    <script src="./htmlcomponents/TooltipMessages.js" type="module"></script>
+    <script src="./src/utils/Giftdata.js" type="module"></script>
+    <script src="./src/components/timerupdate.js" type="module"></script>
   </head>
   <body>
     <nav>
       <div class="nav-wrapper light-blue">
-        <a href="#" data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+        <a data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">
+          <svg-icon name="menu" class="border-blue custombutton2 centerbutton" tooltip="menu" tooltip-position="bottom"></svg-icon>
+        </i></a>
+        <button class="bg-transparent border-blue custombutton2 centerbutton" onclick="refreshPage()">          <svg-icon name="refresh" tooltip="refresh" tooltip-position="bottom"></svg-icon></button>
+        <a><span id="stateText" class="stateText">offline🔴</span></a>
 
+      <script>
+        function refreshPage() {
+          window.location.reload();
+        }
+      </script>
         <ul class="right hide-on-med-and-down">
-          <li><a href="#" class="tab-link" data-tab="tab1">Inicio tab1</a></li>
-          <li><a href="#" class="tab-link" data-tab="tab2">Custom Accions tab2</a></li>
-          <li><a href="#" class="tab-link" data-tab="tab3">Settings tab3</a></li>
-          <li><a href="#" class="tab-link" data-tab="tab4">settings tab4</a></li>
-          <li><a href="#" class="tab-link" data-tab="tab5">settings tab5</a></li>
-          <li><span id="stateText">asdasdasd</span></li>
-          <li>
-            <div class="switch">
-              <label>
-                Claro
-                <input type="checkbox" id="theme-switch">
-                <span class="lever"></span>
-                Oscuro
-              </label>
-            </div>
-          </li>
+          <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
+          <li><a class="tab-link" data-tab="tab2">Chat y Voz 🔊</a></li>
+          <li><a class="tab-link" data-tab="tab3">Audio Control</a></li>
+          <li><a class="tab-link" data-tab="tab4">Acciones y Eventos</a></li>
+          <li><a class="tab-link" data-tab="tab5">Streamdeck</a></li>
+          <li><a class="tab-link" data-tab="tab6">Settings ⚙</a></li>
+          <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
+          <li><a class="tab-link" data-tab="tab8">vrchat</a></li>
         </ul>
       </div>
     </nav>
+    <ul class="sidenav" id="mobile-demo">
+      <li><a class="tab-link" data-tab="tab1">Inicio</a></li>
+      <li><a class="tab-link" data-tab="tab2">Chat y Voz</a></li>
+      <li><a class="tab-link" data-tab="tab3">Audio Control</a></li>
+      <li><a class="tab-link" data-tab="tab4">Acciones y Eventos</a></li>
+      <li><a class="tab-link" data-tab="tab5">Streamdeck</a></li>
+      <li><a class="tab-link" data-tab="tab6">Settings ⚙</a></li>
+      <li><a class="tab-link" data-tab="tab7">Minecraft</a></li>
+      <li><a class="tab-link" data-tab="tab8">vrchat</a></li>
 
-  <ul class="sidenav" id="mobile-demo">
-    <li><a href="#" class="tab-link" data-tab="tab1">Inicio tab1</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab2">Custom Accions tab2</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab3">settings tab3</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab4">settings tab4</a></li>
-    <li><a href="#" class="tab-link" data-tab="tab5">settings tab5</a></li>
+  </ul>
 
-</ul>
 
 <div class="tabcontainer" data-tab="tab1">
       <div class="containerbox grid-autofit-28rem">
           <div class="cssportal-grid">
             <div class="justify-content-center grid842">
               <div id="uniqueIdImageContainer">
-                <img src="./src/assets/images.jpeg" alt="imagentest" class="responsive-img imagentest" id="uniqueIdImage">
+                <img src="./src/assets/images.png" alt="imagentest" class="responsive-img imagentest" id="uniqueIdImage">
               </div>
             </div>
             <div class="grid826 bordercontent-purple">
@@ -69,61 +79,89 @@
                           <input id="tiktok_name" type="text" placeholder=" " maxlength="40">
                           <label for="tiktok_name">Unique ID <span class="red-text">(Required)</span></label>
                           <!--<span class="supporting-text">Supporting Text</span>-->
-                          <button class="btn waves-effect waves-light btn filled" id="btnConnectTikTok" type="submit" name="action">Connect to TikTok LIVE</button>
+                          <button class="btn filled icon-left elevated" id="btnConnectTikTok" type="submit" name="action">Connectar LIVE</button>
                         </div>
 
                     </div>
 
               </form>
-              <div class="bordercontent-purple">
-                <button id="btnDisconnectTikTok" class="btn waves-effect waves-light btn filled">Disconnect</button>
-                <button id="websocketConnect" class="btn waves-effect waves-light btn filled">Tikfinityapi connect</button>
+              <div class="bordercontent-purple justify-content-center">
+                <button id="btnDisconnectTikTok" class="btn waves-effect waves-light red-button bg-transparent">Desconectar</button>
+                <button id="websocketConnect" class="btn waves-effect waves-light blue-button bg-transparent">Tikfinityapi connect</button>
               </div>
             </div>
-        </div>
 
-        <div class="sub-containerbox bordercontent-purple">
-          <div class="stats-card">
-            <h2>Social Stats</h2>
-            <input type="checkbox" name="checkbox" id="checkbox1" class="filled-in" checked="checked" />
-            <p>Followers</p>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-icon">&#128100;</span>
-                <span class="stat-label"></span>
-                <span class="stat-value"></span>
+        </div>
+      </div>
+      <div class="containerbox grid-autofit-28rem">
+
+      <div class="user-profile">
+        <div class="profile-content">
+            <img id="userAvatar1" src="" alt="Avatar del usuario" class="user-avatar">
+            <div class="user-info">
+                <div id="userName1" class="user-name">Nombre:</div>
+                <div id="userEmail1" class="user-email">Email</div>
+                <div class="button-left">
+                  <button id="googleSignInButton" class="btn waves-effect waves-light blue-button bg-transparent">Iniciar Sesión con Google</button>
+                  <button id="logoutButton" class="red-button bg-transparent" style="display: none;">Cerrar Sesión</button>
+                                </div>
             </div>
         </div>
+        <div id="button-container" class="button-container">
+          <button id="SaveSettingsButton" class="btn common-button purple-button bg-blue-light">Guardar configuración</button>
+          <button id="ImportSettingsButton" class="btn common-button purple-button bg-blue-light">Importar configuración</button>
+          <!-- <button id="profileButton" class="btn common-button green-button bg-transparent">Ver Perfil</button>
+          <button id="settingsButton" class="btn common-button purple-button bg-transparent">Configuración</button> -->
         </div>
+    </div>
+      </div>
+      <div class="containerbox grid-autofit-28rem">
+        <!-- <url-iframe url="http://localhost:5173/timer.html?counter123"></url-iframe> -->
+        <div id="countdownIframe"></div>
+        <div class="control-panel">
+          <h2>Control</h2>
+          <div id="countdown" class="countdown">00:00:00</div>
+          <div class="button-group">
+              <button id="control-panel-start">▶ Start</button>
+              <button id="control-panel-pause">⏸ Pause</button>
+              <button id="control-panel-reset">↺ Reset</button>
+          </div>
+          <div class="time-control">
+            <input type="number" name="time-control-initialTime" id="time-control-initialTime" class="inpit-default">
+            <select name="time-control-initialTimeUnit" id="time-control-initialTimeUnit">
+                <option>Seconds</option>
+                <option>Minutes</option>
+                <option>Hours</option>
+                <option>Days</option>
+            </select>
+            <span>Tiempo Inicial</span>
+
+          </div>
+          <div class="time-control">
+            <input type="number" name="time-control-input" id="time-control-input" value="0" class="input-default">
+              <select name="time-control-unit" id="time-control-unit">
+                  <option>Seconds</option>
+                  <option>Minutes</option>
+                  <option>Hours</option>
+                  <option>Days</option>
+              </select>
+              <div class="time-buttons">
+                  <button class="time-button" id="time-button-plus">+</button>
+                  <button class="time-button" id="time-button-minus">-</button>
+              </div>
+          </div>
+      </div>
       </div>
       <div class="containerbox">
         <div class="sub-containerbox bordercontent-purple">
           <div class="justify-content-center">
             <label for="systempoints">
               <input type="checkbox" id="systempoints" checked>
-                <h1>System Points</h1>
+                <h1>Puntos de cada usuario</h1>
             </label>
           </div>
           <form id="pointsForm" action="PointsSystem" class="grid-1fr-1fr">
+
             <span>name of Points</span>
             <div class="input-field outlined">
                 <input id="Pointsname" type="text" placeholder=" " maxlength="20">
@@ -173,15 +211,9 @@
         </div>
         <div id="chat-container" class="chat-container"></div>
         <div class="sub-containerbox bordercontent-purple">
+          <h2>Tabla de usuarios y Puntos</h2>
           <table id="userPointsTable" class="highlight centered">
             <thead>
-            <tr>
-                <th>Profile <button id="loadMoreUsers">loadMoreUsers</button></th>
-                <th><a id="sortByUsername">User</a></th>
-                <th><a id="sortByPoints">Points Total</a></th>
-                <th>First Activity</th>
-                <th>Last Activity</th>
-            </tr>
             </thead>
             <tbody>
             <!-- Rows will be inserted dynamically -->
@@ -189,20 +221,10 @@
         </table>
     </div>
       </div>
-      <button id="googleSignInBtn">Sign in with Google</button>
+      <button id="googleSignInBtn" class="hidden">Sign in with Google</button>
 </div>
 
 <div class="tabcontainer" data-tab="tab2">
-  <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y atajos</button>
-  <div id="modal1" class="modal">
-    <div class="modal-content">
-      <form id="dynamicForm2" class="gridform">
-
-      </form>
-      <a id="submitFormBtn2" href="#!" class="modal-close btn filled waves-effect waves-light">Añadir acciones </a>
-
-    </div>
-  </div>
     <div class="containerbox relative">
       <div class="LiveContainer">
         <div  id="chat-container" class="chat1 chatcontainer">Chats</div>
@@ -230,8 +252,16 @@
                     <label class="flex" for="selectvoice1"><input type="radio" name="selectvoice" id="selectvoice1" class="radio checked:bg-blue-300 float-start" checked><span>Voz1</span></label>
 
                     <div id="voiceSelectContainer" class="relative m-3 content-center">
-                        <select id="voiceSelect1" class="select select-info browser-default" style="width: 100%;" aria-label="Select Voice">select voice</select>
-                        <label for="voiceSelect1">select voice</label>
+                      <label for="voiceSelect1">
+                        <span>select voice</span>
+                          <select id="voiceSelect1" class="select select-info browser-default" style="width: 100%;" aria-label="Select Voice">select voice</select>
+                          </label>
+                          <label for="audiolist">
+                        <audio id="audio"></audio>
+                        <input type="checkbox" id="audiolist" class="filled-in" checked>
+                        <span>Cola de audio</span>
+                        </label>
+
                     </div>
 
 
@@ -366,32 +396,6 @@
       </div>
       <div class="card">
           <div class="card-header">
-              <h2 class="card-title">More Settings</h2>
-
-          </div>
-          <div class="card-content space-y-4">
-              <label class="cyberpunk-checkbox-label">
-                  leer follower prefijo:
-                  <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                  <input type="text" id="prefixuserfollow" value="te sige">
-              </label>
-              <label class="cyberpunk-checkbox-label">
-                  leer regalos prefijo:
-                  <input type="checkbox" class="cyberpunk-checkbox" id="readGiftEvent" checked>
-                  <input type="text" id="prefixGiftEvent" value="regalo">
-              </label>
-              <label class="cyberpunk-checkbox-label">
-                  leer usuario y mensaje prefijo:
-                  <input type="checkbox" class="cyberpunk-checkbox" id="readUserMessage" checked>
-                  <input type="text" id="prefixusermessage" value="dice">
-              </label>
-              <label class="cyberpunk-checkbox-label">solo mensajes =>3
-                  <input type="checkbox" class="cyberpunk-checkbox" id="messagelenght3" checked>
-                  </label>
-          </div>
-      </div>
-      <div class="card">
-          <div class="card-header">
               <h2 class="card-title">BlackList: Input de palabras que no aparecerán en el chat </h2>
           </div>
           <div class="card-content space-y-4">
@@ -402,7 +406,7 @@
           </div>
 
       </div>
-      <div class="card">
+      <div class="card hidden">
           <h2 class="card-title">WhiteList: Input de usuarios que aparecerán en el chat++</h2>
           <div class="card-content space-y-4">
               <input type="text" id="filter-users" class="border p-2 mr-2">
@@ -410,7 +414,6 @@
               <div id="containerfilter-users" class="overflow-y-auto max-h-28 space-y-2 mt-2"></div>
           </div>
       </div>
-      <div id="audio"></div>
   </div>
 
   </div>
@@ -423,8 +426,64 @@
 </div>
 
 <div class="tabcontainer" data-tab="tab4">
-    <div class="file-container" id="drop-area">
-      <ul id="file-list"> </ul>
+  <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y Eventos</button>
+
+  <toggle-content title="Acciones y Eventos Tabla" class="m-10">
+    <div id="table-container" class="table-container"><suggestions-component position="fixed" button-text="parametros" checkbox-text="" include-checkbox="true"></suggestions-component>
+    </div>
+
+  </toggle-content>
+  <div class="containerbox relative">
+    <h3>Overlay Previews</h3>
+    <div class="flex-align-center flex gap-10">
+      <span id="overlay-preview-container">
+      </span><iframe-preview src="/overlay.html" muted="true"></iframe-preview>
+      <span id="overlaypreviewcontainer2">
+      </span><iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
+    </div>
+
+    <script>
+      const urltext = document.getElementById("overlay-preview-container");
+      urltext.innerHTML = `<copy-message message="${getlocalhref()}overlay.html"></copy-message>`;
+      const urltext2 = document.getElementById("overlaypreviewcontainer2");
+      urltext2.innerHTML = `<copy-message message="${getlocalhref()}overlayfull.html"></copy-message>`;
+      function getlocalhref() {
+        if (window.location.protocol === 'https:' || window.location.protocol === 'http:') {
+            return window.location.href
+        } else {
+          return `localhost:8088/`
+        }
+      }
+      console.log("getlocalhref",getlocalhref());
+    </script>
+  </div>
+
+  <style>
+    .table-container {
+      width: 100% !important;
+      overflow-x: scroll !important ;
+    }
+  </style>
+  <div id="modal1" class="modal">
+    <div class="modal-content">
+
+      <suggestions-component position="fixed" button-text="Parametros(params)" checkbox-text="Ver valores" include-checkbox="true"></suggestions-component>
+      <!-- <suggestions-component position="relative" button-text="Mostrar Sugerencias 2" checkbox-text="2" include-checkbox="true"></suggestions-component> -->
+      <form id="dynamicForm2" class="gridform">
+      </form>
+
+      <a id="submitFormBtn2" class="modal-close btn filled waves-effect waves-light m-10">Añadir acciones </a>
+      <!-- <tooltip-messages messages='["UniqueId = nombre de usuario", "Verifica tu red"]' class="tooltip-error">
+        sugerencias
+      </tooltip-messages> -->
+    </div>
+  </div>
+
+    <div class="file-container" id="drop-area" style="position: relative;">
+      <ul id="file-list">     </ul>
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5rem; color: #888;">
+        Arrastre archivos aquí
+      </div>
   </div>
 </div>
 
@@ -432,7 +491,7 @@
   <a id="openModalBtn" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y atajos</a>
   <div id="modal" class="modal">
     <div class="modal-content">
-  <a id="submitFormBtn" href="#!" class="modal-close btn filled waves-effect waves-light">Añadir acciones </a>
+  <a id="submitFormBtn" class="modal-close btn filled waves-effect waves-light">Añadir acciones </a>
 
       <form id="dynamicForm1">
         <!-- Form fields will be appended here -->
@@ -442,14 +501,247 @@
   <button id="toogleEditModeBtn" class="waves-effect waves-light btn">Editar</button>
   <div id="buttonContainer"></div>
 </div>
+<div class="tabcontainer" data-tab="tab6">
+<div class="containerbox relative">
+  <button id="exportButton" class="custombutton exportButton">Exportar bases de datos</button>
+  <input type="file" id="importInput" accept=".json">
+  <button id="importButton" class="custombutton">Importar archivo seleccionado</button>
+  <button id="loadFromFirebaseButton" class="custombutton exportButton">Cargar desde la nube</button>
+  <div id="importResults"></div>
+  <div id="updateResult" class="updateResult">
+    <p id="updateResultText"></p>
+  </div>
 
+</div>
+  <div class="containerbox">
+    <div id="urlToQR"></div>
+    <div id="qrCode"></div>
+    <button type="button" id="AutoUpdate">Actualizar</button>
+
+  </div>
+  <script type="module" src="./firebase/exportdata.js"></script>
+
+</div>
+<div class="tabcontainer" data-tab="tab7">
+  <h3>Minecraft</h3>
+  <div class="containerbox relative">
+    <div class="grid-autofit-40rem">
+      <div class="grid-autofit-24rem">
+        <a href="https://nglmercer.github.io/TikLiveApp/docs/category/minecraftlive" target="_blank">
+          <span class="link link-primary">Leer Tutorial Minecraft</span>
+        </a>
+        <label >
+          <input type="checkbox" class="checkbox checkbox-lg" id="MinecraftLive" checked>
+          <span class="hover:text-blue-500">MinecraftLive</span> </label>
+        <label data-translate="Minecraftplayername">Tu nombre de Minecraft:</label>
+        <input type="text" id="playerNameInput" placeholder="minecraftPlayer">
+
+        <label data-translate="Minecraftinitialcommand">Comando Inicial de BOT:</label>
+        <input type="text" id="InitcommandInput" placeholder="login">
+          <form action="sendcommandmc" id="sendcommandmc">
+            <input name="commandinput" type="text" id="sendcommandmcinput" placeholder="command">
+            <button type="submit" id="sendcommandmcbutton" >Send</button>
+          </form>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-item">
+            <div class="accordion-header">
+                Rcon server minecraft
+                <span class="toggle">+</span>
+            </div>
+            <div class="accordion-content">
+
+              <h2>Rcon server and port</h2>
+              <form id="Rconform" class="form-grid">
+                  <div class="form-row">
+                      <label for="ip">IP</label>
+                      <input name="ip" type="text" id="ipRcon" placeholder="ip del server" required>
+                  </div>
+                  <div class="form-row">
+                      <label for="port">Port</label>
+                      <input name="port" type="number" id="portRcon" placeholder="25575" value="25575">
+                  </div>
+                  <div class="form-row">
+                      <label for="password">Password</label>
+                      <input name="password" type="text" id="passwordRcon" placeholder="server password" required>
+                  </div>
+                  <input type="submit" value="Connectar Rcon server">
+              </form>
+            </div>
+        </div>
+        <div class="accordion-item">
+            <div class="accordion-header">
+                Minecraft Servertap plugin server
+                <span class="toggle">-</span>
+            </div>
+            <div class="accordion-content">
+                <h3>ServerTap Plugin Configuration</h3>
+                <form id="pluginform" class="form-grid">
+                  <div class="form-row">
+                      <label for="ip">IP</label>
+                      <input name="ip" type="text" id="ipPlugin" placeholder="ip del server" value="127.0.0.1">
+                  </div>
+                  <div class="form-row">
+                      <label for="port">Port</label>
+                      <input name="port" type="text" id="portPlugin" placeholder="4567" value="4567">
+                  </div>
+                  <div class="form-row">
+                      <label for="password">Password</label>
+                      <input name="password" type="text" id="passwordPlugin" placeholder="(optional)" value="change_me">
+                  </div>
+                  <input type="submit" value="Connectar Plugin server">
+              </form>
+            </div>
+        </div>
+    </div>
+    </div>
+
+  <script>
+
+    document.querySelectorAll('.accordion-header').forEach(header => {
+      header.addEventListener('click', () => {
+          // Cerrar todas las secciones abiertas
+          document.querySelectorAll('.accordion-content').forEach(content => {
+              content.classList.remove('active');
+              content.previousElementSibling.querySelector('.toggle').textContent = '+';
+          });
+
+          // Abrir la sección seleccionada
+          const content = header.nextElementSibling;
+          content.classList.add('active');
+          header.querySelector('.toggle').textContent = '-';
+      });
+  });
+
+</script>
+
+  </div>
+  <div class="containerbox relative">
+    <div class="container mx-auto p-4">
+      <h4 class="text-2xl font-bold mb-4">Generador de Comandos de Minecraft</h4>
+
+      <div class="form-group mb-4">
+          <label for="playerName" class="block font-semibold">Nombre del Jugador:</label>
+          <input type="text" id="playerName" class="border p-2 w-full" placeholder="Introduce tu nombre">
+      </div>
+
+      <div class="form-group mb-4">
+          <label for="action" class="block font-semibold">Acción:</label>
+          <select id="action" class="border p-2 w-full">
+              <option value="summon">Summon</option>
+              <option value="give">Give</option>
+              <option value="title">Title</option>
+              <option value="subtitle">Subtitle</option>
+              <option value="tellraw">Tellraw</option>
+              <option value="actionbar">Actionbar</option>
+              <option value="setblock">setblock</option>
+          </select>
+      </div>
+
+      <div class="form-group mb-4" id="mobTypeGroup">
+          <label for="mobType" class="block font-semibold">Tipo de Mob:</label>
+          <select id="mobType" class="border p-2 w-full"></select>
+      </div>
+
+      <div class="form-group mb-4" id="mobOptionsGroup" style="display: none;">
+          <label for="mobOptions" class="block font-semibold">Opciones de Mob:</label>
+          <input type="text" id="mobOptions" class="border p-2 w-full" placeholder="key:value,key:value">
+      </div>
+
+      <div class="form-group mb-4" id="itemTypeGroup" style="display: none;">
+          <label for="itemType" class="block font-semibold">Tipo de Item:</label>
+          <select id="itemType" class="border p-2 w-full"></select>
+      </div>
+
+      <div class="form-group mb-4" id="setblockGroup" style="display: none;">
+          <label for="setblock" class="block font-semibold">Tipo de Item:</label>
+          <select id="setblock" class="border p-2 w-full"></select>
+      </div>
+
+      <div class="form-group mb-4" id="messageGroup" style="display: none;">
+          <label for="message" class="block font-semibold">Mensaje:</label>
+          <input type="text" id="message" class="border p-2 w-full" placeholder="Introduce tu mensaje">
+      </div>
+
+      <div class="form-group mb-4" id="messageOptionsGroup" style="display: none;">
+          <label for="messageOptions" class="block font-semibold">Opciones de Mensaje:</label>
+          <input type="text" id="messageOptions" class="border p-2 w-full" placeholder="key:value,key:value">
+      </div>
+
+      <button id="generateCommand" class="btn btn-primary">Generar Comando</button>
+
+      <div id="outputcommand" class="mt-4"></div>
+  </div>
+
+
+
+  </div>
+</div>
+<div class="tabcontainer" data-tab="tab8">
+  <h2>vrchat</h2>
+  <div class="containerbox relative">
+    <form action="vrchatForm" id="vrchatForm">
+      <label for="clientipport">IP client:</label>
+      <input name="clientipport" type="text" id="clientipport" value="127.0.0.1:9000" required>
+      <label for="serveripport">IP server:</label>
+      <input name="serveripport" type="text" id="serveripport" value="127.0.0.1:9001" required>
+      <div class="oscindicator" id="oscindicator"></div>
+      <button type="submit" class="btn btn-large filled waves-effect waves-light">Connectar a vrchat</button>
+    </form>
+    <div id="vrchatContainer"></div>
+    <input type="text" id="testosctext" value="test">
+    <button id="testoscbutton" class="custombutton">send message OSC</button>
+    <select name="oscAction" id="oscAction"></select>
+    <button id="oscActionButton" class="custombutton">Send Action</button>
+  </div>
+  <div class="containerbox">
+      <h1>Panel de Control VRChat</h1>
+      <div id="connection-status">Desconectado</div>
+
+      <div>
+          <button id="moveForward" class="btn btn-primary">Adelante</button>
+          <button id="moveBackward" class="btn btn-primary">Atrás</button>
+          <button id="moveLeft" class="btn btn-primary">Izquierda</button>
+          <button id="moveRight" class="btn btn-primary">Derecha</button>
+          <button id="LookHorizontal.right" class="btn btn-primary">Mirar a la derecha</button>
+          <button id="LookHorizontal.left" class="btn btn-primary">Mirar a la izquierda</button>
+          <button id="LookVertical.up" class="btn btn-primary">Mirar arriba</button>
+          <button id="LookVertical.down" class="btn btn-primary">Mirar abajo</button>
+      </div>
+
+      <div>
+          <button id="jump" class="btn btn-primary">Saltar</button>
+          <button id="run" class="btn btn-primary">Correr</button>
+      </div>
+
+      <div>
+        <button id="lookVertical">lookVertical</button>
+          <label for="lookHorizontal" class="label">Mirar Horizontal:</label>
+          <input type="range" id="lookHorizontal" min="-1" max="1" step="0.01" value="0">
+      </div>
+
+      <div>
+          <input type="text" id="chatMessage" placeholder="Mensaje de chat">
+          <button id="sendChat" class="btn btn-primary">Enviar</button>
+      </div>
+
+      <button id="stopAll" class="btn btn-primary">Detener Todas las Acciones</button>
+
+</div>
+</div>
 <script>
     // Inicialización del sidenav
     var elems = document.querySelectorAll('.sidenav');
     elems.forEach(function(elem) {
         new M.Sidenav(elem);
     });
-
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('select');
+      var instances = M.FormSelect.init(elems, {
+        // specify options here
+      });
+    });
     var tabContainers = document.querySelectorAll('.tabcontainer');
     var tabLinks = document.querySelectorAll('.tab-link');
 
@@ -483,38 +775,18 @@
         });
     });
 
-    // Manejo del cambio de tema
-    var themeSwitch = document.getElementById('theme-switch');
-    var currentTheme = localStorage.getItem('theme');
-
-    if (currentTheme) {
-        document.body.classList.add(currentTheme);
-        if (currentTheme === 'dark-theme') {
-            themeSwitch.checked = true;
-        }
-    }
-
-    themeSwitch.addEventListener('change', function() {
-        if (this.checked) {
-            document.body.classList.remove('light-theme');
-            document.body.classList.add('dark-theme');
-            localStorage.setItem('theme', 'dark-theme');
-        } else {
-            document.body.classList.remove('dark-theme');
-            document.body.classList.add('light-theme');
-            localStorage.setItem('theme', 'light-theme');
-        }
-    });
   </script>
   <script type="module" src="./src/components/Accionevents.js"></script>
+  <script type="module" src="./src/components/vrchat.js"> </script>
     <script type="module" src="./src/renderer.js"></script>
-    <script type="module" src="./src/datamodal.js"></script>
-    <script type="module" src="userdatas.js"></script>
+    <script type="module" src="./src/datamodalboard.js"></script>
+    <script type="module" src="./src/minecraft.js"> </script>
+    <script type="module" src="./src/tiktoksocketdata.js"></script>
     <script type="module" src="./src/utils/localstorage.js"></script>
-
+<!--
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-      import { getFirestore, collection, setDoc, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+      import { getFirestore, setDoc, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
       const firebaseConfig = {
         apiKey: "AIzaSyDf_0M9KgJttAJogVDqHdv7E7y8psKgZyE",
@@ -532,6 +804,7 @@
 
       const docRef = doc(db, "datajson", "localStorageBackup");
 
+      // Método para guardar el localStorage en Firestore
       async function saveLocalStorageToFirestore() {
         const data = JSON.stringify(localStorage);
         try {
@@ -542,16 +815,25 @@
         }
       }
 
-      async function loadFirestoreToLocalStorage() {
+      // Método para cargar el localStorage desde Firestore una vez al día
+      async function loadFirestoreToLocalStorageOncePerDay() {
         try {
           const docSnap = await getDoc(docRef);
+          const now = new Date();
+
           if (docSnap.exists()) {
-            const { data } = docSnap.data();
-            const storedData = JSON.parse(data);
-            Object.keys(storedData).forEach((key) => {
-              localStorage.setItem(key, storedData[key]);
-            });
-            console.log("LocalStorage restored from Firestore.");
+            const { data, timestamp } = docSnap.data();
+            const lastSavedDate = new Date(timestamp.seconds * 1000);
+
+            if (now.toDateString() !== lastSavedDate.toDateString()) {
+              const storedData = JSON.parse(data);
+              Object.keys(storedData).forEach((key) => {
+                localStorage.setItem(key, storedData[key]);
+              });
+              console.log("LocalStorage restored from Firestore.");
+            } else {
+              console.log("LocalStorage already restored today.");
+            }
           } else {
             console.log("No document found.");
           }
@@ -560,27 +842,13 @@
         }
       }
 
-      async function checkAndUpdateDaily() {
-        const docSnap = await getDoc(docRef);
-        const now = new Date();
-        if (docSnap.exists()) {
-          const { timestamp } = docSnap.data();
-          const lastSavedDate = new Date(timestamp.seconds * 1000);
-          if (now.toDateString() !== lastSavedDate.toDateString()) {
-            await saveLocalStorageToFirestore();
-          } else {
-            console.log("LocalStorage already updated today.");
-          }
-        } else {
-          await saveLocalStorageToFirestore();
-        }
-      }
+      // Llamar al método para guardar en cualquier momento del día
+      saveLocalStorageToFirestore();
 
-      // On page load, load data from Firestore and then check if it needs to be updated
-      setTimeout( async () => {
-        loadFirestoreToLocalStorage().then(checkAndUpdateDaily);
-      }, 60 * 1000);
-    </script>
+      // Llamar al método para cargar el localStorage una vez al día al iniciar la página
+      // loadFirestoreToLocalStorageOncePerDay();
+
+    </script> -->
 
       <script type="module" src="./src/voice/speech.js"></script>
   </body>

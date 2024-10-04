@@ -110,12 +110,13 @@ export const getFileById = (fileId) => {
     const fileData = db.get('fileData', []);
     const fileIdNumber = Number(fileId);
     if (isNaN(fileIdNumber)) {
-        return null;
-    }
+      console.warn(`Invalid fileId: ${fileId}`);
+      return { index: null, name: null, path: null, size: 0, type: null, isDirectory: false };
+  }
     const file = fileData.find(file => file.index === fileIdNumber);
 
     if (!file) {
-        throw new Error(`File with id ${fileId} not found`);
+      return { index: null, name: null, path: null, size: 0, type: null, isDirectory: false };
     }
 
     return {
@@ -129,22 +130,26 @@ export const getFileById = (fileId) => {
 };
 
 export const getFileByname = (fileIdname) => {
-    const fileData = db.get('fileData', []);
-    const file = fileData.find(file => file.name === fileIdname);
+  const fileData = db.get('fileData', []);
+  const file = fileData.find(file => file.name === fileIdname);
 
-    if (!file) {
-        throw new Error(`File with id ${fileIdname} not found`);
-    }
+  if (!file) {
+      // Retornar null si no se encuentra el archivo en lugar de lanzar una excepción
+      console.warn(`File with name ${fileIdname} not found.`);
+      return { index: null, name: null, path: null, size: 0, type: null, isDirectory: false };
+  }
 
-    return {
-        index: file.index,
-        name: file.name,
-        path: file.path,
-        size: fs.existsSync(file.path) ? fs.statSync(file.path).size : 0,
-        type: file.type,
-        isDirectory: fs.existsSync(file.path) ? fs.statSync(file.path).isDirectory() : false,
-    };
+  // Retornar información del archivo si existe
+  return {
+      index: file.index,
+      name: file.name,
+      path: file.path,
+      size: fs.existsSync(file.path) ? fs.statSync(file.path).size : 0,
+      type: file.type,
+      isDirectory: fs.existsSync(file.path) ? fs.statSync(file.path).isDirectory() : false,
+  };
 };
+
 
 export const processWebFile = async (fileBase64, fileName, destination) => {
     let filePath = path.join(destination, fileName);

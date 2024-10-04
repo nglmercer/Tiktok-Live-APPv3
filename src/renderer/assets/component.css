@@ -59,6 +59,9 @@ input[type="range"]::-ms-fill-upper {
 .range-field {
   border-radius: 40px;
 }
+.max-width-90p {
+  max-width: 90%;
+}
 .slider-content {
   display: flex;
   float: right;
@@ -70,9 +73,19 @@ input[type="range"]::-ms-fill-upper {
     float: right;
   }
 }
-
-
-
+.input-default {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.input-50px {
+  width: 100%;
+  max-width: 50px;
+  border-radius: 25%;
+}
 .max-height-500 {
   max-height: 280px !important;
   overflow-y: auto;
@@ -96,7 +109,7 @@ input[type="range"]::-ms-fill-upper {
 
 .key:hover {
   background-color: #5c5c5c;
-  border-color: #999;
+  border: solid 2px, #999;
 }
 
 /* Alerta de mensajes */
@@ -142,15 +155,15 @@ input[type="range"]::-ms-fill-upper {
 .grid842 {
   min-width: 100px;
 	grid-area: 1 / 1 / 5 / 4;
-	background-color: rgba(94,120,9, 0.5);
+	background-color: rgba(94, 120, 9, 0);
 }
 .grid826 {
 	grid-area: 1 / 4 / 5 / 7;
-	background-color: rgba(6,101,31, 0.5);
+	background-color: rgba(6, 101, 31, 0);
 }
 .grid846 {
 	grid-area: 3 / 3 / 5 / 7;
-	background-color: rgba(76,236,178, 0.5);
+	background-color: rgba(76, 236, 177, 0);
 }
 .justify-content-center {
   display: flex;
@@ -234,10 +247,11 @@ input[type="range"]::-ms-fill-upper {
   background-color: #ffffff2f;
   z-index: 999;
   overflow: hidden;
-  min-width: 500px;
+  min-width: 400px;
   min-height: 500px;
 }
 #file-list {
+  box-sizing: content-box;
   display: grid;
   grid-template-columns: repeat(auto-fit, 200px); /* Ancho máximo 200px */
     img{
@@ -286,6 +300,238 @@ input[type="range"]::-ms-fill-upper {
   display: block;
 }
 .search-input {
-  width: 100%;
-  max-width: 110px;
+  min-width: 80px;
+  max-width: 160px;
+}
+@media screen and (max-width: 800px){
+  .input-default {
+    max-width: 140px;
+    box-sizing: border-box;
+    resize: vertical;
+  }
+  .justify-content-center {
+    display: flex;
+    justify-content: flex-start;
+  }
+}
+/* colors */
+.bg-blue {
+  background-color: #2196F3 !important;
+}
+.bg-blue:hover {
+  background-color: #115ccc !important;
+}
+.bg-blue-light {
+  background-color: #94c9f5 !important;
+}
+.bg-blue-light:hover {
+  background-color: #5d9cfa !important;
+}
+.bg-red {
+  background-color: #F44336 !important;
+}
+.bg-red:hover {
+  background-color: #D32F2F !important;
+}
+.bg-green {
+  background-color: #14b319 !important;
+}
+.bg-green:hover {
+  background-color: #00c50a !important;
+}
+.bg-yellow {
+  background-color: #FFEB3B !important;
+}
+.bg-yellow:hover {
+  background-color: #F9A825 !important;
+}
+.bg-transparent-important {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+.bg-transparent {
+  background: transparent;
+  background-color: transparent;
+}
+.opacity-50 {
+  opacity: 0.5 !important;
+}
+.m-0 {
+  margin: 0;
+}
+.p-0 {
+  padding: 0;
+}
+/* bordercolors */
+.border-blue {
+  border: solid 2px, #2196F3 !important;
+}
+.border-blue:hover {
+  border: solid 2px, #115ccc !important;
+  background-color: #115ccc90;
+}
+.border-red {
+  border: solid 2px, #F44336 !important;
+}
+.border-red:hover {
+  border: solid 2px, #D32F2F !important;
+  background-color: #d32f2f95;
+}
+.border-green {
+  border: solid 2px, #14b319 !important;
+}
+.border-green:hover {
+  border: solid 2px, #00c50a !important;
+}
+.border-yellow {
+  border: solid 2px, #FFEB3B !important;
+}
+.border-yellow:hover {
+  border: solid 2px, #F9A825 !important;
+}
+.accordion {
+  background-color: #2c3e50;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.accordion-item {
+  border-bottom: 1px solid #34495e;
+}
+.accordion-header {
+  background-color: #34495e;
+  padding: 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.accordion-content {
+  padding: 15px;
+  display: none;
+}
+
+.accordion-content.active {
+  display: block;
+}
+
+.toggle {
+  cursor: pointer;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 1rem;
+}
+.transparent {
+  background-color: transparent !important;
+}
+.centerbutton {
+  display: inline-flex;
+
+}
+#importButton {
+  background-color: #008bbaa1;
+  border-radius: 10px;
+  padding: 5px;
+  border: none;
+}
+#importButton:hover {
+  background-color: #007c9e85;
+}
+#importButton.file-selected {
+  background-color: #4CAF50;
+}
+#importButton.file-selected:hover {
+  background-color: #45a049;
+}
+input[type="file"] {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #dddddd38;
+  border-radius: 4px;
+  width: calc(100% - 22px);
+}
+#importResults {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: #ffffff11;
+  border: 1px solid #dddddd36;
+  border-radius: 4px;
+  height: 200px;
+  overflow-y: auto;
+}
+#importResults p {
+  margin: 5px 0;
+  padding: 5px;
+  border-bottom: 1px solid #eeeeee34;
+}
+#importResults p:last-child {
+  border-bottom: none;
+}
+.exportButton {
+  background-color: #3951bbd3;
+}
+.exportButton:hover {
+  background-color: #3752c9ad;
+}
+/* Variante 1: Azul a Celeste */
+.blue-button {
+  color: #4285F4;
+  border-color: #4285F4;
+}
+.blue-button:hover {
+  color: white;
+  background-color: #4285F4;
+}
+
+/* Variante 2: Rojo a Rosa */
+.red-button {
+  color: #d9534f;
+  border-color: #d9534f;
+}
+.red-button:hover {
+  color: white;
+  background-color: #d9534f;
+}
+
+/* Variante 3: Verde a Lima */
+.green-button {
+  color: #28a745;
+  border-color: #28a745;
+}
+.green-button:hover {
+  color: white;
+  background-color: #28a745;
+}
+
+/* Variante 4: Naranja a Amarillo */
+.orange-button {
+  color: #fd7e14;
+  border-color: #fd7e14;
+}
+.orange-button:hover {
+  color: white;
+  background-color: #fd7e14;
+}
+
+/* Variante 5: Púrpura a Lavanda */
+.purple-button {
+  color: #6f42c1;
+  border-color: #6f42c1;
+}
+.purple-button:hover {
+  color: white;
+  background-color: #6f42c1;
+}
+
+/* Variante 6: Gris a Negro */
+.gray-button {
+  color: #6c757d;
+  border-color: #6c757d;
+}
+.gray-button:hover {
+  color: white;
+  background-color: #6c757d;
 }

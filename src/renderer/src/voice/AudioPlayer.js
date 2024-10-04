@@ -28,14 +28,14 @@ class AudioPlayer {
       this.volumeSlider.type = 'range';
       this.volumeSlider.min = 0;
       this.volumeSlider.max = 1;
-      this.volumeSlider.step = 0.01;
+      this.volumeSlider.step = 0.1;
       this.volumeSlider.value = 1;
       this.volumeSlider.className = 'volume-slider';
 
       this.progressBar = document.createElement('input');
       this.progressBar.type = 'range';
       this.progressBar.min = 0;
-      this.progressBar.max = 100;
+      this.progressBar.max = 20;
       this.progressBar.value = 0;
       this.progressBar.className = 'progress-bar';
 
