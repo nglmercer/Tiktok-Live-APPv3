@@ -69,7 +69,7 @@
           <div class="cssportal-grid">
             <div class="justify-content-center grid842">
               <div id="uniqueIdImageContainer">
-                <img src="./src/assets/images.jpeg" alt="imagentest" class="responsive-img imagentest" id="uniqueIdImage">
+                <img src="./src/assets/images.png" alt="imagentest" class="responsive-img imagentest" id="uniqueIdImage">
               </div>
             </div>
             <div class="grid826 bordercontent-purple">
@@ -427,7 +427,7 @@
 
 <div class="tabcontainer" data-tab="tab4">
   <button id="openModaltest" class="btn btn-large filled waves-effect waves-light">Añadir Acciones y Eventos</button>
-
+  <div id="form-container" class="form-container"></div>
   <toggle-content title="Acciones y Eventos Tabla" class="m-10">
     <div id="table-container" class="table-container"><suggestions-component position="fixed" button-text="parametros" checkbox-text="" include-checkbox="true"></suggestions-component>
     </div>
@@ -437,18 +437,16 @@
     <h3>Overlay Previews</h3>
     <div class="flex-align-center flex gap-10">
       <span id="overlay-preview-container">
-      </span>
+      </span><iframe-preview src="/overlay.html" muted="true"></iframe-preview>
       <span id="overlaypreviewcontainer2">
-      </span>
+      </span><iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
     </div>
 
     <script>
       const urltext = document.getElementById("overlay-preview-container");
-      urltext.innerHTML = `<copy-message message="${getlocalhref()}overlay.html">     <iframe-preview src="/overlay.html" muted="true"></iframe-preview>
-      </copy-message>`;
+      urltext.innerHTML = `<copy-message message="${getlocalhref()}overlay.html"></copy-message>`;
       const urltext2 = document.getElementById("overlaypreviewcontainer2");
-      urltext2.innerHTML = `<copy-message message="${getlocalhref()}overlayfull.html">     <iframe-preview src="/overlayfull.html" muted="true"></iframe-preview>
-      </copy-message>`;
+      urltext2.innerHTML = `<copy-message message="${getlocalhref()}overlayfull.html"></copy-message>`;
       function getlocalhref() {
         if (window.location.protocol === 'https:' || window.location.protocol === 'http:') {
             return window.location.href

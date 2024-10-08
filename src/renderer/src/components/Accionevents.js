@@ -1,5 +1,5 @@
 import FormModal from './FormModal'
-import DynamicTable from './datatable';
+import DynamicTable, { EditModal } from './datatable';
 import { getfileId } from './Fileshtml'
 import  { IndexedDBManager, databases, DBObserver } from '../utils/indexedDB'
 import { getformdatabyid, postToFileHandler, getdatafromserver, getAllDataFromDB, getdataIndexdb, modifyPoints } from '../utils/getdata';
@@ -732,40 +732,46 @@ const config = {
     returnType: 'string',
   }, // Especifica el orden de las columnas
   Evento: {
-    class: 'input-default',
     // label: 'Evento',
     type: 'object',
     eventType: {
       class: 'select-default',
       type: 'select',
       returnType: 'string',
-      options: [{ value: 'chat', label: 'Chat' }, { value: 'follow', label: 'Seguimiento' },{ value: 'like', label: 'like'},
-     {value: 'share', label: 'compartir'}, { value: 'subscribe', label: 'suscripcion' }, { value: 'gift', label: 'Gift' }],
+      toggleoptions: true,
+      options: [{ value: 'chat', label: 'Chat'},
+      { value: 'share', label: 'Compartir'},
+      { value: 'subscribe', label: 'Suscripción'},
+       { value: 'gift', label: 'Gift'},
+      { value: 'member', label: 'Ingreso al live'},
+    { value: 'like', label: 'Like' },
+    { value: 'follow', label: 'Seguimiento' },
+  ],
     },
     chat: {
-      label: 'chat',
+      label: '',
       class: 'input-default',
       type: 'textarea',
       returnType: 'string',
-      hidden: true,
+      dataAssociated: 'chat',
     },
     like: {
-      label: 'like',
+      label: '',
       class: 'input-default',
       type: 'number',
       returnType: 'number',
-      hidden: true,
+      dataAssociated: 'like',
     },
     gift: {
       class: 'input-default',
       label: '',
       type: 'select',
       returnType: 'number',
-      options: getmapselectgift()
+      options: getmapselectgift(),
+      dataAssociated: 'gift',
     },
   },
   minecraft:{
-    class: 'input-default',
     type: 'object',
     check: {
       class: 'filled-in',
@@ -781,7 +787,6 @@ const config = {
     },
   },
   tts: {
-    class: 'input-default',
     label: 'TTS',
     type: 'object',
     check: {
@@ -792,13 +797,12 @@ const config = {
     },
     text: {
       class: 'input-default',
-      label: 'texto a leer',
+      label: 'leer texto',
       type: 'text',
       returnType: 'string',
     },
   },
   timer: {
-    class: 'input-default',
     label: 'Temporizador',
     type: 'object',
     check: {
@@ -927,7 +931,6 @@ const config = {
 
   },
   vrchat: {
-    class: 'input-default',
     label: 'vrchat',
     type: 'object',
     check: {
@@ -951,7 +954,6 @@ const config = {
     },
   },
   Api:{
-    class: 'input-default',
     label: 'Api url',
     type: 'object',
     check: {
@@ -974,7 +976,6 @@ const config = {
     },
   },
   Keyboard: {
-    class: 'input-default',
     label: 'Keyboard',
     type: 'object',
     check: {
@@ -992,7 +993,6 @@ const config = {
     },
   },
   systempoints: {
-    class: 'input-default',
     label: 'System points',
     type: 'object',
     check: {
@@ -1015,12 +1015,13 @@ const config = {
   }
 };
 const table = new DynamicTable('#table-container',editcallback, config,deletecallback);
-
+const editModal = new EditModal('#form-container', editcallback, config,deletecallback);
   setTimeout(() => {
     alldata.forEach((data) => {
       // console.log("alldata", data);
       table.addRow(data);
     });
+    // editModal.render(alldata[0]);
     // table.hideColumn('id');
   }, 1000);
 

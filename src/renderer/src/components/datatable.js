@@ -1,14 +1,3 @@
-import {
-  createInputField,
-  createSelectField,
-  createMultiSelectField,
-  createColorPickerField,
-  createCheckboxField,
-  createSliderField,
-  createRadioField,
-  createTextareaField,
-  getFormData
-} from '../formHelpers.js';
 class DynamicTable {
   constructor(containerSelector, callback, config = {},deletecallback) {
     this.container = document.querySelector(containerSelector);
@@ -16,9 +5,9 @@ class DynamicTable {
     this.columns = this.getOrderedColumns(config); // Establece las columnas en el orden deseado
     this.callback = callback;
     this.deletecallback = deletecallback;
-    this.table = document.createElement('table');
-    this.table.classList.add('dynamic-table');
-    this.container.appendChild(this.table);
+    this.HtmlContainer = document.createElement('table');
+    this.HtmlContainer.classList.add('dynamic-table');
+    this.container.appendChild(this.HtmlContainer);
     this.canClear = true; // Bandera para controlar la limpieza
 
     this.createHeader();
@@ -34,7 +23,7 @@ class DynamicTable {
   }
 
   createHeader() {
-    const header = this.table.createTHead();
+    const header = this.HtmlContainer.createTHead();
     const headerRow = header.insertRow();
 
     this.columns.forEach((key) => {
@@ -53,7 +42,7 @@ class DynamicTable {
   }
 
   addRow(data) {
-    const row = new DynamicRow(this.table, data, this.columns, this.config, this.callback,this.deletecallback);
+    const row = new DynamicRow(this.HtmlContainer, data, this.columns, this.config, this.callback,this.deletecallback);
     row.render();
     this.fillEmptyFields(data);
   }
@@ -81,14 +70,14 @@ class DynamicTable {
   }
 
   hideColumn(columnKey) {
-    const headerCells = this.table.tHead.rows[0].cells;
+    const headerCells = this.HtmlContainer.tHead.rows[0].cells;
     for (let i = 0; i < headerCells.length; i++) {
       if (headerCells[i].dataset.key === columnKey) {
         headerCells[i].style.display = 'none';
       }
     }
 
-    for (let row of this.table.rows) {
+    for (let row of this.HtmlContainer.rows) {
       const cells = row.cells;
       for (let i = 0; i < cells.length; i++) {
         if (this.columns[i] === columnKey) {
@@ -110,14 +99,14 @@ class DynamicTable {
   }
 
   clearRows() {
-    while (this.table.rows.length > 1) {
-      this.table.deleteRow(1);
+    while (this.HtmlContainer.rows.length > 1) {
+      this.HtmlContainer.deleteRow(1);
     }
   }
 }
 class DynamicRow {
   constructor(table, data, columns, config, callback,deletecallback) {
-    this.table = table;
+    this.HtmlContainer = table;
     this.data = data;
     this.columns = columns;
     this.config = config;
@@ -128,7 +117,7 @@ class DynamicRow {
   }
 
   render() {
-    const row = this.table.insertRow();
+    const row = this.HtmlContainer.insertRow();
     let cellIndex = 0;
 
     this.columns.forEach((key) => {
@@ -154,7 +143,7 @@ class DynamicRow {
 
           const subConfig = typeConfig[subKey];
           const subValue = value ? value[subKey] : undefined;
-          const inputElement = this.createInputElement(key, subKey, subValue, subConfig);
+          const inputElement = this.createInputElement(key, subKey, subValue, subConfig, row.rowIndex);
 
           if (inputElement) {
             const wrapper = document.createElement('div');
@@ -175,7 +164,7 @@ class DynamicRow {
 
         cell.appendChild(objectContainer);
       } else {
-        const inputElement = this.createInputElement(key, null, value, typeConfig);
+        const inputElement = this.createInputElement(key, null, value, typeConfig, row.rowIndex);
         console.log("inputElement", inputElement);
         if (inputElement) {
           cell.appendChild(inputElement);
@@ -201,8 +190,92 @@ class DynamicRow {
     actionCell.appendChild(deleteButton);
     actionCell.appendChild(actionButton);
   }
+  renderDivs() {
+    const container = document.createElement('div');
+    container.classList.add('dynamic-row-container');
 
-  createInputElement(key, subKey, value, typeConfig) {
+    this.columns.forEach((key) => {
+      const typeConfig = this.config[key];
+
+      if (typeConfig && typeConfig.hidden) {
+        return;
+      }
+
+      const value = this.data[key];
+      const itemContainer = document.createElement('div');
+      itemContainer.classList.add('dynamic-row-item');
+
+      if (typeConfig && typeConfig.type === 'object') {
+        const objectContainer = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Mostrar ' + key;
+
+        objectContainer.appendChild(summary);
+
+        Object.keys(typeConfig).forEach(subKey => {
+          if (subKey === 'type') return;
+
+          const subConfig = typeConfig[subKey];
+          const subValue = value ? value[subKey] : undefined;
+          const inputElement = this.createInputElement(key, subKey, subValue, subConfig);
+
+          if (inputElement) {
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('input-wrapper');
+
+            if (subConfig.label) {
+              const label = document.createElement('label');
+              label.textContent = subConfig.label;
+              wrapper.appendChild(label);
+            }
+
+            wrapper.appendChild(inputElement);
+            objectContainer.appendChild(wrapper);
+          }
+        });
+
+        itemContainer.appendChild(objectContainer);
+      } else {
+        const inputElement = this.createInputElement(key, null, value, typeConfig);
+        if (inputElement) {
+          itemContainer.appendChild(inputElement);
+        } else {
+          itemContainer.textContent = value !== undefined ? value : '';
+        }
+      }
+
+      container.appendChild(itemContainer);
+    });
+
+    // Botones de acción
+    const actionContainer = document.createElement('div');
+    actionContainer.classList.add('action-container');
+
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Guardar cambios';
+    saveButton.className = 'savebutton custombutton';
+    saveButton.addEventListener('click', () => {
+      this.callback(this.originalData, this.modifiedData);
+    });
+
+    const deleteButton = document.createElement('button');
+    deleteButton.textContent = 'Eliminar';
+    deleteButton.className = 'deletebutton custombutton';
+    deleteButton.addEventListener('click', () => {
+      this.deletecallback(this.originalData, this.modifiedData);
+    });
+
+    actionContainer.appendChild(deleteButton);
+    actionContainer.appendChild(saveButton);
+    container.appendChild(actionContainer);
+
+    // Limpiar el contenedor HTML original y agregar el nuevo contenido
+    this.HtmlContainer.innerHTML = '';
+    this.HtmlContainer.appendChild(container);
+    return container;
+  }
+
+  createInputElement(key, subKey, value, typeConfig, rowindex) {
     if (value === undefined && subKey === 'class' || subKey === 'label') {
       // console.log("createInputElement return", key, subKey, value, typeConfig);
       return null;
@@ -229,7 +302,7 @@ class DynamicRow {
         inputElement = this.createtexareaElement(key, subKey, value);
         break;
       case 'select':
-        inputElement = this.createSelectElement(key, subKey, value, typeConfig);
+        inputElement = this.createSelectElement(key, subKey, value, typeConfig, rowindex);
         break;
       case 'multiSelect':
         inputElement = this.createMultiSelectElement(key, subKey, value, typeConfig);
@@ -243,10 +316,12 @@ class DynamicRow {
     if (typeConfig?.class) {
       inputElement.classList.add(typeConfig.class);
     }
-
+    if (typeConfig.dataAssociated) {
+          inputElement.setAttribute('data-associated', typeConfig.dataAssociated);
+    }
     return inputElement || document.createTextNode('');
   }
-  createSelectElement(key, subKey, value, typeConfig) {
+  createSelectElement(key, subKey, value, typeConfig, rowindex) {
     const divElement = document.createElement('div');
     divElement.classList.add('div-select');
     const selectElement = document.createElement('select');
@@ -272,9 +347,16 @@ class DynamicRow {
     }
 
     selectElement.value = value;
-
+    if (typeConfig.toggleoptions) {
+      setTimeout(() => {
+        this.handletoggleoptions(subKey, value, rowindex);
+      }, 500);
+    }
     selectElement.addEventListener('change', () => {
       this.updateModifiedData(key, subKey, selectElement.value);
+      if (typeConfig.toggleoptions) {
+        this.handletoggleoptions(subKey, selectElement.value, rowindex);
+      }
     });
     const labelElement = document.createElement('label');
     divElement.appendChild(selectElement);
@@ -381,6 +463,24 @@ class DynamicRow {
       this.modifiedData[key] = value;
     }
   }
+  handletoggleoptions(key, subKey, rowindex) {
+    const rows = this.HtmlContainer.rows
+    if (!rows) return;
+    Array.from(rows).forEach(row => {
+      console.log("handletoggleoptions",row, row.rowIndex); // Nombre o contenido de la fila
+      if (row.rowIndex === rowindex) {
+        const fields = row.querySelectorAll('[data-associated]');
+        fields.forEach(field => {
+          if (field.getAttribute('data-associated') === subKey) {
+            field.style.display = 'block';
+          } else {
+            field.style.display = 'none';
+          }
+      });
+      }
+    });
+    console.log("handletoggleoptions", key, subKey, rowindex);
+  }
 }
 function createMultiSelectField1(field, onChangeCallback, value) {
   const container = document.createElement('div');
@@ -460,6 +560,52 @@ function createMultiSelectField1(field, onChangeCallback, value) {
 
   return container;
 }
+export class EditModal {
+  constructor(containerSelector, callback, config = {},deletecallback) {
+    this.HtmlContainer = document.querySelector(containerSelector);
+    this.config = config;
+    this.callback = callback;
+    this.deletecallback = deletecallback;
+    // this.HtmlContainer = document.createElement('div');
+    this.columns = this.getOrderedElements(config); // Establece las columnas en el orden deseado
+  }
+  render(data) {
+    const renderelement = new DynamicRow(this.HtmlContainer, data, this.columns, this.config, this.callback,this.deletecallback);
+    const renderhtml = renderelement.renderDivs();
+    this.HtmlContainer.appendChild(renderhtml);
+    console.log("renderhtml", renderhtml);
+  }
+  addRow(data) {
+    const renderelement = new DynamicRow(this.HtmlContainer, data, this.columns, this.config, this.callback,this.deletecallback);
+    const renderhtml = renderelement.renderDivs();
+  }
+  getOrderedElements(config) {
+    return Object.keys(config);
+  }
+  fillEmptyFields(data) {
+    const filledData = { ...data }; // Copia los datos recibidos sin modificarlos
+
+    this.columns.forEach((key) => {
+      const columnConfig = this.config[key];
+
+      if (columnConfig && columnConfig.type === 'object') {
+        // Si el campo es un objeto, comprobamos cada subcampo
+        filledData[key] = data[key] || {}; // Si no existe el objeto en los datos, lo inicializamos
+        Object.keys(columnConfig).forEach(subKey => {
+          if (subKey !== 'type' && !(subKey in filledData[key])) {
+            filledData[key][subKey] = ''; // Añadimos solo los subcampos que faltan
+          }
+        });
+      } else if (!(key in filledData)) {
+        // Si el campo no es un objeto y no existe en los datos, lo añadimos vacío
+        filledData[key] = '';
+      }
+    });
+
+    return filledData;
+  }
+}
+
 export default DynamicTable;
 
 // const sugerenceDiv = document.createElement('div');
